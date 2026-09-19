@@ -14,7 +14,8 @@ class TelegramService
 
     public function __construct()
     {
-        $this->telegram = new Api(env('TELEGRAM_BOT_TOKEN'));
+        $token = config('services.telegram.bot_token') ?: env('TELEGRAM_BOT_TOKEN');
+        $this->telegram = new Api($token);
     }
 
     public function handleUpdate(array $update): void

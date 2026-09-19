@@ -122,7 +122,13 @@ class HikvisionAccessEventObserver
 Filial: {$worker->branch->name}
 Sana: " . $hikvisionTime->format('Y-m-d H:i:s');
 
-        $telegram = new \Telegram\Bot\Api(env('TELEGRAM_BOT_TOKEN'));
+        $token = config('services.telegram.bot_token') ?: env('TELEGRAM_BOT_TOKEN');
+        if (!$token) {
+            \Illuminate\Support\Facades\Log::warning('Telegram bot token is not configured in HikvisionAccessEventObserver.');
+            return;
+        }
+
+        $telegram = new \Telegram\Bot\Api($token);
 
         foreach ($users as $user) {
             try {
