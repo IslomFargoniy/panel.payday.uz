@@ -14,6 +14,19 @@ class StoreBranchRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'address' => $this->address && trim($this->address) !== '' ? trim($this->address) : null,
+            'comment' => $this->comment && trim($this->comment) !== '' ? trim($this->comment) : null,
+            'telegram_group_id' => $this->telegram_group_id && trim($this->telegram_group_id) !== '' ? trim($this->telegram_group_id) : null,
+            'latitude' => $this->latitude && trim($this->latitude) !== '' ? trim($this->latitude) : null,
+            'longitude' => $this->longitude && trim($this->longitude) !== '' ? trim($this->longitude) : null,
+            'hour_price' => $this->filled('hour_price') ? $this->hour_price : 0,
+            'fine_price' => $this->filled('fine_price') ? $this->fine_price : 0,
+        ]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -22,14 +35,14 @@ class StoreBranchRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'firm_id' => 'required',
-            'name' => 'required',
-            'address' => 'nullable',
-            'comment' => 'nullable',
+            'firm_id' => 'required|exists:firms,id',
+            'name' => 'required|string|max:255',
+            'address' => 'nullable|string|max:255',
+            'comment' => 'nullable|string|max:1000',
             'work_time' => 'required',
             'end_time' => 'required',
-            'hour_price' => 'required',
-            'fine_price' => 'required|numeric|min:0',
+            'hour_price' => 'nullable|numeric|min:0',
+            'fine_price' => 'nullable|numeric|min:0',
             'telegram_group_id' => 'nullable|string',
             'latitude' => 'nullable|string',
             'longitude' => 'nullable|string',
@@ -41,11 +54,8 @@ class StoreBranchRequest extends FormRequest
         return [
             'firm_id.required' => 'The firm field is required.',
             'name.required' => 'The name field is required.',
-            'address.required' => 'The address field is required.',
             'work_time.required' => 'The work time field is required.',
             'end_time.required' => 'The end time field is required.',
-            'hour_price.required' => 'The hour price field is required.',
-            'fine_price.required' => 'The hour price field is required.',
         ];
     }
 }

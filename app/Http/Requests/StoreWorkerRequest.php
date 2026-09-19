@@ -14,6 +14,17 @@ class StoreWorkerRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'phone' => $this->phone && trim($this->phone) !== '' ? trim($this->phone) : null,
+            'address' => $this->address && trim($this->address) !== '' ? trim($this->address) : null,
+            'comment' => $this->comment && trim($this->comment) !== '' ? trim($this->comment) : null,
+            'hour_price' => $this->filled('hour_price') ? $this->hour_price : 0,
+            'fine_price' => $this->filled('fine_price') ? $this->fine_price : 0,
+        ]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -22,15 +33,15 @@ class StoreWorkerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'branch_id' => 'required',
+            'branch_id' => 'required|exists:branches,id',
             'work_time' => 'required',
             'end_time' => 'required',
-            'hour_price' => 'numeric|min:0',
-            'fine_price' => 'numeric|min:0',
-            'name' => 'required',
-            'phone' => 'nullable|unique:workers,phone',
-            'address' => 'nullable',
-            'comment' => 'nullable',
+            'hour_price' => 'nullable|numeric|min:0',
+            'fine_price' => 'nullable|numeric|min:0',
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|unique:workers,phone',
+            'address' => 'nullable|string|max:255',
+            'comment' => 'nullable|string|max:1000',
             'status' => 'nullable',
             'avatar' => 'nullable|image|max:5120',
         ];
@@ -44,10 +55,6 @@ class StoreWorkerRequest extends FormRequest
             'end_time.required' => 'The end time field is required.',
             'name.required' => 'The name field is required.',
             'phone.unique' => 'This phone number has already been taken.',
-            'phone.nullable' => 'The phone field is required.',
-            'address.nullable' => 'The address field is required.',
-            'comment.nullable' => 'The comment field is required.',
         ];
     }
-
 }

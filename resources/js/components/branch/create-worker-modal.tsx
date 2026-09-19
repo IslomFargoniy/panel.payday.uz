@@ -83,16 +83,16 @@ export default function CreateWorkerModal({ branch }: createWorker) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="h-8 gap-1 bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700">
-                    <IoCreate className="h-4 w-4" />
+                <Button className="h-8 gap-1.5 bg-indigo-600 px-3 py-1 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700 transition-colors rounded-lg">
+                    <IoCreate className="h-3.5 w-3.5" />
                     {t('modal.create_title')}
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="max-w-2xl dark:border-gray-400">
-                <DialogHeader>
-                    <DialogTitle>{t('modal.create_title')}</DialogTitle>
-                    <DialogDescription>{t('modal.create_description')}</DialogDescription>
+            <DialogContent className="max-w-2xl rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                <DialogHeader className="space-y-1">
+                    <DialogTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">{t('modal.create_title')}</DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">{t('modal.create_description')}</DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={submit}>

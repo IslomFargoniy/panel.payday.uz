@@ -1,22 +1,17 @@
 import AppLogoIcon from './app-logo-icon';
-import { Image } from 'lucide-react';
 
 export default function AppLogo() {
     return (
-        <>
-            <div
-                className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-md">
-                {/*<AppLogoIcon className="size-5 fill-current text-white dark:text-black" />*/}
-                <img
-                    src="/images/icons/big-payday-nobg.png"
-                    alt="App Logo"
-                    className="size-9 fill-current text-white dark:text-black"
-                />
+        <div className="flex items-center gap-2.5">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg shadow-xs transition-transform hover:scale-105">
+                <AppLogoIcon className="size-8" />
             </div>
 
-            <div className="ml-1 grid flex-1 text-left text-sm">
-                <span className="mb-0.5 truncate leading-none font-semibold">PayDay</span>
+            <div className="grid flex-1 text-left">
+                <span className="truncate text-base font-bold tracking-tight text-slate-900 dark:text-white">
+                    Pay<span className="text-indigo-600 dark:text-indigo-400">Day</span>
+                </span>
             </div>
-        </>
+        </div>
     );
 }

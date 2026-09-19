@@ -104,6 +104,12 @@ class WorkerController extends Controller
     {
         try {
             $data = $request->validated();
+            $data['hour_price'] = isset($data['hour_price']) && $data['hour_price'] !== '' ? $data['hour_price'] : 0;
+            $data['fine_price'] = isset($data['fine_price']) && $data['fine_price'] !== '' ? $data['fine_price'] : 0;
+            $data['phone'] = !empty($data['phone']) ? trim($data['phone']) : null;
+            $data['address'] = !empty($data['address']) ? trim($data['address']) : null;
+            $data['comment'] = !empty($data['comment']) ? trim($data['comment']) : null;
+
             if ($request->hasFile('avatar')) {
                 $data['avatar'] = $this->saveOptimizedAvatar($request->file('avatar'));
             }
@@ -249,6 +255,12 @@ class WorkerController extends Controller
     {
         try {
             $data = $request->validated();
+            $data['hour_price'] = isset($data['hour_price']) && $data['hour_price'] !== '' ? $data['hour_price'] : 0;
+            $data['fine_price'] = isset($data['fine_price']) && $data['fine_price'] !== '' ? $data['fine_price'] : 0;
+            $data['phone'] = !empty($data['phone']) ? trim($data['phone']) : null;
+            $data['address'] = !empty($data['address']) ? trim($data['address']) : null;
+            $data['comment'] = !empty($data['comment']) ? trim($data['comment']) : null;
+
             if ($request->hasFile('avatar')) {
                 if ($worker->avatar && is_file(public_path('storage/' . $worker->avatar))) {
                     @unlink(public_path('storage/' . $worker->avatar));

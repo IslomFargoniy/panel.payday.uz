@@ -14,6 +14,13 @@ class UpdateSalaryRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'comment' => $this->comment && trim($this->comment) !== '' ? trim($this->comment) : null,
+        ]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -30,7 +37,7 @@ class UpdateSalaryRequest extends FormRequest
             'real_amount' => 'required',
             'from' => 'required',
             'to' => 'required',
-            'comment' => 'nullable',
+            'comment' => 'nullable|string|max:255',
         ];
     }
 

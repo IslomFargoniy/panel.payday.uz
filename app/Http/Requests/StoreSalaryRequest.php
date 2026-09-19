@@ -14,6 +14,13 @@ class StoreSalaryRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'comment' => $this->comment && trim($this->comment) !== '' ? trim($this->comment) : null,
+        ]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *

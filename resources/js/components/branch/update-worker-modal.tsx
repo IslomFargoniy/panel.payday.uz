@@ -98,10 +98,10 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="max-w-2xl dark:border-gray-400">
-                <DialogHeader>
-                    <DialogTitle>{t('modal.update_title')}</DialogTitle>
-                    <DialogDescription>{t('modal.update_description')}</DialogDescription>
+            <DialogContent className="max-w-2xl rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                <DialogHeader className="space-y-1">
+                    <DialogTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">{t('modal.update_title')}</DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">{t('modal.update_description')}</DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={submit}>

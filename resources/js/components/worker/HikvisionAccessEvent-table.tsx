@@ -137,111 +137,143 @@ const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: Hikv
     }, [showModal, currentIndex, validImages.length]);
 
     return (
-        <div>
-            <h3 className={'capitalize text-center py-2'}>{t('hikvisionAccessEvent')}</h3>
+        <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                    <h3 className="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100 capitalize">
+                        {t('hikvisionAccessEvent')}
+                    </h3>
+                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                        {hikvision_access_events.total || 0} ta
+                    </span>
+                </div>
+            </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
-                <table className="border-collapse w-full text-sm text-left text-gray-800 dark:text-gray-100">
-                    <thead className="bg-gray-100 dark:bg-gray-700">
-                        <tr>
-                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('n')}</td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('datetime')}</td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('shortSerialNumber')}</td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('mac_address')}</td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('attendanceStatus')}</td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('label')}</td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-center">{t('image')}</td>
-                            <th className="border border-gray-300 dark:border-gray-600 px-4 py-2"></th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800">
-                        {hikvision_access_events.data.map((item, index) => {
-                            const globalIndex = (hikvision_access_events.current_page - 1) * hikvision_access_events.per_page + index + 1;
-                            const imgUrl = getImageUrl(item);
-
-                            return (
-                                <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{globalIndex}</td>
-                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.hikvision_access?.dateTime}</td>
-                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.hikvision_access?.shortSerialNumber}</td>
-                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.hikvision_access?.macAddress}</td>
-                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.attendanceStatus}</td>
-                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.label}</td>
-                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-center">
-                                        {imgUrl ? (
-                                            <ImageThumbnail
-                                                src={imgUrl}
-                                                alt={item.name || 'Olingan Rasm'}
-                                                noImageText={t('no_image')}
-                                                onClick={() => {
-                                                    const validIndex = validImages.findIndex(img => img.id === item.id);
-                                                    if (validIndex !== -1) {
-                                                        setCurrentIndex(validIndex);
-                                                        setShowModal(true);
-                                                    }
-                                                }}
-                                            />
-                                        ) : (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700/50">
-                                                {t('no_image')}
-                                            </span>
-                                        )}
-                                    </td>
-
-                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                        <div className="inline-flex shadow-sm">
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                onClick={() => handleDeleteClick(item)}
-                                            >
-                                                <TrashIcon className="w-4 h-4" />
-                                            </Button>
-                                        </div>
+            {/* Table Card */}
+            <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-700 dark:text-slate-200">
+                        <thead className="border-b border-slate-200/80 bg-slate-50/80 font-semibold text-slate-500 uppercase tracking-wider dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+                            <tr>
+                                <th className="px-3 py-2.5 text-center w-10 font-mono">{t('n')}</th>
+                                <th className="px-3 py-2.5 whitespace-nowrap">{t('datetime')}</th>
+                                <th className="px-3 py-2.5">{t('shortSerialNumber')}</th>
+                                <th className="px-3 py-2.5 font-mono">{t('mac_address')}</th>
+                                <th className="px-3 py-2.5">{t('attendanceStatus')}</th>
+                                <th className="px-3 py-2.5">{t('label')}</th>
+                                <th className="px-3 py-2.5 text-center w-16">{t('image')}</th>
+                                <th className="px-3 py-2.5 text-right w-14"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900">
+                            {(!hikvision_access_events.data || hikvision_access_events.data.length === 0) ? (
+                                <tr>
+                                    <td colSpan={8} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+                                        {t('no_events_found', 'Hozircha kirish-chiqish hodisalari mavjud emas.')}
                                     </td>
                                 </tr>
-                            );
-                        })}
-                    </tbody>
+                            ) : (
+                                hikvision_access_events.data.map((item, index) => {
+                                    const globalIndex = (hikvision_access_events.current_page - 1) * hikvision_access_events.per_page + index + 1;
+                                    const imgUrl = getImageUrl(item);
 
-                    {/* Pass selected worker to the DeleteWorkerModal */}
-                    {selectedHikvisionAccessEvent && openDelete && (
-                        <DeleteItemModal
-                            item={selectedHikvisionAccessEvent}
-                            open={openDelete}
-                            setOpen={setOpenDelete}
-                            onDelete={handleDelete}
-                        />
-                    )}
-                </table>
+                                    return (
+                                        <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                                            <td className="px-3 py-2.5 text-center font-mono text-slate-400 dark:text-slate-500">{globalIndex}</td>
+                                            <td className="px-3 py-2.5 whitespace-nowrap font-mono text-slate-700 dark:text-slate-300">
+                                                {item.hikvision_access?.dateTime || '—'}
+                                            </td>
+                                            <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-slate-100">
+                                                {item.hikvision_access?.shortSerialNumber || '—'}
+                                            </td>
+                                            <td className="px-3 py-2.5 font-mono text-slate-500 dark:text-slate-400 text-[11px]">
+                                                {item.hikvision_access?.macAddress || '—'}
+                                            </td>
+                                            <td className="px-3 py-2.5 whitespace-nowrap">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 font-medium text-[11px]">
+                                                    {item.attendanceStatus || '—'}
+                                                </span>
+                                            </td>
+                                            <td className="px-3 py-2.5 text-slate-600 dark:text-slate-300">
+                                                {item.label || '—'}
+                                            </td>
+                                            <td className="px-3 py-2.5 text-center">
+                                                {imgUrl ? (
+                                                    <ImageThumbnail
+                                                        src={imgUrl}
+                                                        alt={item.name || 'Olingan Rasm'}
+                                                        noImageText={t('no_image')}
+                                                        onClick={() => {
+                                                            const validIndex = validImages.findIndex(img => img.id === item.id);
+                                                            if (validIndex !== -1) {
+                                                                setCurrentIndex(validIndex);
+                                                                setShowModal(true);
+                                                            }
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800">
+                                                        {t('no_image')}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleDeleteClick(item)}
+                                                    className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400"
+                                                    title={t('delete', 'O‘chirish')}
+                                                >
+                                                    <TrashIcon className="w-3.5 h-3.5" />
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+
+                        {/* Pass selected worker to the DeleteWorkerModal */}
+                        {selectedHikvisionAccessEvent && openDelete && (
+                            <DeleteItemModal
+                                item={selectedHikvisionAccessEvent}
+                                open={openDelete}
+                                setOpen={setOpenDelete}
+                                onDelete={handleDelete}
+                            />
+                        )}
+                    </table>
+                </div>
 
                 {/* Pagination */}
-                <div className="mt-4 flex justify-between items-center text-sm text-gray-600 dark:text-gray-300">
-                    <div>
-                        {t('showing', {
-                            from: hikvision_access_events.from,
-                            to: hikvision_access_events.to,
-                            total: hikvision_access_events.total,
-                        })}
+                {hikvision_access_events.total > 0 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200/80 bg-slate-50/50 px-4 py-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+                        <div>
+                            {t('showing', {
+                                from: hikvision_access_events.from || 0,
+                                to: hikvision_access_events.to || 0,
+                                total: hikvision_access_events.total || 0,
+                            })}
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                            {hikvision_access_events.links.map((link, index) => (
+                                <Link
+                                    key={index}
+                                    href={`${link.url ?? '?'}&search=${searchData.search}&per_page=${searchData.per_page}`}
+                                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                                        link.active
+                                            ? 'bg-indigo-600 text-white shadow-xs'
+                                            : !link.url
+                                              ? 'cursor-not-allowed text-slate-300 dark:text-slate-600'
+                                              : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                    }`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </div>
                     </div>
-                    <div className="flex gap-1">
-                        {hikvision_access_events.links.map((link, index) => (
-                            <Link
-                                key={index}
-                                href={`${link.url ?? '?'}&search=${searchData.search}&per_page=${searchData.per_page}`}
-                                className={`px-3 py-1 rounded-md text-sm transition ${
-                                    link.active
-                                        ? 'bg-blue-600 text-white'
-                                        : !link.url
-                                          ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                          : 'bg-white dark:bg-gray-800 dark:text-gray-200 text-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ))}
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* Modal Preview */}

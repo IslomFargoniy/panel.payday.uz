@@ -10,6 +10,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         $dbUsername = env('DB_USERNAME', 'root');
 
         DB::unprepared("DROP FUNCTION IF EXISTS count_working_days;");

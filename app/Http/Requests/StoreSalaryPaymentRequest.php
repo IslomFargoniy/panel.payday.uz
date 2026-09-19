@@ -14,6 +14,13 @@ class StoreSalaryPaymentRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'comment' => $this->comment && trim($this->comment) !== '' ? trim($this->comment) : null,
+        ]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -33,8 +40,6 @@ class StoreSalaryPaymentRequest extends FormRequest
         return [
             'worker_id.required' => 'The worker field is required.',
             'amount.required' => 'The amount field is required.',
-            'comment.required' => 'The comment field is required.',
         ];
     }
-
 }

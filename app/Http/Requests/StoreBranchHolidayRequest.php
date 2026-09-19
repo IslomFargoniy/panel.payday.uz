@@ -14,6 +14,13 @@ class StoreBranchHolidayRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'comment' => $this->comment && trim($this->comment) !== '' ? trim($this->comment) : null,
+        ]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -22,10 +29,10 @@ class StoreBranchHolidayRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'branch_id' => 'required',
-            'name' => 'required',
-            'date' => 'required',
-            'comment' => 'nullable',
+            'branch_id' => 'required|exists:branches,id',
+            'name' => 'required|string|max:255',
+            'date' => 'required|date',
+            'comment' => 'nullable|string|max:1000',
         ];
     }
 
