@@ -6,17 +6,15 @@ import AppearanceToggleDropdown from '@/components/appearance-dropdown';
 
 export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: BreadcrumbItemType[] }) {
     return (
-        <div className="fixed top-0 z-50 block w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800">
-            <header className="flex justify-between items-center h-14 px-4 sm:px-6">
-                <div className="flex items-center gap-2 min-w-0">
-                    <SidebarTrigger className="-ml-1 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" />
-                    <Breadcrumbs breadcrumbs={breadcrumbs} />
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                    <LanguageBar />
-                    <AppearanceToggleDropdown />
-                </div>
-            </header>
-        </div>
+        <header className="sticky top-0 z-40 flex h-14 w-full shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 sm:px-6">
+            <div className="flex items-center gap-2 min-w-0">
+                <SidebarTrigger className="-ml-1 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" />
+                <Breadcrumbs breadcrumbs={breadcrumbs} />
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+                <LanguageBar />
+                <AppearanceToggleDropdown />
+            </div>
+        </header>
     );
 }
