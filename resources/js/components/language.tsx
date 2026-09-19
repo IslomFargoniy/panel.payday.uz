@@ -1,62 +1,94 @@
-import { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import AppearanceTabs from '@/components/appearance-tabs';
+import { Check, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
-const LanguageBar = () => {
-    const { i18n, t } = useTranslation();
-    const [open, setOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+interface LanguageOption {
+    code: 'uz' | 'ru' | 'en';
+    label: string;
+    short: string;
+    flag: string;
+}
+
+const languages: LanguageOption[] = [
+    { code: 'uz', label: "O‘zbekcha", short: "O‘zb", flag: '🇺🇿' },
+    { code: 'ru', label: 'Русский', short: 'Рус', flag: '🇷🇺' },
+    { code: 'en', label: 'English', short: 'Eng', flag: '🇬🇧' },
+];
+
+interface LanguageBarProps {
+    className?: string;
+}
+
+const LanguageBar = ({ className }: LanguageBarProps) => {
+    const { i18n } = useTranslation();
+
+    const currentCode = (i18n.language || 'uz').toLowerCase().startsWith('ru')
+        ? 'ru'
+        : (i18n.language || 'uz').toLowerCase().startsWith('en')
+        ? 'en'
+        : 'uz';
+
+    const currentLang = languages.find((l) => l.code === currentCode) || languages[0];
 
     const changeLanguage = (lang: string) => {
         i18n.changeLanguage(lang);
         localStorage.setItem('lang', lang);
-        setOpen(false);
     };
 
-    // Close dropdown on outside click
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
     return (
-        <div className="flex justify-end relative" ref={dropdownRef}>
-            <button
-                onClick={() => setOpen(!open)}
-                className="text-sm px-3 py-1 rounded border border-gray-300 shadow bg-white hover:bg-gray-100 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700"
-            >
-                🌐 {t('lang.title') ?? 'Language'}
-            </button>
+        <div className={cn('relative', className)}>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8.5 px-2.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800/80 text-xs font-medium text-slate-700 dark:text-slate-200 gap-1.5 focus-visible:ring-1 focus-visible:ring-indigo-500 cursor-pointer"
+                    >
+                        <span className="text-sm leading-none">{currentLang.flag}</span>
+                        <span className="hidden sm:inline font-medium">{currentLang.label}</span>
+                        <span className="inline sm:hidden font-medium">{currentLang.short}</span>
+                        <ChevronDown className="h-3.5 w-3.5 text-slate-400 opacity-70 ml-0.5" />
+                    </Button>
+                </DropdownMenuTrigger>
 
-            {open && (
-                <div
-                    className="absolute right-0 mt-2 w-36 rounded shadow-lg border border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 z-50">
-                    <button
-                        onClick={() => changeLanguage('uz')}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white"
-                    >
-                        🇺🇿 {t('lang.uz')}
-                    </button>
-                    <button
-                        onClick={() => changeLanguage('en')}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white"
-                    >
-                        🇬🇧 {t('lang.en')}
-                    </button>
-                    <button
-                        onClick={() => changeLanguage('ru')}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white"
-                    >
-                        🇷🇺 {t('lang.ru')}
-                    </button>
-                    <AppearanceTabs className={'flex flex-col gap-1'} />
-                </div>
-            )}
+                <DropdownMenuContent
+                    align="end"
+                    sideOffset={6}
+                    className="w-40 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1.5 shadow-xl"
+                >
+                    {languages.map((lang) => {
+                        const isActive = currentCode === lang.code;
+                        return (
+                            <DropdownMenuItem
+                                key={lang.code}
+                                onClick={() => changeLanguage(lang.code)}
+                                className={cn(
+                                    'flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors',
+                                    isActive
+                                        ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-semibold'
+                                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-slate-800/70'
+                                )}
+                            >
+                                <span className="flex items-center gap-2">
+                                    <span className="text-sm leading-none">{lang.flag}</span>
+                                    <span>{lang.label}</span>
+                                </span>
+                                {isActive && (
+                                    <Check className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                )}
+                            </DropdownMenuItem>
+                        );
+                    })}
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     );
 };

@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 import { FcGoogle } from 'react-icons/fc';
 import { useTranslation } from 'react-i18next';
-import LanguageBar from '@/components/language';
 
 type RegisterForm = {
     name: string;
@@ -41,8 +40,6 @@ export default function Register() {
     return (
         <AuthLayout title={t('register.title')} description={t('register.description')}>
             <Head title={t('register.title')} />
-
-            <LanguageBar />
 
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
