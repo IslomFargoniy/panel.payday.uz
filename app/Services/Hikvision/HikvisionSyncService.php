@@ -260,107 +260,162 @@ class HikvisionSyncService
             $startTime = $startTime ?: Carbon::now()->subDays(1)->format('Y-m-d\T00:00:00+05:00');
             $endTime = $endTime ?: Carbon::now()->addHours(1)->format('Y-m-d\T23:59:59+05:00');
 
-            $payload = [
-                'AcsEventCond' => [
-                    'searchID' => 'payday_' . time(),
-                    'searchResultPosition' => 0,
-                    'maxResults' => 100,
-                    'major' => 5, // Access granted (Face, card, fingerprint)
-                    'minor' => 0, // All
-                    'startTime' => $startTime,
-                    'endTime' => $endTime,
-                ]
-            ];
-
-            $res = \Illuminate\Support\Facades\Http::timeout(10)->post('http://127.0.0.1:7661/api/isapi', [
-                'device_id' => $device->device_id,
-                'method' => 'POST',
-                'url' => 'POST /ISAPI/AccessControl/AcsEvent?format=json',
-                'body' => json_encode($payload),
-            ]);
-
-            if (!$res->successful()) {
-                return ['success' => false, 'error' => $res->body()];
-            }
-
-            $body = $res->json();
-            $rawResponse = $body['response'] ?? '';
-            $acsData = is_string($rawResponse) ? json_decode($rawResponse, true) : $rawResponse;
-            $infoList = $acsData['AcsEvent']['InfoList'] ?? [];
+            $device->loadMissing('branch.workers.branch.firm.firm_setting');
 
             $syncedCount = 0;
-            $device->loadMissing('branch.workers');
+            $position = 0;
+            $maxPerReq = 100;
+            $totalMatches = 1;
 
-            foreach ($infoList as $event) {
-                $employeeNo = $event['employeeNoString'] ?? null;
-                if (empty($employeeNo)) {
-                    continue;
+            while ($position < $totalMatches) {
+                $payload = [
+                    'AcsEventCond' => [
+                        'searchID' => 'payday_' . time() . '_' . $position,
+                        'searchResultPosition' => $position,
+                        'maxResults' => $maxPerReq,
+                        'major' => 5, // Access granted (Face, card, fingerprint)
+                        'minor' => 0, // All
+                        'startTime' => $startTime,
+                        'endTime' => $endTime,
+                    ]
+                ];
+
+                $res = \Illuminate\Support\Facades\Http::timeout(10)->post('http://127.0.0.1:7661/api/isapi', [
+                    'device_id' => $device->device_id,
+                    'method' => 'POST',
+                    'url' => 'POST /ISAPI/AccessControl/AcsEvent?format=json',
+                    'body' => json_encode($payload),
+                ]);
+
+                if (!$res->successful()) {
+                    break;
                 }
 
-                $worker = $device->branch?->workers->firstWhere('employeeNoString', $employeeNo);
-                if (!$worker) {
-                    continue;
+                $body = $res->json();
+                $rawResponse = $body['response'] ?? '';
+                $acsData = is_string($rawResponse) ? json_decode($rawResponse, true) : $rawResponse;
+
+                if (!isset($acsData['AcsEvent'])) {
+                    break;
                 }
 
-                $rawTime = $event['time'] ?? null;
-                if (!$rawTime) {
-                    continue;
+                $totalMatches = (int)($acsData['AcsEvent']['totalMatches'] ?? 0);
+                $numOfMatches = (int)($acsData['AcsEvent']['numOfMatches'] ?? 0);
+                $infoList = $acsData['AcsEvent']['InfoList'] ?? [];
+
+                if (empty($infoList)) {
+                    break;
                 }
 
-                $eventDateTime = Carbon::parse($rawTime)->timezone('Asia/Tashkent');
-                $eventDateStr = $eventDateTime->format('Y-m-d H:i:s');
-                $serialNo = (string)($event['serialNo'] ?? '');
+                foreach ($infoList as $event) {
+                    $employeeNo = $event['employeeNoString'] ?? null;
+                    if (empty($employeeNo)) {
+                        continue;
+                    }
 
-                // Check for duplicate
-                $existing = \App\Models\Hikvision\HikvisionAccessEvent::where('employeeNoString', $employeeNo)
-                    ->where(function ($q) use ($eventDateStr, $serialNo) {
-                        $q->where('created_at', $eventDateStr);
-                        if (!empty($serialNo)) {
-                            $q->orWhere('serialNo', $serialNo);
+                    $worker = $device->branch?->workers->firstWhere('employeeNoString', $employeeNo);
+                    if (!$worker) {
+                        continue;
+                    }
+
+                    $rawTime = $event['time'] ?? null;
+                    if (!$rawTime) {
+                        continue;
+                    }
+
+                    $eventDateTime = Carbon::parse($rawTime)->timezone('Asia/Tashkent');
+                    $eventDateStr = $eventDateTime->format('Y-m-d H:i:s');
+                    $serialNo = (string)($event['serialNo'] ?? '');
+
+                    // Check for duplicate specifically by employeeNo and exact access dateTime
+                    $existing = \App\Models\Hikvision\HikvisionAccessEvent::where('employeeNoString', $employeeNo)
+                        ->whereHas('hikvisionAccess', function ($q) use ($eventDateStr) {
+                            $q->where('dateTime', $eventDateStr);
+                        })
+                        ->exists();
+
+                    if ($existing) {
+                        continue;
+                    }
+
+                    // Determine attendance status & label (use device value if provided, else toggle)
+                    $attendanceStatus = $event['attendanceStatus'] ?? null;
+                    $label = $event['label'] ?? null;
+
+                    if (empty($attendanceStatus)) {
+                        $lastEvent = \App\Models\Hikvision\HikvisionAccessEvent::where('employeeNoString', $employeeNo)
+                            ->whereHas('hikvisionAccess', function ($q) use ($eventDateTime) {
+                                $q->whereDate('dateTime', $eventDateTime->format('Y-m-d'));
+                            })
+                            ->latest('id')
+                            ->first();
+
+                        $lastStatus = $lastEvent ? $lastEvent->attendanceStatus : null;
+                        $attendanceStatus = ($lastStatus === 'checkIn') ? 'checkOut' : 'checkIn';
+                    }
+
+                    if (empty($label)) {
+                        $label = ($attendanceStatus === 'checkIn') ? 'Keldi' : (($attendanceStatus === 'checkOut') ? 'Ketdi' : null);
+                    }
+
+                    $access = \App\Models\Hikvision\HikvisionAccess::create([
+                        'ipAddress' => $device->ip_address,
+                        'macAddress' => $device->mac_address,
+                        'shortSerialNumber' => $device->serial_number ?: $device->device_id,
+                        'dateTime' => $eventDateStr,
+                        'eventType' => 'AccessControl',
+                        'eventDescription' => 'ISUP AcsEvent Sync',
+                    ]);
+
+                    $eventModel = new \App\Models\Hikvision\HikvisionAccessEvent([
+                        'deviceName' => $device->name ?: 'Hikvision Terminal',
+                        'name' => $event['name'] ?? $worker->name,
+                        'employeeNoString' => $employeeNo,
+                        'serialNo' => $serialNo,
+                        'attendanceStatus' => $attendanceStatus,
+                        'label' => $label,
+                        'currentVerifyMode' => $event['currentVerifyMode'] ?? 'face',
+                        'work_time' => $worker->work_time,
+                        'end_time' => $worker->end_time,
+                    ]);
+                    $eventModel->hikvision_access_id = $access->id;
+                    $eventModel->timestamps = false;
+                    $eventModel->created_at = $eventDateTime;
+                    $eventModel->updated_at = $eventDateTime;
+                    $eventModel->save();
+
+                    if (isset($event['FaceRect']) && is_array($event['FaceRect'])) {
+                        $eventModel->faceReact()->create([
+                            'height' => $event['FaceRect']['height'] ?? null,
+                            'width' => $event['FaceRect']['width'] ?? null,
+                            'x' => $event['FaceRect']['x'] ?? null,
+                            'y' => $event['FaceRect']['y'] ?? null,
+                        ]);
+                    }
+
+                    $webhookUrl = optional($worker->branch?->firm?->firm_setting)->webhook_url;
+                    if ($webhookUrl) {
+                        try {
+                            \Illuminate\Support\Facades\Http::timeout(3)->post($webhookUrl, [
+                                'employeeNoString' => $employeeNo,
+                                'name' => $worker->name,
+                                'attendanceStatus' => $attendanceStatus,
+                                'label' => $label,
+                                'dateTime' => $eventDateStr,
+                                'device_id' => $device->device_id,
+                            ]);
+                        } catch (\Exception $e) {
+                            // ignore webhook timeout
                         }
-                    })
-                    ->exists();
+                    }
 
-                if ($existing) {
-                    continue;
+                    $syncedCount++;
                 }
 
-                // Determine attendance status (checkIn vs checkOut)
-                $lastEvent = \App\Models\Hikvision\HikvisionAccessEvent::where('employeeNoString', $employeeNo)
-                    ->whereDate('created_at', $eventDateTime->format('Y-m-d'))
-                    ->where('created_at', '<', $eventDateStr)
-                    ->latest()
-                    ->first();
-
-                $lastStatus = $lastEvent ? $lastEvent->attendanceStatus : null;
-                $attendanceStatus = ($lastStatus === 'checkIn') ? 'checkOut' : 'checkIn';
-
-                $access = \App\Models\Hikvision\HikvisionAccess::create([
-                    'ipAddress' => $device->ip_address,
-                    'macAddress' => $device->mac_address,
-                    'shortSerialNumber' => $device->serial_number ?: $device->device_id,
-                    'dateTime' => $eventDateStr,
-                    'eventType' => 'AccessControl',
-                    'eventDescription' => 'ISUP AcsEvent Sync',
-                ]);
-
-                $eventModel = new \App\Models\Hikvision\HikvisionAccessEvent([
-                    'deviceName' => $device->name ?: 'Hikvision Terminal',
-                    'name' => $event['name'] ?? $worker->name,
-                    'employeeNoString' => $employeeNo,
-                    'serialNo' => $serialNo,
-                    'attendanceStatus' => $attendanceStatus,
-                    'currentVerifyMode' => $event['currentVerifyMode'] ?? 'face',
-                    'work_time' => $worker->work_time,
-                    'end_time' => $worker->end_time,
-                ]);
-                $eventModel->hikvision_access_id = $access->id;
-                $eventModel->timestamps = false;
-                $eventModel->created_at = $eventDateTime;
-                $eventModel->updated_at = $eventDateTime;
-                $eventModel->save();
-
-                $syncedCount++;
+                $position += $numOfMatches;
+                if ($numOfMatches === 0 || $position >= $totalMatches) {
+                    break;
+                }
             }
 
             Log::info("HikvisionSync [ISUP Events]: Device {$device->device_id} synced {$syncedCount} events.");
