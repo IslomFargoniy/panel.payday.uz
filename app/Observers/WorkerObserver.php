@@ -68,21 +68,29 @@ class WorkerObserver
                 ->firstOrFail();
         }
 
-        // 2️⃣ Relations to check (relation => message)
-        $checks = [
-            'salaries' => 'Worker has salary records.',
-            'worker_holidays' => 'Worker has holiday records.',
-            'salary_payments' => 'Worker has salary payments.',
-            'hikvisionAccessEvents' => 'Worker has Hikvision access events.',
-        ];
+        // 2️⃣ Cascade delete all related records
+        $employeeNo = (string)($worker->employeeNoString ?: $worker->id);
 
-        // 3️⃣ Efficient exists check (no loading collections)
-        foreach ($checks as $relation => $message) {
-            if ($worker->$relation()->exists()) {
-                throw ValidationException::withMessages([
-                    'error' => [$message],
-                ]);
+        // Delete HikvisionAccessEvents and related FaceRects & HikvisionAccess
+        $events = HikvisionAccessEvent::where('employeeNoString', $employeeNo)->get();
+        foreach ($events as $event) {
+            $event->faceReact()->delete();
+            $accessId = $event->hikvision_access_id;
+            $event->delete();
+            if ($accessId && !HikvisionAccessEvent::where('hikvision_access_id', $accessId)->exists()) {
+                \App\Models\Hikvision\HikvisionAccess::where('id', $accessId)->delete();
             }
+        }
+
+        // Delete Salaries, Payments, Days, Holidays
+        $worker->salaries()->delete();
+        $worker->salary_payments()->delete();
+        $worker->worker_holidays()->delete();
+        $worker->worker_days()->delete();
+
+        // Delete avatar file if exists
+        if ($worker->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($worker->avatar)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($worker->avatar);
         }
     }
 
