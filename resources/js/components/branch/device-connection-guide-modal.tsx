@@ -31,8 +31,8 @@ export default function DeviceConnectionGuideModal({ branch }: DeviceConnectionG
         setTimeout(() => setCopiedKey(null), 2000);
     };
 
-    const isupDeviceId = `branch_${branch.id}`;
-    const isupKey = `PayDay${branch.id}!2026`;
+    const isupDeviceId = `branch${branch.id}`;
+    const isupKey = `PayDay${branch.id}2026`;
     const serverIp = '193.180.213.188';
 
     return (

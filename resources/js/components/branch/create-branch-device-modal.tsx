@@ -42,9 +42,9 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
         branch_id: branch.id,
         name: '',
         mac_address: '',
-        device_id: `branch_${branch.id}`,
+        device_id: `branch${branch.id}`,
         connection_type: 'isup',
-        encryption_key: `PayDay${branch.id}!2026`,
+        encryption_key: `PayDay${branch.id}2026`,
     });
 
     const submit: FormEventHandler = (e) => {
