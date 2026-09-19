@@ -189,6 +189,10 @@ class HikvisionController extends Controller
                         $eventData->AccessControllerEvent->label = 'Keldi';
                     }
                 }
+                $shortSerial = $eventData->shortSerialNumber ?? ($eventData->AccessControllerEvent->serialNo ?? 'default');
+                $macAddress = $eventData->macAddress ?? ($eventData->AccessControllerEvent->macAddress ?? null);
+                $accessEventData = $eventData->AccessControllerEvent;
+
                 $filename = '';
                 if ($request->hasFile('Picture')) {
                     $picture = $request->file('Picture');
@@ -197,31 +201,34 @@ class HikvisionController extends Controller
                     $filename = time() . '_' . rand(1, 50) . '_' . $picture->getClientOriginalName();
 
                     // Saqlash
-                    $savedPath = $picture->storeAs("hikvision/$eventData->shortSerialNumber", $filename, 'public'); // 3-chi parametr: 'public'
+                    $savedPath = $picture->storeAs("hikvision/$shortSerial", $filename, 'public'); // 3-chi parametr: 'public'
 
                     // Matnli xabar yuborish
-                    $caption = 'Foydalanuvchi: ' . ($eventData->AccessControllerEvent->name ?? 'Noma\'lum') .
-                        "\nHolati: " . ($eventData->AccessControllerEvent->attendanceStatus ?? 'Noma\'lum') .
+                    $caption = 'Foydalanuvchi: ' . ($accessEventData->name ?? 'Noma\'lum') .
+                        "\nHolati: " . ($accessEventData->attendanceStatus ?? 'Noma\'lum') .
                         "\nPath : $savedPath" .
-                        "\nEmployeeNo : {$eventData->AccessControllerEvent->employeeNoString}";
+                        "\nEmployeeNo : " . ($accessEventData->employeeNoString ?? 'yo\'q');
 
                     telegramlog($caption);
                 }
 
-
-                $accessEventData = $eventData->AccessControllerEvent;
+                if (empty($accessEventData->employeeNoString)) {
+                    return response()->json(['success' => true, 'message' => 'No employeeNoString']);
+                }
 
                 $checkWorker = Worker::with([])
                     ->where('employeeNoString', '=', $accessEventData->employeeNoString)
                     ->where('status', '=', 1)
-                    ->whereHas('branch', function ($query) use ($eventData) {
-                        $query->whereHas('firm', function ($query) use ($eventData) {
+                    ->whereHas('branch', function ($query) use ($macAddress) {
+                        $query->whereHas('firm', function ($query) {
                             $query->where('status', '=', 1)
                                 ->where('valid_date', '>=', date('Y-m-d'));
                         })
-                            ->whereHas('branch_devices', function ($query) use ($eventData) {
-                                $query->where('mac_address', '=', $eventData->macAddress)
-                                    ->where('status', '=', 1);
+                            ->whereHas('branch_devices', function ($query) use ($macAddress) {
+                                if ($macAddress) {
+                                    $query->where('mac_address', '=', $macAddress);
+                                }
+                                $query->where('status', '=', 1);
                             });
                     })->first();
 
@@ -282,7 +289,7 @@ class HikvisionController extends Controller
                         'ipAddress' => $eventData->ipAddress ?? null,
                         'portNo' => $eventData->portNo ?? null,
                         'protocol' => $eventData->protocol ?? null,
-                        'macAddress' => $eventData->macAddress ?? null,
+                        'macAddress' => $macAddress,
                         'channelId' => $eventData->channelID ?? null,
 //                        'dateTime' => date('Y-m-d H:i:s'),
                         'dateTime' => isset($eventData->dateTime)
@@ -292,7 +299,7 @@ class HikvisionController extends Controller
                         'eventType' => $eventData->eventType ?? null,
                         'eventState' => $eventData->eventState ?? null,
                         'eventDescription' => $eventData->eventDescription ?? null,
-                        'shortSerialNumber' => $eventData->shortSerialNumber ?? null,
+                        'shortSerialNumber' => $shortSerial,
                     ]);
 
                     // 2. Save HikvisionAccessEvent
