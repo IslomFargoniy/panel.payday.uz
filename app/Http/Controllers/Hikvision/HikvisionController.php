@@ -179,7 +179,12 @@ class HikvisionController extends Controller
     public function store(StoreFaceRectRequest $request)
     {
         try {
-            $rawEvent = $request->AccessControllerEvent ?? $request->event_log;
+            \Illuminate\Support\Facades\Log::info('Hikvision Callback Incoming:', [
+                'all' => $request->all(),
+                'files' => array_keys($request->allFiles())
+            ]);
+
+            $rawEvent = $request->AccessControllerEvent ?? $request->event_log ?? $request->all();
             $eventData = is_string($rawEvent) ? json_decode($rawEvent) : json_decode(json_encode($rawEvent));
 
             if (isset($eventData->AccessControllerEvent)) {
