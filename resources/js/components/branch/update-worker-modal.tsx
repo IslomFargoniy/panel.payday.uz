@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { FormEventHandler, useEffect, useRef } from 'react';
+import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import InputError from '@/components/input-error';
