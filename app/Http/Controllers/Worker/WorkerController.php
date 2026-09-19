@@ -105,7 +105,7 @@ class WorkerController extends Controller
         try {
             $data = $request->validated();
             if ($request->hasFile('avatar')) {
-                $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+                $data['avatar'] = $this->saveOptimizedAvatar($request->file('avatar'));
             }
             Worker::create($data);
 
@@ -251,9 +251,9 @@ class WorkerController extends Controller
             $data = $request->validated();
             if ($request->hasFile('avatar')) {
                 if ($worker->avatar && is_file(public_path('storage/' . $worker->avatar))) {
-                    unlink(public_path('storage/' . $worker->avatar));
+                    @unlink(public_path('storage/' . $worker->avatar));
                 }
-                $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+                $data['avatar'] = $this->saveOptimizedAvatar($request->file('avatar'));
             } else {
                 unset($data['avatar']);
             }
@@ -262,6 +262,67 @@ class WorkerController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Resize and optimize avatar image to safe dimensions and size for Hikvision terminals
+     */
+    protected function saveOptimizedAvatar($file): string
+    {
+        $filename = 'avatars/' . uniqid('avatar_', true) . '.jpg';
+        $destinationPath = storage_path('app/public/' . $filename);
+
+        if (!file_exists(storage_path('app/public/avatars'))) {
+            @mkdir(storage_path('app/public/avatars'), 0775, true);
+        }
+
+        if (extension_loaded('gd')) {
+            $imageInfo = @getimagesize($file->getRealPath());
+            if ($imageInfo) {
+                $mime = $imageInfo['mime'];
+                $src = null;
+                if ($mime === 'image/jpeg' || $mime === 'image/jpg') {
+                    $src = @imagecreatefromjpeg($file->getRealPath());
+                } elseif ($mime === 'image/png') {
+                    $src = @imagecreatefrompng($file->getRealPath());
+                } elseif ($mime === 'image/webp') {
+                    $src = @imagecreatefromwebp($file->getRealPath());
+                }
+
+                if ($src) {
+                    $width = imagesx($src);
+                    $height = imagesy($src);
+
+                    // Max dimensions 800px for optimal face recognition and small payload size
+                    $maxDim = 800;
+                    if ($width > $maxDim || $height > $maxDim) {
+                        if ($width > $height) {
+                            $newWidth = $maxDim;
+                            $newHeight = (int)($height * ($maxDim / $width));
+                        } else {
+                            $newHeight = $maxDim;
+                            $newWidth = (int)($width * ($maxDim / $height));
+                        }
+                    } else {
+                        $newWidth = $width;
+                        $newHeight = $height;
+                    }
+
+                    $dst = imagecreatetruecolor($newWidth, $newHeight);
+                    $white = imagecolorallocate($dst, 255, 255, 255);
+                    imagefilledrectangle($dst, 0, 0, $newWidth, $newHeight, $white);
+                    imagecopyresampled($dst, $src, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+                    imagejpeg($dst, $destinationPath, 85);
+                    imagedestroy($src);
+                    imagedestroy($dst);
+
+                    return $filename;
+                }
+            }
+        }
+
+        return $file->store('avatars', 'public');
     }
 
     /**
