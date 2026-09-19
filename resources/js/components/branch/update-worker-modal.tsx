@@ -33,6 +33,8 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
     const { t } = useTranslation();
     const nameInput = useRef<HTMLInputElement>(null);
 
+    const [previewUrl, setPreviewUrl] = useState<string | null>(worker.avatar ? `/storage/${worker.avatar}` : null);
+
     const { data, setData, post, processing, errors, clearErrors } = useForm({
         _method: 'put',
         name: worker.name || '',
@@ -49,6 +51,7 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
 
     useEffect(() => {
         if (open) {
+            setPreviewUrl(worker.avatar ? `/storage/${worker.avatar}` : null);
             setData({
                 _method: 'put',
                 name: worker.name || '',
@@ -64,6 +67,16 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
             });
         }
     }, [open, worker]);
+
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        setData('avatar', file);
+        if (file) {
+            setPreviewUrl(URL.createObjectURL(file));
+        } else {
+            setPreviewUrl(worker.avatar ? `/storage/${worker.avatar}` : null);
+        }
+    };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -119,9 +132,38 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
                             </div>
 
                             <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor="avatar">{t('avatar')}</Label>
-                                <Input id="avatar" type="file" accept="image/*" onChange={(e) => setData('avatar', e.target.files?.[0] || null)} />
-                                <InputError message={errors.avatar as string} />
+                                <Label htmlFor="update-avatar">{t('avatar')}</Label>
+                                <div className="flex items-center gap-4">
+                                    {previewUrl ? (
+                                        <div className="relative group size-16 shrink-0">
+                                            <img
+                                                src={previewUrl}
+                                                alt="Avatar preview"
+                                                className="size-16 rounded-full object-cover border-2 border-blue-500 shadow-sm"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setData('avatar', null);
+                                                    setPreviewUrl(null);
+                                                    const fileInput = document.getElementById('update-avatar') as HTMLInputElement;
+                                                    if (fileInput) fileInput.value = '';
+                                                }}
+                                                className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow hover:bg-red-600"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex size-16 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-gray-300 bg-gray-100 p-1 text-center text-xs text-gray-400 dark:border-gray-600 dark:bg-gray-800">
+                                            {t('no_image') || 'Rasm yo\'q'}
+                                        </div>
+                                    )}
+                                    <div className="flex-1">
+                                        <Input id="update-avatar" type="file" accept="image/*" onChange={handleAvatarChange} />
+                                        <InputError message={errors.avatar as string} />
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="space-y-2">
