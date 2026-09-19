@@ -19,6 +19,40 @@ interface ValidImageItem {
     title: string;
 }
 
+const ImageThumbnail = ({
+    src,
+    alt,
+    onClick,
+    noImageText,
+}: {
+    src: string;
+    alt: string;
+    onClick: () => void;
+    noImageText: string;
+}) => {
+    const [hasError, setHasError] = useState(false);
+
+    if (hasError) {
+        return (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700/50">
+                {noImageText}
+            </span>
+        );
+    }
+
+    return (
+        <div className="overflow-hidden inline-block">
+            <img
+                onClick={onClick}
+                className="transition-transform duration-300 ease-in-out transform hover:scale-110 cursor-pointer max-h-12 rounded object-cover border border-gray-200 dark:border-gray-700 shadow-sm"
+                src={src}
+                alt={alt}
+                onError={() => setHasError(true)}
+            />
+        </div>
+    );
+};
+
 const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: HikvisionAccessEventTableProps) => {
     const { t } = useTranslation();
     const [openDelete, setOpenDelete] = useState(false);
@@ -136,34 +170,18 @@ const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: Hikv
                                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.label}</td>
                                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-center">
                                         {imgUrl ? (
-                                            <div className="overflow-hidden inline-block relative">
-                                                <img
-                                                    onClick={() => {
-                                                        const validIndex = validImages.findIndex(img => img.id === item.id);
-                                                        if (validIndex !== -1) {
-                                                            setCurrentIndex(validIndex);
-                                                            setShowModal(true);
-                                                        }
-                                                    }}
-                                                    className="transition-transform duration-300 ease-in-out transform hover:scale-110 cursor-pointer max-h-12 rounded object-cover border border-gray-200 dark:border-gray-700 shadow-sm"
-                                                    src={imgUrl}
-                                                    alt="Olingan Rasm"
-                                                    onError={e => {
-                                                        const imgEl = e.currentTarget;
-                                                        imgEl.style.display = 'none';
-                                                        const parent = imgEl.parentElement;
-                                                        if (parent) {
-                                                            const fallback = parent.querySelector('.img-fallback');
-                                                            if (fallback) {
-                                                                (fallback as HTMLElement).classList.remove('hidden');
-                                                            }
-                                                        }
-                                                    }}
-                                                />
-                                                <span className="img-fallback hidden inline-flex items-center px-2 py-0.5 rounded text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700/50">
-                                                    {t('no_image')}
-                                                </span>
-                                            </div>
+                                            <ImageThumbnail
+                                                src={imgUrl}
+                                                alt={item.name || 'Olingan Rasm'}
+                                                noImageText={t('no_image')}
+                                                onClick={() => {
+                                                    const validIndex = validImages.findIndex(img => img.id === item.id);
+                                                    if (validIndex !== -1) {
+                                                        setCurrentIndex(validIndex);
+                                                        setShowModal(true);
+                                                    }
+                                                }}
+                                            />
                                         ) : (
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700/50">
                                                 {t('no_image')}
