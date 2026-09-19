@@ -79,8 +79,8 @@ const WorkerTable = ({ worker, branch, searchData }: WorkerTableProps) => {
                                 <th className="px-4 py-3 text-center w-16">{t('avatar')}</th>
                                 <th className="px-4 py-3">{t('worker')} / {t('employeeNoString')}</th>
                                 <th className="px-4 py-3">{t('phone')} / {t('address')}</th>
-                                <th className="px-4 py-3 whitespace-nowrap">{t('work_time')} - {t('end_time')}</th>
-                                <th className="px-4 py-3 whitespace-nowrap">{t('hour_price')} / {t('fine_price')}</th>
+                                <th className="px-4 py-3 whitespace-nowrap">{t('work_time', 'Ish vaqti')}</th>
+                                <th className="px-4 py-3 whitespace-nowrap">{t('hourly_fine', 'Soatbay / Jarima')}</th>
                                 <th className="px-4 py-3 text-center">{t('status')} / {t('balance')}</th>
                                 <th className="px-4 py-3 text-right w-28">
                                     {branch && <CreateWorkerModal branch={branch} />}

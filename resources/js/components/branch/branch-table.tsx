@@ -61,7 +61,7 @@ const BranchTable = ({ firm }: BranchTableProps) => {
                                 <th className="px-4 py-3">{t('name', 'Filial Nomi')}</th>
                                 <th className="px-4 py-3">{t('address', 'Manzil')}</th>
                                 <th className="px-4 py-3">{t('work_time', 'Ish vaqti')}</th>
-                                <th className="px-4 py-3">{t('hour_price', 'Soat / Jarima')}</th>
+                                <th className="px-4 py-3">{t('hourly_fine', 'Soatbay / Jarima')}</th>
                                 <th className="px-4 py-3">{t('worker', 'Xodimlar')}</th>
                                 <th className="px-4 py-3 text-center">{t('status', 'Holat')}</th>
                                 <th className="px-4 py-3 text-right w-32">
