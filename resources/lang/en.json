@@ -272,5 +272,16 @@
     "view": "View",
     "view_history": "View history",
     "worker_history": "Worker financial history",
-    "workers_count": "workers"
+    "workers_count": "workers",
+    "welcome_back": "Welcome back",
+    "today_attendance_rate": "Today's Attendance Rate",
+    "total_workers": "Total Workers",
+    "present_at_work": "Present & On Time",
+    "late_arrivals": "Late Arrivals",
+    "absent_on_leave": "Absent / On Leave",
+    "work_hours_overview": "Work Hours Dynamics",
+    "attendance_distribution": "Attendance Distribution",
+    "in_building": "Inside building",
+    "registered_staff": "Registered staff",
+    "branches_overview": "Branches Overview"
 }

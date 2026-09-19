@@ -272,5 +272,16 @@
     "view": "Просмотр",
     "view_history": "Посмотреть историю",
     "worker_history": "Финансовая история сотрудника",
-    "workers_count": "чел."
+    "workers_count": "чел.",
+    "welcome_back": "Добро пожаловать",
+    "today_attendance_rate": "Показатель посещаемости сегодня",
+    "total_workers": "Всего сотрудников",
+    "present_at_work": "Прибыли вовремя",
+    "late_arrivals": "Опоздавшие",
+    "absent_on_leave": "Отсутствуют / В отпуске",
+    "work_hours_overview": "Динамика рабочих часов",
+    "attendance_distribution": "Распределение посещаемости",
+    "in_building": "В здании",
+    "registered_staff": "В штате",
+    "branches_overview": "Показатели филиалов"
 }

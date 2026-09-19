@@ -272,5 +272,16 @@
     "view": "Ko‘rish",
     "view_history": "Tarixni ko‘rish",
     "worker_history": "Xodim moliyaviy tarixi",
-    "workers_count": "nafar"
+    "workers_count": "nafar",
+    "welcome_back": "Xush kelibsiz",
+    "today_attendance_rate": "Bugungi davomat ko‘rsatkichi",
+    "total_workers": "Jami xodimlar",
+    "present_at_work": "O‘z vaqtida kelganlar",
+    "late_arrivals": "Kechikkanlar",
+    "absent_on_leave": "Kelmadi / Ta’tilda",
+    "work_hours_overview": "Ish soatlari dinamikasi",
+    "attendance_distribution": "Davomat taqsimoti",
+    "in_building": "Bino ichida",
+    "registered_staff": "Ro‘yxatdagi tarkib",
+    "branches_overview": "Filiallar ko‘rsatkichlari"
 }
