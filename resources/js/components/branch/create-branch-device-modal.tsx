@@ -13,7 +13,9 @@ import {
     DialogContent,
     DialogDescription,
     DialogFooter,
-    DialogTitle, DialogTrigger
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
 } from '@/components/ui/dialog';
 import { IoCreate } from 'react-icons/io5';
 import { Branch } from '@/types';
