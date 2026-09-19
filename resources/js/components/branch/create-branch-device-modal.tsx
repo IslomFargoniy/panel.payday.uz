@@ -69,7 +69,7 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
             <DialogTrigger asChild>
                 <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-8 px-2.5 rounded-lg shadow-xs flex items-center gap-1 text-xs">
                     <Plus className="w-3.5 h-3.5" />
-                    <span>{t('add_device', 'Qurilma qo‘shish')}</span>
+                    <span>{t('create', 'Qo‘shish')}</span>
                 </Button>
             </DialogTrigger>
 

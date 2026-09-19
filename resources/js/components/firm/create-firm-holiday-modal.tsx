@@ -62,7 +62,7 @@ export default function CreateFirmHolidayModal({ firm }: CreateFirmHolidayProps)
             <DialogTrigger asChild>
                 <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-7 px-2 rounded-lg shadow-xs flex items-center gap-1 text-xs">
                     <Plus className="w-3.5 h-3.5" />
-                    <span>{t('add', 'Qo‘shish')}</span>
+                    <span>{t('create', 'Qo‘shish')}</span>
                 </Button>
             </DialogTrigger>
 

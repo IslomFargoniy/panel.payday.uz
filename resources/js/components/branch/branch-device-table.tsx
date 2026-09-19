@@ -78,7 +78,7 @@ const BranchDeviceTable = ({ branch }: BranchDeviceTableProps) => {
                         {t('no_devices', 'Hozircha ulangan qurilmalar mavjud emas')}
                     </p>
                     <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-                        {t('add_device_hint', 'Yuqoridagi "Qurilma qo‘shish" yoki "Yo‘riqnoma" orqali Hikvision terminalini ulang.')}
+                        {t('add_device_hint', 'Yuqoridagi "Qo‘shish" yoki "Yo‘riqnoma" orqali Hikvision terminalini ulang.')}
                     </p>
                 </div>
             ) : (
