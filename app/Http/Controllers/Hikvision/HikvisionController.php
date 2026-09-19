@@ -189,11 +189,6 @@ class HikvisionController extends Controller
                         $eventData->AccessControllerEvent->label = 'Keldi';
                     }
                 }
-//                \Illuminate\Support\Facades\Log::info('Hikvision Event:', $request->all());
-
-                telegramlog('Hikvision Event:');
-                telegramlog(json_encode($request->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
                 $filename = '';
                 if ($request->hasFile('Picture')) {
                     $picture = $request->file('Picture');
@@ -204,11 +199,11 @@ class HikvisionController extends Controller
                     // Saqlash
                     $savedPath = $picture->storeAs("hikvision/$eventData->shortSerialNumber", $filename, 'public'); // 3-chi parametr: 'public'
 
-                    // Matnli xabar yuborish (rasmsiz)
+                    // Matnli xabar yuborish
                     $caption = 'Foydalanuvchi: ' . ($eventData->AccessControllerEvent->name ?? 'Noma\'lum') .
                         "\nHolati: " . ($eventData->AccessControllerEvent->attendanceStatus ?? 'Noma\'lum') .
                         "\nPath : $savedPath" .
-                        "\nPath : {$eventData->AccessControllerEvent->employeeNoString}";
+                        "\nEmployeeNo : {$eventData->AccessControllerEvent->employeeNoString}";
 
                     telegramlog($caption);
                 }
@@ -343,7 +338,9 @@ class HikvisionController extends Controller
                     }
 
                 } else {
-                    telegramlog('Worker topilmadi');
+                    if ($request->hasFile('Picture')) {
+                        telegramlog('Worker topilmadi (EmployeeNo: ' . ($accessEventData->employeeNoString ?? 'yo\'q') . ')');
+                    }
 
                     return response()->json(['success' => false]);
                 }
@@ -353,8 +350,10 @@ class HikvisionController extends Controller
             return response()->json(['success' => true]);
 
         } catch (\Exception $e) {
-            telegramlog('Xatolik: ' . $e->getMessage() . $e->getLine());
-            telegramlog(json_encode($request->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            \Illuminate\Support\Facades\Log::error('Hikvision Callback Error: ' . $e->getMessage() . ' line: ' . $e->getLine());
+            if ($request->hasFile('Picture')) {
+                telegramlog('Xatolik: ' . $e->getMessage() . ' line: ' . $e->getLine());
+            }
             return response()->json(['error' => $e->getMessage()]);
         }
     }
