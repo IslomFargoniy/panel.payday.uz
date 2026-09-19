@@ -57,36 +57,36 @@ export interface SearchData {
 }
 
 export interface FirmPaginate {
-    data: [Firm];
+    data: Firm[];
     search: string;
     per_page: number;
     from: number;
     to: number;
     total: number;
     current_page: number;
-    links: [Link];
+    links: Link[];
 }
 
 export interface SalaryPaymentPaginate {
-    data: [SalaryPayment];
+    data: SalaryPayment[];
     search: string;
     per_page: number;
     from: number;
     to: number;
     total: number;
     current_page: number;
-    links: [Link];
+    links: Link[];
 }
 
 export interface AttendancePaginate {
-    data: [Attendance];
+    data: Attendance[];
     search: string;
     per_page: number;
     from: number;
     to: number;
     total: number;
     current_page: number;
-    links: [Link];
+    links: Link[];
 }
 
 export interface Attendance {
@@ -123,14 +123,14 @@ export interface Report {
 }
 
 export interface HikvisionAccessEventPaginate {
-    data: [HikvisionAccessEvent];
+    data: HikvisionAccessEvent[];
     search: string;
     per_page: number;
     from: number;
     to: number;
     total: number;
     current_page: number;
-    links: [Link];
+    links: Link[];
 }
 
 export interface Link {
@@ -187,14 +187,14 @@ export interface FirmPayment {
 }
 
 export interface UserPaginate {
-    data: [User];
+    data: User[];
     search: string;
     per_page: number;
     from: number;
     to: number;
     total: number;
     current_page: number;
-    links: [Link];
+    links: Link[];
 }
 
 export interface User {
@@ -308,14 +308,14 @@ export interface Day {
 }
 
 export interface WorkerPaginate {
-    data: [Worker];
+    data: Worker[];
     search: string;
     per_page: number;
     from: number;
     to: number;
     total: number;
     current_page: number;
-    links: [Link];
+    links: Link[];
 }
 
 export interface Worker {
@@ -404,14 +404,14 @@ export interface Salary {
 }
 
 export interface SalaryPaginate {
-    data: [Salary];
+    data: Salary[];
     search: string;
     per_page: number;
     from: number;
     to: number;
     total: number;
     current_page: number;
-    links: [Link];
+    links: Link[];
 }
 
 export interface SalaryFirmHoliday {

@@ -29,7 +29,7 @@ export default function WorkerShow() {
     }>().props;
     const { t } = useTranslation(); // Using the translation hook
 
-    const breadcrumbs: BreadcrumbItem[] = [
+    const breadcrumbs: LayoutBreadcrumbItem[] = [
         {
             title: `${t('worker')} ( ${worker.name} )`,
             href: '/dashboard',
