@@ -179,10 +179,16 @@ class HikvisionController extends Controller
     public function store(StoreFaceRectRequest $request)
     {
         try {
-            // Decode the AccessControllerEvent string into a PHP object
-            $eventData = json_decode($request->AccessControllerEvent);
+            $rawEvent = $request->AccessControllerEvent ?? $request->event_log;
+            $eventData = is_string($rawEvent) ? json_decode($rawEvent) : json_decode(json_encode($rawEvent));
 
-            if (isset($eventData->AccessControllerEvent->attendanceStatus)) {
+            if (isset($eventData->AccessControllerEvent)) {
+                if (!isset($eventData->AccessControllerEvent->attendanceStatus) || $eventData->AccessControllerEvent->attendanceStatus === 'undefined' || $eventData->AccessControllerEvent->attendanceStatus === 'CheckIn') {
+                    $eventData->AccessControllerEvent->attendanceStatus = 'checkIn';
+                    if (empty($eventData->AccessControllerEvent->label)) {
+                        $eventData->AccessControllerEvent->label = 'Keldi';
+                    }
+                }
 //                \Illuminate\Support\Facades\Log::info('Hikvision Event:', $request->all());
 
                 telegramlog('Hikvision Event:');
