@@ -79,7 +79,7 @@ const WorkerDayTable = ({ worker, days }: WorkerDayTableProps) => {
     const activeDaysCount = worker.worker_days?.length || 0;
 
     return (
-        <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-2.5">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-2.5">
             <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
                     <Calendar className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />

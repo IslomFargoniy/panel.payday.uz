@@ -50,32 +50,39 @@ const UserTable = ({ searchData, ...user }: UserTableProps) => {
             {/* Table Card */}
             <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-                        <thead className="border-b border-slate-200/80 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+                    <table className="w-full text-left text-xs text-slate-700 dark:text-slate-200">
+                        <thead className="border-b border-slate-200/80 bg-slate-50/80 font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
                             <tr>
-                                <th className="px-4 py-3.5">{t('n')}</th>
-                                <th className="px-4 py-3.5">{t('name')}</th>
-                                <th className="px-4 py-3.5">{t('firm')}</th>
-                                <th className="px-4 py-3.5">{t('role')}</th>
-                                <th className="px-4 py-3.5">{t('phone')}</th>
-                                <th className="px-4 py-3.5">{t('email')}</th>
-                                <th className="px-4 py-3.5 text-right font-medium">{t('actions') ?? ''}</th>
+                                <th className="px-4 py-3 text-center w-12 font-mono">{t('n')}</th>
+                                <th className="px-4 py-3">{t('name')}</th>
+                                <th className="px-4 py-3">{t('firm')}</th>
+                                <th className="px-4 py-3">{t('role')}</th>
+                                <th className="px-4 py-3">{t('phone')}</th>
+                                <th className="px-4 py-3">{t('email')}</th>
+                                <th className="px-4 py-3 text-right font-medium">{t('actions') ?? ''}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                            {user.data.map((item, index) => {
-                                const globalIndex = (user.current_page - 1) * user.per_page + index + 1;
-                                return (
-                                    <tr key={item.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                                        <td className="px-4 py-3 font-medium text-slate-500 dark:text-slate-400">{globalIndex}</td>
-                                        <td className="px-4 py-3">
-                                            <Link
-                                                href={`/user/${item.id}`}
-                                                className="font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
-                                            >
-                                                {item.name}
-                                            </Link>
-                                        </td>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900">
+                            {(!user.data || user.data.length === 0) ? (
+                                <tr>
+                                    <td colSpan={7} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+                                        {t('no_data', 'Ma’lumot mavjud emas')}
+                                    </td>
+                                </tr>
+                            ) : (
+                                user.data.map((item, index) => {
+                                    const globalIndex = (user.current_page - 1) * user.per_page + index + 1;
+                                    return (
+                                        <tr key={item.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                                            <td className="px-4 py-3 text-center font-mono text-slate-400 dark:text-slate-500">{globalIndex}</td>
+                                            <td className="px-4 py-3">
+                                                <Link
+                                                    href={`/user/${item.id}`}
+                                                    className="font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                                >
+                                                    {item.name}
+                                                </Link>
+                                            </td>
                                         <td className="px-4 py-3">
                                             <div className="flex flex-wrap gap-1">
                                                 {item.user_firms && item.user_firms.length > 0 ? (
@@ -128,7 +135,8 @@ const UserTable = ({ searchData, ...user }: UserTableProps) => {
                                         </td>
                                     </tr>
                                 );
-                            })}
+                            })
+                        )}
                         </tbody>
                     </table>
                 </div>

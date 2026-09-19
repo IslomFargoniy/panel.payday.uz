@@ -19,47 +19,55 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
             {/* Table Card */}
             <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-                        <thead className="border-b border-slate-200/80 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+                    <table className="w-full text-left text-xs text-slate-700 dark:text-slate-200">
+                        <thead className="border-b border-slate-200/80 bg-slate-50/80 font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
                             <tr>
-                                <th className="px-4 py-3.5">{t('n')}</th>
-                                <th className="px-4 py-3.5">{t('worker')}</th>
-                                <th className="px-4 py-3.5">{t('firm')}</th>
-                                <th className="px-4 py-3.5">{t('work_time')}</th>
-                                <th className="px-4 py-3.5">{t('from')}</th>
-                                <th className="px-4 py-3.5">{t('to')}</th>
-                                <th className="px-4 py-3.5">{t('worked_minutes')}</th>
-                                <th className="px-4 py-3.5">{t('break_minutes')}</th>
-                                <th className="px-4 py-3.5 text-rose-600 dark:text-rose-400">{t('late_minutes')}</th>
-                                <th className="px-4 py-3.5">{t('status')}</th>
+                                <th className="px-4 py-3 text-center w-12 font-mono">{t('n')}</th>
+                                <th className="px-4 py-3">{t('worker')}</th>
+                                <th className="px-4 py-3">{t('firm')}</th>
+                                <th className="px-4 py-3">{t('work_time')}</th>
+                                <th className="px-4 py-3">{t('from')}</th>
+                                <th className="px-4 py-3">{t('to')}</th>
+                                <th className="px-4 py-3">{t('worked_minutes')}</th>
+                                <th className="px-4 py-3">{t('break_minutes')}</th>
+                                <th className="px-4 py-3 text-rose-600 dark:text-rose-400">{t('late_minutes')}</th>
+                                <th className="px-4 py-3">{t('status')}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                            {attendance.data.map((item, index) => {
-                                const globalIndex = (attendance.current_page - 1) * attendance.per_page + index + 1;
-                                return (
-                                    <tr key={item.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                                        <td className="px-4 py-3 font-medium text-slate-500 dark:text-slate-400">{globalIndex}</td>
-                                        <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{item.worker}</td>
-                                        <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
-                                            {item.firm} ({item.branch})
-                                        </td>
-                                        <td className="px-4 py-3 text-xs font-mono text-slate-600 dark:text-slate-300">{item.work_time?.slice(0, 5)}</td>
-                                        <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{item.from?.slice(0, 16)}</td>
-                                        <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{item.to?.slice(0, 16)}</td>
-                                        <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{item.worked_minutes}</td>
-                                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{item.break_minutes}</td>
-                                        <td className="px-4 py-3 font-semibold text-rose-600 dark:text-rose-400">
-                                            {item.late_minutes > 0 ? item.late_minutes : 0}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                                {item.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900">
+                            {(!attendance.data || attendance.data.length === 0) ? (
+                                <tr>
+                                    <td colSpan={10} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+                                        {t('no_data', 'Ma’lumot mavjud emas')}
+                                    </td>
+                                </tr>
+                            ) : (
+                                attendance.data.map((item, index) => {
+                                    const globalIndex = (attendance.current_page - 1) * attendance.per_page + index + 1;
+                                    return (
+                                        <tr key={item.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                                            <td className="px-4 py-3 text-center font-mono text-slate-400 dark:text-slate-500">{globalIndex}</td>
+                                            <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{item.worker}</td>
+                                            <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                                                {item.firm} ({item.branch})
+                                            </td>
+                                            <td className="px-4 py-3 text-xs font-mono text-slate-600 dark:text-slate-300">{item.work_time?.slice(0, 5)}</td>
+                                            <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{item.from?.slice(0, 16)}</td>
+                                            <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{item.to?.slice(0, 16)}</td>
+                                            <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{item.worked_minutes}</td>
+                                            <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{item.break_minutes}</td>
+                                            <td className="px-4 py-3 font-semibold text-rose-600 dark:text-rose-400">
+                                                {item.late_minutes > 0 ? item.late_minutes : 0}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                                    {item.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>

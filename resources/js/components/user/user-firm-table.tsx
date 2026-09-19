@@ -49,39 +49,47 @@ const UserFirmTable = ({ user, firms }: UserFirmTableProps) => {
             {/* Table Card */}
             <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-                        <thead className="border-b border-slate-200/80 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+                    <table className="w-full text-left text-xs text-slate-700 dark:text-slate-200">
+                        <thead className="border-b border-slate-200/80 bg-slate-50/80 font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
                             <tr>
-                                <th className="px-4 py-3.5">{t('n')}</th>
-                                <th className="px-4 py-3.5">{t('firm')}</th>
-                                <th className="px-4 py-3.5">{t('user')}</th>
-                                <th className="px-4 py-3.5 text-right font-medium">
+                                <th className="px-4 py-3 text-center w-12 font-mono">{t('n')}</th>
+                                <th className="px-4 py-3">{t('firm')}</th>
+                                <th className="px-4 py-3">{t('user')}</th>
+                                <th className="px-4 py-3 text-right font-medium">
                                     <CreateUserFirmModal user={user} firms={firms} />
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                            {user.user_firms?.map((item, index) => {
-                                return (
-                                    <tr key={item.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                                        <td className="px-4 py-3 font-medium text-slate-500 dark:text-slate-400">{index + 1}</td>
-                                        <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{item.firm?.name}</td>
-                                        <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.user?.name}</td>
-                                        <td className="px-4 py-3 text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDeleteClick(item)}
-                                                    className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
-                                                    title={t('delete') ?? 'Delete'}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900">
+                            {(!user.user_firms || user.user_firms.length === 0) ? (
+                                <tr>
+                                    <td colSpan={4} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+                                        {t('no_data', 'Ma’lumot mavjud emas')}
+                                    </td>
+                                </tr>
+                            ) : (
+                                user.user_firms.map((item, index) => {
+                                    return (
+                                        <tr key={item.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                                            <td className="px-4 py-3 text-center font-mono text-slate-400 dark:text-slate-500">{index + 1}</td>
+                                            <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{item.firm?.name}</td>
+                                            <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.user?.name}</td>
+                                            <td className="px-4 py-3 text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteClick(item)}
+                                                        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
+                                                        title={t('delete') ?? 'Delete'}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>

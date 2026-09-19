@@ -19,14 +19,14 @@ const RightBar = ({ ...report }: Report) => {
             {/* Table Card */}
             <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-                        <thead className="border-b border-slate-200/80 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+                    <table className="w-full text-left text-xs text-slate-700 dark:text-slate-200">
+                        <thead className="border-b border-slate-200/80 bg-slate-50/80 font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
                             <tr>
-                                <th className="px-4 py-3.5">{t('status')}</th>
-                                <th className="px-4 py-3.5 text-right">{t('count')}</th>
+                                <th className="px-4 py-3">{t('status')}</th>
+                                <th className="px-4 py-3 text-right">{t('count')}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900">
                             <tr className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
                                 <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{t('working_days')}</td>
                                 <td className="px-4 py-3 text-right font-medium text-slate-900 dark:text-slate-100">
