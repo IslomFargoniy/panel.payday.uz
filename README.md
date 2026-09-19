@@ -80,7 +80,7 @@ Loyihani o'z kompyuteringizga o'rnatish va ishga tushirish uchun quyidagi qadaml
 
 Loyihani yuklab oling va papkaga kiring:
 ```bash
-git clone https://github.com/islamabdurahman/panel.payday.git
+git clone https://github.com/IslomFargoniy/panel.payday.git
 cd panel.payday
 ```
 
@@ -100,6 +100,19 @@ Papkalar uchun ruxsatlarni to'g'rilab, storage havolasini unlang:
 ```bash
 php artisan storage:link
 ```
+
+---
+
+## 📚 Server va Hikvision Hujjatlari (Docs)
+
+Boshqa serverlarga o‘rnatish va Hikvision terminallari bilan ishlash bo‘yicha to‘liq qo‘llanmalar [`docs/`](docs/README.md) papkasida joylashgan:
+
+- 🖥️ **[Serverni O‘rnatish va Sozlash](docs/server-installation-guide.md)** — Nginx, PHP 8.2, MySQL, SSL, Supervisor va Cron sozlash.
+- 📹 **[Hikvision Terminallari Integratsiyasi](docs/hikvision-integration-guide.md)** — ISUP 5.0, HTTP Listening va tarmoq parametrlari.
+- ⚙️ **[Hikvision ISUP Gateway Servisi (C++)](docs/hikvision-gateway-service.md)** — C++ daemonni kompilyatsiya qilish va systemd xizmati.
+- 🛠️ **[Muammolarni Bartaraf Etish (FAQ)](docs/troubleshooting-and-faq.md)** — Offline holatlar, yuz rasmlari, vaqt mintaqasi va diagnostika.
+
+---
 
 ### 3️⃣ Ma'lumotlar bazasi va To'lov sozlamalari
 
