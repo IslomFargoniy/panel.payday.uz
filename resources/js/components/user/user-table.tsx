@@ -161,12 +161,12 @@ const UserTable = ({ searchData, ...user }: UserTableProps) => {
             )}
 
             {/* Pagination */}
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 px-1 pt-1">
                 <div>
                     {t('showing', {
-                        from: user.from,
-                        to: user.to,
-                        total: user.total
+                        from: user.from || 0,
+                        to: user.to || 0,
+                        total: user.total || 0,
                     })}
                 </div>
                 <div className="flex items-center gap-1">
@@ -178,8 +178,8 @@ const UserTable = ({ searchData, ...user }: UserTableProps) => {
                                 link.active
                                     ? 'bg-indigo-600 text-white shadow-xs'
                                     : !link.url
-                                        ? 'cursor-not-allowed opacity-40'
-                                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                                        ? 'cursor-not-allowed opacity-40 text-slate-400'
+                                        : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
                             }`}
                             dangerouslySetInnerHTML={{ __html: link.label }}
                         />

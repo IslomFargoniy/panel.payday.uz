@@ -246,35 +246,33 @@ const WorkerTable = ({ worker, branch, searchData }: WorkerTableProps) => {
                         </Dialog>
                     </table>
                 </div>
+            </div>
 
-                {/* Pagination */}
-                {worker.total > 0 && (
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200/80 bg-slate-50/50 px-4 py-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
-                        <div>
-                            {t('showing', {
-                                from: worker.from || 0,
-                                to: worker.to || 0,
-                                total: worker.total || 0,
-                            })}
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                            {worker.links.map((link, index) => (
-                                <Link
-                                    key={index}
-                                    href={`${link.url ?? '?'}&search=${searchData.search}&per_page=${searchData.per_page}&firm_id=${searchData.firm_id}&branch_id=${searchData.branch_id}`}
-                                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
-                                        link.active
-                                            ? 'bg-indigo-600 text-white shadow-xs'
-                                            : !link.url
-                                              ? 'cursor-not-allowed text-slate-300 dark:text-slate-600'
-                                              : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                                    }`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                )}
+            {/* Pagination */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 px-1 pt-1">
+                <div>
+                    {t('showing', {
+                        from: worker.from || 0,
+                        to: worker.to || 0,
+                        total: worker.total || 0,
+                    })}
+                </div>
+                <div className="flex items-center gap-1">
+                    {worker.links.map((link, index) => (
+                        <Link
+                            key={index}
+                            href={`${link.url ?? '?'}&search=${searchData.search}&per_page=${searchData.per_page}&firm_id=${searchData.firm_id}&branch_id=${searchData.branch_id}`}
+                            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                                link.active
+                                    ? 'bg-indigo-600 text-white shadow-xs'
+                                    : !link.url
+                                        ? 'cursor-not-allowed opacity-40 text-slate-400'
+                                        : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                            }`}
+                            dangerouslySetInnerHTML={{ __html: link.label }}
+                        />
+                    ))}
+                </div>
             </div>
         </div>
     );

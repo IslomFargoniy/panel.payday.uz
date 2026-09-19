@@ -192,33 +192,31 @@ const FirmTable = ({ searchData, ...firm }: FirmTableProps) => {
             </div>
 
             {/* Modern Pagination */}
-            {firm.total > firm.per_page && (
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-500 dark:text-slate-400 px-1">
-                    <div>
-                        {t('showing', {
-                            from: firm.from,
-                            to: firm.to,
-                            total: firm.total
-                        })}
-                    </div>
-                    <div className="flex items-center gap-1">
-                        {firm.links.map((link, index) => (
-                            <Link
-                                key={index}
-                                href={`${link.url ?? '?'}&search=${searchData.search}&per_page=${searchData.per_page}`}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                                    link.active
-                                        ? 'bg-indigo-600 text-white shadow-xs'
-                                        : !link.url
-                                            ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
-                                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                }`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ))}
-                    </div>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 px-1 pt-1">
+                <div>
+                    {t('showing', {
+                        from: firm.from || 0,
+                        to: firm.to || 0,
+                        total: firm.total || 0,
+                    })}
                 </div>
-            )}
+                <div className="flex items-center gap-1">
+                    {firm.links.map((link, index) => (
+                        <Link
+                            key={index}
+                            href={`${link.url ?? '?'}&search=${searchData.search}&per_page=${searchData.per_page}`}
+                            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                                link.active
+                                    ? 'bg-indigo-600 text-white shadow-xs'
+                                    : !link.url
+                                        ? 'cursor-not-allowed opacity-40 text-slate-400'
+                                        : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                            }`}
+                            dangerouslySetInnerHTML={{ __html: link.label }}
+                        />
+                    ))}
+                </div>
+            </div>
         </div>
     );
 };

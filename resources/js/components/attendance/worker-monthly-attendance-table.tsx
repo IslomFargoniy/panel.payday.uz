@@ -199,32 +199,32 @@ const WorkerMonthlyAttendanceTable = ({ worker, searchData }: WorkerTableProps) 
                         </tbody>
                     </table>
                 </div>
+            </div>
 
-                {/* Pagination */}
-                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200/80 dark:border-slate-800 text-xs text-slate-500">
-                    <div>
-                        {t('showing', {
-                            from: worker.from,
-                            to: worker.to,
-                            total: worker.total,
-                        })}
-                    </div>
-                    <div className="flex gap-1">
-                        {worker.links.map((link, index) => (
-                            <Link
-                                key={index}
-                                href={`${link.url ?? '?'}&search=${searchData.search || ''}&per_page=${searchData.per_page || 15}&firm_id=${searchData.firm_id || 0}&branch_id=${searchData.branch_id || 0}&month=${searchData.month || ''}`}
-                                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                                    link.active
-                                        ? 'bg-indigo-600 text-white shadow-xs'
-                                        : !link.url
-                                            ? 'cursor-not-allowed opacity-40'
-                                            : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
-                                }`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ))}
-                    </div>
+            {/* Pagination */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 px-1 pt-1">
+                <div>
+                    {t('showing', {
+                        from: worker.from || 0,
+                        to: worker.to || 0,
+                        total: worker.total || 0,
+                    })}
+                </div>
+                <div className="flex items-center gap-1">
+                    {worker.links.map((link, index) => (
+                        <Link
+                            key={index}
+                            href={`${link.url ?? '?'}&search=${searchData.search || ''}&per_page=${searchData.per_page || 15}&firm_id=${searchData.firm_id || 0}&branch_id=${searchData.branch_id || 0}&month=${searchData.month || ''}`}
+                            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                                link.active
+                                    ? 'bg-indigo-600 text-white shadow-xs'
+                                    : !link.url
+                                        ? 'cursor-not-allowed opacity-40 text-slate-400'
+                                        : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                            }`}
+                            dangerouslySetInnerHTML={{ __html: link.label }}
+                        />
+                    ))}
                 </div>
             </div>
         </div>
