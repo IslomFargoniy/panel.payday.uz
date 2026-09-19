@@ -69,8 +69,25 @@ class HikvisionSyncService
                 ]
             ];
 
-            // If IP is known or on local network
-            $deviceIp = $device->ip_address ?? '192.168.1.107'; // Fallback to local default if not set
+            // Route through ISUP Gateway if ISUP connection type or device_id is present
+            if ($device->connection_type === 'isup' && !empty($device->device_id)) {
+                $isupRes = \Illuminate\Support\Facades\Http::timeout(6)->post('http://127.0.0.1:7661/api/isapi', [
+                    'device_id' => $device->device_id,
+                    'method' => 'POST',
+                    'url' => 'POST /ISAPI/AccessControl/UserInfo/Record?format=json',
+                    'body' => json_encode($userData),
+                ]);
+
+                $status = $isupRes->json();
+                Log::info("HikvisionSync [ISUP]: Worker {$employeeNo} synced to device {$device->device_id}", [
+                    'status' => $status
+                ]);
+
+                return ['success' => true, 'response' => $status];
+            }
+
+            // Fallback to local network direct HTTP if on same network
+            $deviceIp = $device->ip_address ?? '192.168.1.107';
             $username = $device->username ?? 'admin';
             $password = $device->password ?? 'hikvision1';
 
@@ -94,7 +111,7 @@ class HikvisionSyncService
                 $this->uploadFaceToDevice($client, $employeeNo, $photoPath);
             }
 
-            Log::info("HikvisionSync: Worker {$employeeNo} synced to device {$device->id}", [
+            Log::info("HikvisionSync [HTTP]: Worker {$employeeNo} synced to device {$device->id}", [
                 'status' => $status
             ]);
 
@@ -157,6 +174,24 @@ class HikvisionSyncService
         foreach ($devices as $device) {
             try {
                 $employeeNo = (string)($worker->employeeNoString ?: $worker->id);
+
+                if ($device->connection_type === 'isup' && !empty($device->device_id)) {
+                    $delRes = \Illuminate\Support\Facades\Http::timeout(6)->post('http://127.0.0.1:7661/api/isapi', [
+                        'device_id' => $device->device_id,
+                        'method' => 'PUT',
+                        'url' => 'PUT /ISAPI/AccessControl/UserInfo/Delete?format=json',
+                        'body' => json_encode([
+                            'UserInfoDelCond' => [
+                                'EmployeeNoList' => [
+                                    ['employeeNo' => $employeeNo]
+                                ]
+                            ]
+                        ]),
+                    ]);
+                    $results[$device->id] = $delRes->json();
+                    continue;
+                }
+
                 $deviceIp = $device->ip_address ?? '192.168.1.107';
                 $username = $device->username ?? 'admin';
                 $password = $device->password ?? 'hikvision1';
