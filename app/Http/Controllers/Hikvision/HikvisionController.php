@@ -397,8 +397,48 @@ class HikvisionController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(FaceRect $faceRect)
+    public function getDeviceKey(Request $request)
     {
-        //
+        $deviceId = $request->query('device_id');
+        if (!$deviceId) {
+            return response()->json(['error' => 'Device ID required'], 400);
+        }
+
+        $device = \App\Models\Branch\BranchDevice::where('device_id', $deviceId)->first();
+        if ($device && !empty($device->encryption_key)) {
+            return response()->json([
+                'success' => true,
+                'device_id' => $deviceId,
+                'encryption_key' => $device->encryption_key,
+            ]);
+        }
+
+        // Fallback default format PayDay{branch_id}2026 or PayDay142026
+        return response()->json([
+            'success' => true,
+            'device_id' => $deviceId,
+            'encryption_key' => 'PayDay142026',
+        ]);
+    }
+
+    public function updateDeviceStatus(Request $request)
+    {
+        $deviceId = $request->input('device_id');
+        $status = $request->input('status'); // 'online' or 'offline'
+        $ip = $request->input('ip');
+        $serial = $request->input('serial');
+
+        if ($deviceId) {
+            $device = \App\Models\Branch\BranchDevice::where('device_id', $deviceId)->first();
+            if ($device) {
+                $device->update([
+                    'is_online' => ($status === 'online'),
+                    'status' => 1,
+                    'last_seen_at' => now(),
+                ]);
+            }
+        }
+
+        return response()->json(['success' => true]);
     }
 }
