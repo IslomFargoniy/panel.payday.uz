@@ -283,6 +283,23 @@ class WorkerController extends Controller
                 $src = null;
                 if ($mime === 'image/jpeg' || $mime === 'image/jpg') {
                     $src = @imagecreatefromjpeg($file->getRealPath());
+                    // Auto-rotate according to EXIF orientation metadata from smartphones
+                    if ($src && function_exists('exif_read_data')) {
+                        $exif = @exif_read_data($file->getRealPath());
+                        if (!empty($exif['Orientation'])) {
+                            switch ($exif['Orientation']) {
+                                case 8:
+                                    $src = imagerotate($src, 90, 0);
+                                    break;
+                                case 3:
+                                    $src = imagerotate($src, 180, 0);
+                                    break;
+                                case 6:
+                                    $src = imagerotate($src, -90, 0);
+                                    break;
+                            }
+                        }
+                    }
                 } elseif ($mime === 'image/png') {
                     $src = @imagecreatefrompng($file->getRealPath());
                 } elseif ($mime === 'image/webp') {
