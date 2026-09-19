@@ -361,7 +361,7 @@ class HikvisionSyncService
                     $access = \App\Models\Hikvision\HikvisionAccess::create([
                         'ipAddress' => $device->ip_address,
                         'macAddress' => $device->mac_address,
-                        'shortSerialNumber' => $device->serial_number ?: $device->device_id,
+                        'shortSerialNumber' => $device->device_id,
                         'dateTime' => $eventDateStr,
                         'eventType' => 'AccessControl',
                         'eventDescription' => 'ISUP AcsEvent Sync',

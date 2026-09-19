@@ -194,27 +194,57 @@ class HikvisionController extends Controller
                         $eventData->AccessControllerEvent->label = 'Keldi';
                     }
                 }
-                $shortSerial = $eventData->shortSerialNumber ?? ($eventData->AccessControllerEvent->serialNo ?? 'default');
                 $macAddress = $eventData->macAddress ?? ($eventData->AccessControllerEvent->macAddress ?? null);
+                $deviceId = $eventData->device_id ?? null;
+                $shortSerial = $eventData->shortSerialNumber ?? null;
+
+                // Resolve matching BranchDevice
+                $branchDevice = null;
+                if ($macAddress || $shortSerial || $deviceId) {
+                    $branchDevice = \App\Models\Branch\BranchDevice::where('status', 1)
+                        ->where(function ($q) use ($macAddress, $shortSerial, $deviceId) {
+                            if ($macAddress) {
+                                $q->orWhere('mac_address', '=', $macAddress);
+                            }
+                            if ($shortSerial && $shortSerial !== 'default') {
+                                $q->orWhere('device_id', '=', $shortSerial);
+                            }
+                            if ($deviceId) {
+                                $q->orWhere('device_id', '=', $deviceId);
+                            }
+                        })->first();
+                }
+
+                if ($branchDevice) {
+                    $shortSerial = $branchDevice->device_id ?: ($shortSerial ?: 'default');
+                } elseif (empty($shortSerial) || $shortSerial === 'default') {
+                    $shortSerial = $eventData->AccessControllerEvent->serialNo ?? 'default';
+                }
+
                 $accessEventData = $eventData->AccessControllerEvent;
 
                 $filename = '';
                 if ($request->hasFile('Picture')) {
                     $picture = $request->file('Picture');
-
-                    // Fayl nomini generatsiya qilish (ixtiyoriy)
                     $filename = time() . '_' . rand(1, 50) . '_' . $picture->getClientOriginalName();
+                    $savedPath = $picture->storeAs("hikvision/$shortSerial", $filename, 'public');
 
-                    // Saqlash
-                    $savedPath = $picture->storeAs("hikvision/$shortSerial", $filename, 'public'); // 3-chi parametr: 'public'
-
-                    // Matnli xabar yuborish
                     $caption = 'Foydalanuvchi: ' . ($accessEventData->name ?? 'Noma\'lum') .
                         "\nHolati: " . ($accessEventData->attendanceStatus ?? 'Noma\'lum') .
                         "\nPath : $savedPath" .
                         "\nEmployeeNo : " . ($accessEventData->employeeNoString ?? 'yo\'q');
 
                     telegramlog($caption);
+                } elseif ($request->hasFile('picture')) {
+                    $picture = $request->file('picture');
+                    $filename = time() . '_' . rand(1, 50) . '_' . $picture->getClientOriginalName();
+                    $picture->storeAs("hikvision/$shortSerial", $filename, 'public');
+                } elseif ($request->filled('picture')) {
+                    $filename = $request->input('picture');
+                } elseif (!empty($eventData->picture)) {
+                    $filename = $eventData->picture;
+                } elseif (!empty($accessEventData->picture)) {
+                    $filename = $accessEventData->picture;
                 }
 
                 if (empty($accessEventData->employeeNoString)) {
@@ -237,7 +267,6 @@ class HikvisionController extends Controller
                                         $q->orWhere('mac_address', '=', $macAddress);
                                     }
                                     if ($shortSerial && $shortSerial !== 'default') {
-                                        $q->orWhere('serial_number', 'LIKE', "%$shortSerial%");
                                         $q->orWhere('device_id', '=', $shortSerial);
                                     }
                                     if ($deviceId) {
