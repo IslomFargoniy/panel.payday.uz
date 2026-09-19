@@ -36,14 +36,19 @@ return Application::configure(basePath: dirname(__DIR__))
 if (!function_exists('telegramlog')) {
     function telegramlog($text)
     {
-        $token = "7763950049:AAFyTjSgv47GC-76zSez6Q9pPzNNYPH6kqA";
-        $chat_id = "531110501";
+        $token = config('services.telegram.bot_token') ?: env('TELEGRAM_BOT_TOKEN');
+        $chat_id = config('services.telegram.log_chat_id') ?: env('TELEGRAM_LOG_CHAT_ID', '531110501');
+
+        if (!$token || !$chat_id) {
+            return null;
+        }
+
         try {
             $telegram = new \Telegram\Bot\Api($token);
 
             $telegram->sendMessage([
                 'chat_id' => $chat_id,
-                'text' => json_encode($text, JSON_PRETTY_PRINT),
+                'text' => is_string($text) ? $text : json_encode($text, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
                 'parse_mode' => 'html',
             ]);
 
