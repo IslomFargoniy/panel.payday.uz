@@ -93,8 +93,7 @@ class BranchController extends Controller
             })
             ->paginate($request->per_page ?? 10);
 
-        $days = Day::whereNotIn('id', $branch->branch_days()->pluck('day_id'))
-            ->get();
+        $days = Day::all();
 
         return Inertia::render('branch/show', [
             'worker' => $worker,

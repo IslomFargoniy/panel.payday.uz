@@ -1,121 +1,139 @@
 import React, { useState } from 'react';
-import { TrashIcon } from 'lucide-react';
-import { useForm } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
 import { Branch, BranchDay, Day } from '@/types';
-import DeleteItemModal from '@/components/delete-item-modal';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import CreateBranchDayModal from '@/components/branch/create-branch-day-modal';
-
+import { Calendar, Check, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type BranchDayTableProps = {
     branch: Branch;
-    days: Day[]
+    days?: Day[];
 };
 
+// Fallback days metadata if DB days not loaded yet
+const defaultWeekDays = [
+    { id: 2, name: 'Dushanba', name_ru: 'Понедельник', name_en: 'Monday', short_uz: 'Du', short_ru: 'Пн', short_en: 'Mon' },
+    { id: 3, name: 'Seshanba', name_ru: 'Вторник', name_en: 'Tuesday', short_uz: 'Se', short_ru: 'Вт', short_en: 'Tue' },
+    { id: 4, name: 'Chorshanba', name_ru: 'Среда', name_en: 'Wednesday', short_uz: 'Chor', short_ru: 'Ср', short_en: 'Wed' },
+    { id: 5, name: 'Payshanba', name_ru: 'Четверг', name_en: 'Thursday', short_uz: 'Pay', short_ru: 'Чт', short_en: 'Thu' },
+    { id: 6, name: 'Juma', name_ru: 'Пятница', name_en: 'Friday', short_uz: 'Jum', short_ru: 'Пт', short_en: 'Fri' },
+    { id: 7, name: 'Shanba', name_ru: 'Суббота', name_en: 'Saturday', short_uz: 'Sha', short_ru: 'Сб', short_en: 'Sat' },
+    { id: 1, name: 'Yakshanba', name_ru: 'Воскресенье', name_en: 'Sunday', short_uz: 'Yak', short_ru: 'Вс', short_en: 'Sun' },
+];
+
 const BranchDayTable = ({ branch, days }: BranchDayTableProps) => {
+    const { i18n, t } = useTranslation();
+    const [loadingDayId, setLoadingDayId] = useState<number | null>(null);
 
-    const { i18n, t } = useTranslation();  // Using the translation hook
-    const [openDelete, setOpenDelete] = useState(false);
-    const [selectedBranchDay, setSelectedBranchDay] = useState<BranchDay | null>(null);
+    // Week order starting from Monday (id: 2) through Sunday (id: 1)
+    const weekOrder = [2, 3, 4, 5, 6, 7, 1];
 
-    const handleDeleteClick = (branch_day: BranchDay) => {
-        setSelectedBranchDay(branch_day);
-        setOpenDelete(true);
+    const allDays = (days && days.length > 0) ? days : defaultWeekDays;
+    const sortedDays = [...allDays].sort((a, b) => {
+        const indexA = weekOrder.indexOf(a.id);
+        const indexB = weekOrder.indexOf(b.id);
+        return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+    });
+
+    const getBranchDay = (dayId: number): BranchDay | undefined => {
+        return branch.branch_days?.find((item) => item.day_id === dayId || item.day?.id === dayId);
     };
-    const { delete: deleteBranchDay, reset, errors: deleteError, clearErrors } = useForm();
 
-    const handleDelete = (id: number) => {
+    const handleToggleDay = (dayId: number) => {
+        const existingBranchDay = getBranchDay(dayId);
+        setLoadingDayId(dayId);
 
-        deleteBranchDay(`/branch_day/${id}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                reset();
-                clearErrors();
-                setOpenDelete(false); // 🔒 CLOSE MODAL HERE
-                toast.success(t('deleted_successfully')); // Success message
-            },
-            onError: (err) => {
-                // Display a friendly error message if available
-                const errorMessage = err?.error || t('delete_failed'); // Use fallback error message
-                toast.error(errorMessage); // Display error message
-            }
-        });
+        if (existingBranchDay) {
+            router.delete(`/branch_day/${existingBranchDay.id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setLoadingDayId(null);
+                    toast.success(t('deleted_successfully', 'Muvaffaqiyatli o‘chirildi'));
+                },
+                onError: (err) => {
+                    setLoadingDayId(null);
+                    toast.error(err?.error || t('action_failed', 'Xatolik yuz berdi'));
+                },
+                onFinish: () => setLoadingDayId(null),
+            });
+        } else {
+            router.post('/branch_day', {
+                branch_id: branch.id,
+                day_ids: [dayId],
+            }, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setLoadingDayId(null);
+                    toast.success(t('created_successfully', 'Muvaffaqiyatli saqlandi'));
+                },
+                onError: (err) => {
+                    setLoadingDayId(null);
+                    toast.error(err?.error || t('action_failed', 'Xatolik yuz berdi'));
+                },
+                onFinish: () => setLoadingDayId(null),
+            });
+        }
     };
+
+    const activeDaysCount = branch.branch_days?.length || 0;
 
     return (
-        <div className="space-y-2">
-            <div className="flex items-center justify-between py-1.5 border-b border-slate-200/80 dark:border-slate-800">
-                <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2 capitalize">
-                    <span>{t('branch_day')}</span>
-                    <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                        {branch.branch_days?.length || 0} ta
-                    </span>
+        <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-2.5">
+            <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                    <span>{t('branch_day', 'Filial ish kunlari')}</span>
                 </h3>
-
-                <CreateBranchDayModal branch={branch} days={days} />
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                    {activeDaysCount} / 7 {t('days', 'kun')}
+                </span>
             </div>
 
-            {/* Table Card */}
-            <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs text-slate-700 dark:text-slate-200">
-                        <thead className="border-b border-slate-200/80 bg-slate-50/80 font-semibold text-slate-500 uppercase tracking-wider dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
-                            <tr>
-                                <th className="px-3 py-2.5 text-center w-10 font-mono">{t('n')}</th>
-                                <th className="px-3 py-2.5">{t('day')}</th>
-                                <th className="px-3 py-2.5 text-right w-16">{t('action', 'Amal')}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900">
-                            {(!branch.branch_days || branch.branch_days.length === 0) ? (
-                                <tr>
-                                    <td colSpan={3} className="px-3 py-6 text-center text-slate-400 dark:text-slate-500">
-                                        {t('no_days_selected', 'Ish kunlari belgilanmagan')}
-                                    </td>
-                                </tr>
-                            ) : (
-                                branch.branch_days.map((item, index) => {
-                                    const dayName = i18n.language === 'uz' ? item.day?.name :
-                                        i18n.language === 'ru' ? item.day?.name_ru :
-                                            item.day?.name_en;
-                                    return (
-                                        <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
-                                            <td className="px-3 py-2.5 text-center font-mono text-slate-400 dark:text-slate-500">{index + 1}</td>
-                                            <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-slate-100">
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 font-medium">
-                                                    {dayName}
-                                                </span>
-                                            </td>
-                                            <td className="px-3 py-2.5 text-right">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleDeleteClick(item)}
-                                                    className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400"
-                                                    title={t('delete', 'O‘chirish')}
-                                                >
-                                                    <TrashIcon className="w-3.5 h-3.5" />
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
+            {/* Single row of 7 day toggle pills */}
+            <div className="grid grid-cols-7 gap-1.5 pt-1">
+                {sortedDays.map((day) => {
+                    const isActive = !!getBranchDay(day.id);
+                    const isLoading = loadingDayId === day.id;
 
-                        {/* Pass selected branch to the DeleteBranchModal */}
-                        {selectedBranchDay && openDelete && (
-                            <DeleteItemModal
-                                item={selectedBranchDay}
-                                open={openDelete}
-                                setOpen={setOpenDelete}
-                                onDelete={handleDelete}
-                            />
-                        )}
-                    </table>
-                </div>
+                    const defaultMeta = defaultWeekDays.find((d) => d.id === day.id);
+                    const dayName = i18n.language === 'uz' ? (day.name || defaultMeta?.name) :
+                        i18n.language === 'ru' ? (day.name_ru || defaultMeta?.name_ru) :
+                            (day.name_en || defaultMeta?.name_en);
+
+                    const shortLabel = i18n.language === 'uz' ? (defaultMeta?.short_uz || day.name?.slice(0, 3)) :
+                        i18n.language === 'ru' ? (defaultMeta?.short_ru || day.name_ru?.slice(0, 2)) :
+                            (defaultMeta?.short_en || day.name_en?.slice(0, 3));
+
+                    return (
+                        <button
+                            key={day.id}
+                            type="button"
+                            disabled={isLoading}
+                            onClick={() => handleToggleDay(day.id)}
+                            title={dayName}
+                            className={cn(
+                                "flex flex-col items-center justify-center py-2 px-0.5 rounded-lg border transition-all cursor-pointer select-none relative group",
+                                isActive
+                                    ? "bg-indigo-600 text-white border-indigo-600 shadow-xs hover:bg-indigo-700 dark:bg-indigo-500 dark:border-indigo-500 dark:hover:bg-indigo-600"
+                                    : "bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600"
+                            )}
+                        >
+                            {isLoading ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin my-1" />
+                            ) : (
+                                <>
+                                    <span className="text-[11px] font-bold leading-tight">{shortLabel}</span>
+                                    {isActive ? (
+                                        <Check className="w-3 h-3 mt-0.5 text-indigo-200 dark:text-indigo-100" />
+                                    ) : (
+                                        <span className="w-1.5 h-1.5 mt-1 rounded-full bg-slate-300 dark:bg-slate-600 group-hover:bg-slate-400" />
+                                    )}
+                                </>
+                            )}
+                        </button>
+                    );
+                })}
             </div>
         </div>
     );

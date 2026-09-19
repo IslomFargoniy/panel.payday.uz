@@ -164,9 +164,7 @@ class WorkerController extends Controller
 
         $hikvision_access_events = $hikvision_access_events->paginate($per_page);
 
-        $days = Day::query()
-            ->whereNotIn('id', $worker->worker_days()->pluck('day_id'))
-            ->get();
+        $days = Day::all();
 
         return Inertia::render('worker/show', [
             'worker' => $worker,
