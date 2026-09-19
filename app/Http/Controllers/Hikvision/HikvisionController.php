@@ -249,109 +249,97 @@ class HikvisionController extends Controller
                     })->first();
 
                 if ($checkWorker) {
+                    $dateTimeStr = isset($eventData->dateTime)
+                        ? Carbon::parse($eventData->dateTime)->timezone('Asia/Tashkent')->format('Y-m-d H:i:s')
+                        : date('Y-m-d H:i:s');
 
                     $lastHikvisionAccessEvent = HikvisionAccessEvent::with([])
                         ->where('employeeNoString', '=', $accessEventData->employeeNoString)
-                        ->whereHas('hikvisionAccess', function ($query) use ($accessEventData) {
+                        ->whereHas('hikvisionAccess', function ($query) {
                             $query->whereRaw("date(dateTime) = current_date");
                         })
-                        ->latest()
+                        ->latest('id')
                         ->first();
 
                     $lastStatus = $lastHikvisionAccessEvent ? $lastHikvisionAccessEvent->attendanceStatus : null;
 
-                    $status = $accessEventData->attendanceStatus;
-
-                    switch ($status) {
-                        case 'checkIn':
-                            if (is_null($lastStatus) || $lastStatus === 'checkOut') {
-                                // checkIn allowed
-                            } else {
-                                throw new \Exception('Kelgansiz.');
-                            }
-                            break;
-
-                        case 'checkOut':
-                            if ($lastStatus === 'checkIn' || $lastStatus === 'breakIn') {
-                                // checkOut allowed
-                            } else {
-                                throw new \Exception('Kelmagansiz yoki Abetdasiz.');
-                            }
-                            break;
-
-                        case 'breakIn':
-                            if ($lastStatus === 'breakOut') {
-                                // breakIn allowed
-                            } else {
-                                throw new \Exception('Abetda emassiz.');
-                            }
-                            break;
-
-                        case 'breakOut':
-                            if ($lastStatus === 'breakIn' || $lastStatus === 'checkIn') {
-                                // breakOut allowed
-                            } else {
-                                throw new \Exception('Abetdasiz.');
-                            }
-                            break;
-
-                        default:
-                            throw new \Exception('Noto‘g‘ri attendance holati.');
+                    $status = $accessEventData->attendanceStatus ?? null;
+                    if (empty($status) || $status === 'undefined') {
+                        $status = ($lastStatus === 'checkIn') ? 'checkOut' : 'checkIn';
                     }
 
+                    $label = $accessEventData->label ?? null;
+                    if (empty($label)) {
+                        $label = ($status === 'checkIn') ? 'Keldi' : (($status === 'checkOut') ? 'Ketdi' : null);
+                    }
 
-                    // 1. Save HikvisionAccess
-                    $hikvisionAccess = HikvisionAccess::create([
-                        'ipAddress' => $eventData->ipAddress ?? null,
-                        'portNo' => $eventData->portNo ?? null,
-                        'protocol' => $eventData->protocol ?? null,
-                        'macAddress' => $macAddress,
-                        'channelId' => $eventData->channelID ?? null,
-//                        'dateTime' => date('Y-m-d H:i:s'),
-                        'dateTime' => isset($eventData->dateTime)
-                            ? Carbon::parse($eventData->dateTime)->timezone('Asia/Tashkent')->format('Y-m-d H:i:s')
-                            : null,
-                        'activePostCount' => $eventData->activePostCount ?? null,
-                        'eventType' => $eventData->eventType ?? null,
-                        'eventState' => $eventData->eventState ?? null,
-                        'eventDescription' => $eventData->eventDescription ?? null,
-                        'shortSerialNumber' => $shortSerial,
-                    ]);
+                    // Check if an event already exists at this exact second (e.g. from ISUP sync)
+                    $existingEvent = HikvisionAccessEvent::where('employeeNoString', '=', $accessEventData->employeeNoString)
+                        ->whereHas('hikvisionAccess', function ($query) use ($dateTimeStr) {
+                            $query->where('dateTime', $dateTimeStr);
+                        })
+                        ->first();
 
-                    // 2. Save HikvisionAccessEvent
-                    $hikvisionAccessEvent = $hikvisionAccess->hikvisionAccessEvent()->create([
-                        'deviceName' => $accessEventData->deviceName ?? null,
-                        'majorEventType' => $accessEventData->majorEventType ?? null,
-                        'subEventType' => $accessEventData->subEventType ?? null,
-                        'name' => $accessEventData->name ?? null,
-                        'cardReaderNo' => $accessEventData->cardReaderNo ?? null,
-                        'employeeNoString' => $accessEventData->employeeNoString ?? null,
-                        'serialNo' => $accessEventData->serialNo ?? null,
-                        'userType' => $accessEventData->userType ?? null,
-                        'currentVerifyMode' => $accessEventData->currentVerifyMode ?? null,
-                        'frontSerialNo' => $accessEventData->frontSerialNo ?? null,
-                        'attendanceStatus' => $accessEventData->attendanceStatus ?? null,
-                        'label' => $accessEventData->label ?? null,
-                        'mask' => $accessEventData->mask ?? null,
-                        'picturesNumber' => $accessEventData->picturesNumber ?? null,
-                        'purePwdVerifyEnable' => $accessEventData->purePwdVerifyEnable ?? null,
-                        'picture' => $filename,
-                        'work_time' => $checkWorker->work_time,
-                        'end_time' => $checkWorker->end_time,
-                    ]);
-
-                    // 3. Save FaceRect
-                    if (isset($accessEventData->FaceRect)) {
-                        $hikvisionAccessEvent->faceReact()->create([
-                            'height' => $accessEventData->FaceRect->height ?? null,
-                            'width' => $accessEventData->FaceRect->width ?? null,
-                            'x' => $accessEventData->FaceRect->x ?? null,
-                            'y' => $accessEventData->FaceRect->y ?? null,
+                    if ($existingEvent) {
+                        // If existing event has no picture, attach the picture now!
+                        if (!empty($filename) && empty($existingEvent->picture)) {
+                            $existingEvent->picture = $filename;
+                            $existingEvent->save();
+                            if ($existingEvent->hikvisionAccess && !empty($shortSerial)) {
+                                $existingEvent->hikvisionAccess->shortSerialNumber = $shortSerial;
+                                $existingEvent->hikvisionAccess->save();
+                            }
+                        }
+                    } else {
+                        // 1. Save HikvisionAccess
+                        $hikvisionAccess = HikvisionAccess::create([
+                            'ipAddress' => $eventData->ipAddress ?? null,
+                            'portNo' => $eventData->portNo ?? null,
+                            'protocol' => $eventData->protocol ?? null,
+                            'macAddress' => $macAddress,
+                            'channelId' => $eventData->channelID ?? null,
+                            'dateTime' => $dateTimeStr,
+                            'activePostCount' => $eventData->activePostCount ?? null,
+                            'eventType' => $eventData->eventType ?? null,
+                            'eventState' => $eventData->eventState ?? null,
+                            'eventDescription' => $eventData->eventDescription ?? null,
+                            'shortSerialNumber' => $shortSerial,
                         ]);
+
+                        // 2. Save HikvisionAccessEvent
+                        $hikvisionAccessEvent = $hikvisionAccess->hikvisionAccessEvent()->create([
+                            'deviceName' => $accessEventData->deviceName ?? null,
+                            'majorEventType' => $accessEventData->majorEventType ?? null,
+                            'subEventType' => $accessEventData->subEventType ?? null,
+                            'name' => $accessEventData->name ?? $checkWorker->name,
+                            'cardReaderNo' => $accessEventData->cardReaderNo ?? null,
+                            'employeeNoString' => $accessEventData->employeeNoString ?? null,
+                            'serialNo' => (string)($accessEventData->serialNo ?? ''),
+                            'userType' => $accessEventData->userType ?? null,
+                            'currentVerifyMode' => $accessEventData->currentVerifyMode ?? null,
+                            'frontSerialNo' => $accessEventData->frontSerialNo ?? null,
+                            'attendanceStatus' => $status,
+                            'label' => $label,
+                            'mask' => $accessEventData->mask ?? null,
+                            'picturesNumber' => $accessEventData->picturesNumber ?? null,
+                            'purePwdVerifyEnable' => $accessEventData->purePwdVerifyEnable ?? null,
+                            'picture' => $filename,
+                            'work_time' => $checkWorker->work_time,
+                            'end_time' => $checkWorker->end_time,
+                        ]);
+
+                        // 3. Save FaceRect
+                        if (isset($accessEventData->FaceRect)) {
+                            $hikvisionAccessEvent->faceReact()->create([
+                                'height' => $accessEventData->FaceRect->height ?? null,
+                                'width' => $accessEventData->FaceRect->width ?? null,
+                                'x' => $accessEventData->FaceRect->x ?? null,
+                                'y' => $accessEventData->FaceRect->y ?? null,
+                            ]);
+                        }
                     }
 
                     $webhookUrl = optional($checkWorker->branch->firm->firm_setting)->webhook_url;
-
                     if ($webhookUrl) {
                         try {
                             Http::post($webhookUrl, $request->all());
