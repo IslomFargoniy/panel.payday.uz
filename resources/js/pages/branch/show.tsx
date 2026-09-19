@@ -5,9 +5,18 @@ import WorkerTable from '@/components/branch/worker-table';
 import MobileSearchModal from '@/components/MobileSearchModal';
 import SearchForm from '@/components/search-form';
 import { Button } from '@/components/ui/button';
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import AppLayout from '@/layouts/app-layout';
-import { type Branch, type BreadcrumbItem, Day, SearchData, WorkerPaginate } from '@/types';
+import { type Branch, type BreadcrumbItem as LayoutBreadcrumbItem, Day, SearchData, WorkerPaginate } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Building2, CalendarCheck } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -19,7 +28,7 @@ export default function Branch() {
     }>().props;
     const { t } = useTranslation(); // Using the translation hook
 
-    const breadcrumbs: BreadcrumbItem[] = [
+    const breadcrumbs: LayoutBreadcrumbItem[] = [
         {
             title: `${t('branch')} (${branch.name})`,
             href: '/dashboard',
@@ -48,30 +57,62 @@ export default function Branch() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Branch ${branch.name}`} />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                {/* Search and Per-Page Selection */}
-                <div className="flex items-center justify-between">
-                    <div className={''}>
-                        <Link href={'/firm'} className={'underline'}>
-                            {t('firm')} /
-                        </Link>
-                        <Link href={`/firm/${branch.firm_id}`} className={'underline'}>
-                            {branch.firm?.name} /
-                        </Link>
-                        {branch.name}
+                {/* Header: Breadcrumbs Navigation, Daily Attendance Action, and Search/Filter */}
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-card p-3 rounded-xl border border-border shadow-xs">
+                    {/* Left: Breadcrumbs */}
+                    <div className="flex items-center">
+                        <Breadcrumb>
+                            <BreadcrumbList className="text-sm font-medium">
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink asChild>
+                                        <Link href="/firm" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors">
+                                            <Building2 className="h-4 w-4" />
+                                            <span>{t('firm')}</span>
+                                        </Link>
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator />
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink asChild>
+                                        <Link href={`/firm/${branch.firm_id}`} className="text-muted-foreground hover:text-primary transition-colors">
+                                            {branch.firm?.name}
+                                        </Link>
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator />
+                                <BreadcrumbItem>
+                                    <BreadcrumbPage className="font-semibold text-foreground px-2.5 py-1 rounded-md bg-muted">
+                                        {branch.name}
+                                    </BreadcrumbPage>
+                                </BreadcrumbItem>
+                            </BreadcrumbList>
+                        </Breadcrumb>
                     </div>
-                    <MobileSearchModal data={data} setData={setData} handleSubmit={handleSubmit} />
-                    <div className={'hidden lg:block'}>
-                        <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} />
+
+                    {/* Middle: Daily Attendance Button */}
+                    <div className="flex items-center justify-start lg:justify-center">
+                        <Button
+                            asChild
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs hover:shadow transition-all gap-2 h-9 px-4"
+                        >
+                            <Link href={`/daily_attendance/${branch.id}`}>
+                                <CalendarCheck className="h-4 w-4" />
+                                <span>{t('daily_attendance')}</span>
+                            </Link>
+                        </Button>
+                    </div>
+
+                    {/* Right: Search and Per-Page Selection */}
+                    <div className="flex items-center gap-2">
+                        <MobileSearchModal data={data} setData={setData} handleSubmit={handleSubmit} />
+                        <div className="hidden lg:block">
+                            <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} />
+                        </div>
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto pt-3">
-                    <Button variant="success" asChild className="mb-4">
-                        <Link href={`/daily_attendance/${branch.id}`}>
-                            {t('daily_attendance')}
-                        </Link>
-                    </Button>
+                <div className="overflow-x-auto pt-1">
                     <div className={'grid grid-cols-12 gap-4'}>
                         <div className={'col-span-12 sm:col-span-12 md:col-span-12 lg:col-span-8'}>
                             {branch.workers && <WorkerTable worker={worker} branch={branch} searchData={data} />}

@@ -1,6 +1,15 @@
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import AppLayout from '@/layouts/app-layout';
 import { Head, usePage, useForm, Link } from '@inertiajs/react';
-import { Branch, type BreadcrumbItem,  SearchData, WorkerPaginate } from '@/types';
+import { Branch, type BreadcrumbItem as LayoutBreadcrumbItem, SearchData, WorkerPaginate } from '@/types';
+import { Building2 } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { router } from '@inertiajs/react';
 import SearchForm from '@/components/search-form';
@@ -21,7 +30,7 @@ export default function Attendance() {
     const { t } = useTranslation();  // Using the translation hook
 
 
-    const breadcrumbs: BreadcrumbItem[] = [
+    const breadcrumbs: LayoutBreadcrumbItem[] = [
         {
             title: `${t('worker')}`,
             href: '/dashboard'
@@ -57,19 +66,44 @@ export default function Attendance() {
             <Head title={t('worker')} />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Search and Per-Page Selection */}
-                <div className="flex flex-col md:flex-row justify-between">
-                    <div className={'mb-4'}>
-                        <Link href={'/firm'} className={'underline'}>
-                            {t('firm')} /
-                        </Link>
-                        <Link href={`/firm/${branch.firm_id}`} className={'underline'}>
-                            {branch.firm?.name} /
-                        </Link>
-                        <Link href={`/branch/${branch.id}`} className={'underline'}>
-                            {branch.name}
-                        </Link>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-card p-3 rounded-xl border border-border shadow-xs">
+                    <Breadcrumb>
+                        <BreadcrumbList className="text-sm font-medium">
+                            <BreadcrumbItem>
+                                <BreadcrumbLink asChild>
+                                    <Link href="/firm" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors">
+                                        <Building2 className="h-4 w-4" />
+                                        <span>{t('firm')}</span>
+                                    </Link>
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbLink asChild>
+                                    <Link href={`/firm/${branch.firm_id}`} className="text-muted-foreground hover:text-primary transition-colors">
+                                        {branch.firm?.name}
+                                    </Link>
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbLink asChild>
+                                    <Link href={`/branch/${branch.id}`} className="text-muted-foreground hover:text-primary transition-colors">
+                                        {branch.name}
+                                    </Link>
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbPage className="font-semibold text-foreground px-2.5 py-1 rounded-md bg-muted">
+                                    {t('daily_attendance')}
+                                </BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
+                    <div className="flex items-center gap-2">
+                        <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} />
                     </div>
-                    <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} />
                 </div>
 
                 {/* Table */}

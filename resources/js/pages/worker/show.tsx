@@ -5,9 +5,18 @@ import SalaryPaymentTable from '@/components/worker/salary-payment-table';
 import SalaryTable from '@/components/worker/salary-table';
 import WorkerDayTable from '@/components/worker/worker-day-table';
 import WorkerHolidayTable from '@/components/worker/worker-holiday-table';
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type Worker, Day, HikvisionAccessEventPaginate, SearchData } from '@/types';
+import { type BreadcrumbItem as LayoutBreadcrumbItem, type Worker, Day, HikvisionAccessEventPaginate, SearchData } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Building2 } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -58,22 +67,46 @@ export default function WorkerShow() {
             <Head title={`Worker ${worker.name}`} />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Search and Per-Page Selection */}
-                <div className="flex items-center justify-between">
-                    <div className={''}>
-                        <Link href={'/firm'} className={'underline'}>
-                            {t('firm')} /
-                        </Link>
-                        <Link href={`/firm/${worker?.branch?.firm_id}`} className={'underline'}>
-                            {worker?.branch?.firm?.name} /
-                        </Link>
-                        <Link href={`/branch/${worker?.branch?.id}`} className={'underline'}>
-                            {worker?.branch?.name} /
-                        </Link>
-                        {worker?.name}
-                    </div>
-                    <MobileSearchModal data={data} setData={setData} handleSubmit={handleSubmit} />
-                    <div className={'hidden lg:block'}>
-                        <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} />
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-card p-3 rounded-xl border border-border shadow-xs">
+                    <Breadcrumb>
+                        <BreadcrumbList className="text-sm font-medium">
+                            <BreadcrumbItem>
+                                <BreadcrumbLink asChild>
+                                    <Link href="/firm" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors">
+                                        <Building2 className="h-4 w-4" />
+                                        <span>{t('firm')}</span>
+                                    </Link>
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbLink asChild>
+                                    <Link href={`/firm/${worker?.branch?.firm_id}`} className="text-muted-foreground hover:text-primary transition-colors">
+                                        {worker?.branch?.firm?.name}
+                                    </Link>
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbLink asChild>
+                                    <Link href={`/branch/${worker?.branch?.id}`} className="text-muted-foreground hover:text-primary transition-colors">
+                                        {worker?.branch?.name}
+                                    </Link>
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbPage className="font-semibold text-foreground px-2.5 py-1 rounded-md bg-muted">
+                                    {worker?.name}
+                                </BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
+                    <div className="flex items-center gap-2">
+                        <MobileSearchModal data={data} setData={setData} handleSubmit={handleSubmit} />
+                        <div className="hidden lg:block">
+                            <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} />
+                        </div>
                     </div>
                 </div>
 
