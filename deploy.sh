@@ -55,6 +55,11 @@ if [ -f "composer.json" ]; then
     sudo composer install --no-interaction --prefer-dist --optimize-autoloader || true
 fi
 
+echo -e "${BLUE}--> Frontend aktivlari build qilinmoqda (npm run build)...${NC}"
+if [ -f "package.json" ]; then
+    sudo npm run build || true
+fi
+
 echo -e "${BLUE}--> Ma'lumotlar bazasi migratsiyalari ishga tushirilmoqda...${NC}"
 sudo $PHP_BIN artisan migrate --force
 

@@ -24,10 +24,14 @@ class WorkerObserver
 
     public function created(Worker $worker): void
     {
+        $worker->employeeNoString = (string)$worker->id;
+        $worker->saveQuietly();
 
-        $worker->employeeNoString = $worker->id;
-        $worker->update();
-
+        try {
+            app(\App\Services\Hikvision\HikvisionSyncService::class)->syncWorker($worker);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('WorkerObserver sync failed on create: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -40,6 +44,15 @@ class WorkerObserver
             Auth::user()->user_firms()
                 ->where('firm_id', $worker->branch->firm_id)
                 ->firstOrFail(); // Throws if unauthorized
+        }
+    }
+
+    public function updated(Worker $worker): void
+    {
+        try {
+            app(\App\Services\Hikvision\HikvisionSyncService::class)->syncWorker($worker);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('WorkerObserver sync failed on update: ' . $e->getMessage());
         }
     }
 
@@ -70,6 +83,15 @@ class WorkerObserver
                     'error' => [$message],
                 ]);
             }
+        }
+    }
+
+    public function deleted(Worker $worker): void
+    {
+        try {
+            app(\App\Services\Hikvision\HikvisionSyncService::class)->deleteWorker($worker);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('WorkerObserver delete sync failed: ' . $e->getMessage());
         }
     }
 

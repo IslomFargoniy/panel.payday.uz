@@ -225,5 +225,13 @@
     "off_day": "Dam olish kuni",
     "fine": "Jarima",
     "user_firm": "Foydalanuvchi firmasi",
-    "select": "Tanlash"
+    "select": "Tanlash",
+    "device_guide": "Qurilmani ulash yo‘riqnomasi",
+    "device_name": "Qurilma nomi",
+    "device_id": "Device ID",
+    "connection_type": "Ulanish turi",
+    "encryption_key": "Xavfsizlik kaliti (Key)",
+    "add_device": "Qurilma qo‘shish",
+    "no_devices": "Hozircha ulangan qurilmalar mavjud emas.",
+    "sync_all": "Xodimlarni yuklash"
 }

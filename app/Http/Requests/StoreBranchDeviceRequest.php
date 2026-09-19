@@ -22,8 +22,12 @@ class StoreBranchDeviceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'branch_id' => 'required',
-            'mac_address' => 'required',
+            'branch_id' => 'required|exists:branches,id',
+            'mac_address' => 'required|string',
+            'name' => 'nullable|string|max:255',
+            'device_id' => 'nullable|string|max:255',
+            'connection_type' => 'nullable|in:isup,http_listening',
+            'encryption_key' => 'nullable|string|max:255',
         ];
     }
     public function messages(): array

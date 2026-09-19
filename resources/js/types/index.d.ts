@@ -275,7 +275,14 @@ export interface BranchDevice {
     id: number;
     branch_id: number;
     branch?: Branch;
+    name?: string;
     mac_address: string;
+    device_id?: string;
+    connection_type?: 'isup' | 'http_listening';
+    status?: boolean | number;
+    is_online?: boolean;
+    last_seen_at?: string;
+    encryption_key?: string;
 }
 
 export interface BranchDay {
