@@ -344,7 +344,7 @@ class HikvisionSyncService
                     'eventDescription' => 'ISUP AcsEvent Sync',
                 ]);
 
-                $access->hikvisionAccessEvent()->create([
+                $eventModel = new \App\Models\Hikvision\HikvisionAccessEvent([
                     'deviceName' => $device->name ?: 'Hikvision Terminal',
                     'name' => $event['name'] ?? $worker->name,
                     'employeeNoString' => $employeeNo,
@@ -353,9 +353,12 @@ class HikvisionSyncService
                     'currentVerifyMode' => $event['currentVerifyMode'] ?? 'face',
                     'work_time' => $worker->work_time,
                     'end_time' => $worker->end_time,
-                    'created_at' => $eventDateTime,
-                    'updated_at' => $eventDateTime,
                 ]);
+                $eventModel->hikvision_access_id = $access->id;
+                $eventModel->timestamps = false;
+                $eventModel->created_at = $eventDateTime;
+                $eventModel->updated_at = $eventDateTime;
+                $eventModel->save();
 
                 $syncedCount++;
             }
