@@ -64,7 +64,7 @@ export default function WorkerShow() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Worker ${worker.name}`} />
+            <Head title={`${t('worker')}: ${worker.name}`} />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Search and Per-Page Selection */}
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-card p-3 rounded-xl border border-border shadow-xs">

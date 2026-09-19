@@ -69,7 +69,7 @@ export default function SalaryPayment() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="SalaryPayment" />
+            <Head title={t('sidebar.salary_payment')} />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Search and Per-Page Selection */}
                 <div className="flex justify-end items-center ">

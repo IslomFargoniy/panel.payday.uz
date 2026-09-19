@@ -55,7 +55,7 @@ export default function Branch() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Branch ${branch.name}`} />
+            <Head title={`${t('branch')}: ${branch.name}`} />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Header: Breadcrumbs Navigation, Daily Attendance Action, and Search/Filter */}
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-card p-3 rounded-xl border border-border shadow-xs">

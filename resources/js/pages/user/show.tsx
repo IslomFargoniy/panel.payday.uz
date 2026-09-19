@@ -33,7 +33,7 @@ export default function UserShow() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`User ${user.name}`} />
+            <Head title={`${t('user')}: ${user.name}`} />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Search and Per-Page Selection */}
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-card p-3 rounded-xl border border-border shadow-xs">
