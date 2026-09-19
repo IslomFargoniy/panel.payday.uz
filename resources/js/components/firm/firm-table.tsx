@@ -70,8 +70,8 @@ const FirmTable = ({ searchData, ...firm }: FirmTableProps) => {
                                 <th className="px-4 py-3">{t('user', 'Mas‘ul foydalanuvchilar')}</th>
                                 <th className="px-4 py-3">{t('address', 'Manzil')}</th>
                                 <th className="px-4 py-3">{t('worker', 'Xodimlar')}</th>
-                                <th className="px-4 py-3">{t('branch_limit', 'Filial limiti')}</th>
-                                <th className="px-4 py-3">{t('valid_date', 'Amal qilish muddati')}</th>
+                                <th className="px-4 py-3">{t('branch_limit', 'Filiallar')}</th>
+                                <th className="px-4 py-3">{t('valid_date', 'Amal qilish')}</th>
                                 <th className="px-4 py-3 text-center">{t('status', 'Holat')}</th>
                                 <th className="px-4 py-3 text-right w-28">
                                     {isAdmin && <CreateFirmModal />}
