@@ -6,24 +6,26 @@ import { useTranslation } from 'react-i18next';
 import { Worker, HikvisionAccessEvent, HikvisionAccessEventPaginate, SearchData } from '@/types';
 import DeleteItemModal from '@/components/delete-item-modal';
 import { toast } from 'sonner';
-// import CreateHikvisionAccessEventModal from '@/components/worker/create-hikvisionAccessEvent-payment-modal';
-
 
 type HikvisionAccessEventTableProps = {
     worker: Worker;
-    searchData: SearchData,
-    hikvision_access_events: HikvisionAccessEventPaginate
+    searchData: SearchData;
+    hikvision_access_events: HikvisionAccessEventPaginate;
 };
 
-const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: HikvisionAccessEventTableProps) => {
+interface ValidImageItem {
+    id: number;
+    src: string;
+    title: string;
+}
 
-    const { t } = useTranslation();  // Using the translation hook
+const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: HikvisionAccessEventTableProps) => {
+    const { t } = useTranslation();
     const [openDelete, setOpenDelete] = useState(false);
     const [selectedHikvisionAccessEvent, setSelectedHikvisionAccessEvent] = useState<HikvisionAccessEvent | null>(null);
 
     const [showModal, setShowModal] = useState(false);
     const [currentIndex, setCurrentIndex] = useState<number | null>(null);
-
 
     const handleDeleteClick = (hikvisionAccessEvent: HikvisionAccessEvent) => {
         setSelectedHikvisionAccessEvent(hikvisionAccessEvent);
@@ -31,47 +33,61 @@ const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: Hikv
     };
     const { delete: deleteHikvisionAccessEvent, reset, clearErrors } = useForm();
 
-    // Suppose you have an array like:
-    const images = hikvision_access_events.data.map(item => ({
-        src: item.picture && item.picture.includes('/') 
-             ? `/storage/${item.picture}` 
-             : `/storage/hikvision/${item.hikvision_access?.shortSerialNumber}/${item.picture}`
-    }));
+    const getImageUrl = (item: HikvisionAccessEvent): string | null => {
+        if (!item.picture || item.picture === 'null' || item.picture === 'undefined') {
+            return null;
+        }
+        if (item.picture.includes('/')) {
+            return `/storage/${item.picture}`;
+        }
+        const serial = item.hikvision_access?.shortSerialNumber;
+        return serial ? `/storage/hikvision/${serial}/${item.picture}` : null;
+    };
+
+    const validImages: ValidImageItem[] = hikvision_access_events.data
+        .map(item => {
+            const url = getImageUrl(item);
+            return url
+                ? {
+                      id: item.id,
+                      src: url,
+                      title: `${item.name || ''} ${item.hikvision_access?.dateTime || ''}`.trim(),
+                  }
+                : null;
+        })
+        .filter((item): item is ValidImageItem => item !== null);
 
     const handleDelete = (id: number) => {
-
         deleteHikvisionAccessEvent(`/hikvision_access_event/${id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 reset();
                 clearErrors();
-                setOpenDelete(false); // 🔒 CLOSE MODAL HERE
-                toast.success(t('deleted_successfully')); // Success message
-
+                setOpenDelete(false);
+                toast.success(t('deleted_successfully'));
             },
-            onError: (err) => {
-                // Display a friendly error message if available
-                const errorMessage = err?.error || t('delete_failed'); // Use fallback error message
-                toast.error(errorMessage); // Display error message
-            }
+            onError: err => {
+                const errorMessage = err?.error || t('delete_failed');
+                toast.error(errorMessage);
+            },
         });
     };
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (!showModal || currentIndex === null) return;
+            if (!showModal || currentIndex === null || validImages.length === 0) return;
 
             if (event.key === 'ArrowRight') {
                 setCurrentIndex(prev => {
                     if (prev === null) return 0;
-                    return prev < images.length - 1 ? prev + 1 : 0;
+                    return prev < validImages.length - 1 ? prev + 1 : 0;
                 });
             }
 
             if (event.key === 'ArrowLeft') {
                 setCurrentIndex(prev => {
                     if (prev === null) return 0;
-                    return prev > 0 ? prev - 1 : images.length - 1;
+                    return prev > 0 ? prev - 1 : validImages.length - 1;
                 });
             }
 
@@ -84,85 +100,103 @@ const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: Hikv
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [showModal, currentIndex, images.length]);
+    }, [showModal, currentIndex, validImages.length]);
 
     return (
         <div>
-
             <h3 className={'capitalize text-center py-2'}>{t('hikvisionAccessEvent')}</h3>
 
             {/* Table */}
             <div className="overflow-x-auto">
                 <table className="border-collapse w-full text-sm text-left text-gray-800 dark:text-gray-100">
                     <thead className="bg-gray-100 dark:bg-gray-700">
-                    <tr>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('n')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('datetime')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('shortSerialNumber')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('mac_address')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('attendanceStatus')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('label')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('image')}</td>
-                        <th className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                            {/*<CreateHikvisionAccessEventModal worker={worker} />*/}
-                        </th>
-                    </tr>
+                        <tr>
+                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('n')}</td>
+                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('datetime')}</td>
+                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('shortSerialNumber')}</td>
+                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('mac_address')}</td>
+                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('attendanceStatus')}</td>
+                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('label')}</td>
+                            <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-center">{t('image')}</td>
+                            <th className="border border-gray-300 dark:border-gray-600 px-4 py-2"></th>
+                        </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800">
-                    {hikvision_access_events.data.map((item, index) => {
-                        const globalIndex = (hikvision_access_events.current_page - 1) * hikvision_access_events.per_page + index + 1;
-                        return (
-                            <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{globalIndex}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.hikvision_access?.dateTime}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.hikvision_access?.shortSerialNumber}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.hikvision_access?.macAddress}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.attendanceStatus}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.label}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    <div className="overflow-hidden cursor-pointer">
-                                        <img
-                                            onClick={() => {
-                                                setCurrentIndex(index); // pass index in .map loop
-                                                setShowModal(true);
-                                            }}
-                                            className="transition-transform duration-300 ease-in-out transform hover:scale-125 cursor-pointer max-h-12 rounded object-cover"
-                                            src={item.picture && item.picture.includes('/') ? `/storage/${item.picture}` : `/storage/hikvision/${item.hikvision_access?.shortSerialNumber}/${item.picture}`}
-                                            alt="Olingan Rasm"
-                                        />
-                                    </div>
-                                </td>
+                        {hikvision_access_events.data.map((item, index) => {
+                            const globalIndex = (hikvision_access_events.current_page - 1) * hikvision_access_events.per_page + index + 1;
+                            const imgUrl = getImageUrl(item);
 
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                            return (
+                                <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{globalIndex}</td>
+                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.hikvision_access?.dateTime}</td>
+                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.hikvision_access?.shortSerialNumber}</td>
+                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.hikvision_access?.macAddress}</td>
+                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.attendanceStatus}</td>
+                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.label}</td>
+                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-center">
+                                        {imgUrl ? (
+                                            <div className="overflow-hidden inline-block relative">
+                                                <img
+                                                    onClick={() => {
+                                                        const validIndex = validImages.findIndex(img => img.id === item.id);
+                                                        if (validIndex !== -1) {
+                                                            setCurrentIndex(validIndex);
+                                                            setShowModal(true);
+                                                        }
+                                                    }}
+                                                    className="transition-transform duration-300 ease-in-out transform hover:scale-110 cursor-pointer max-h-12 rounded object-cover border border-gray-200 dark:border-gray-700 shadow-sm"
+                                                    src={imgUrl}
+                                                    alt="Olingan Rasm"
+                                                    onError={e => {
+                                                        const imgEl = e.currentTarget;
+                                                        imgEl.style.display = 'none';
+                                                        const parent = imgEl.parentElement;
+                                                        if (parent) {
+                                                            const fallback = parent.querySelector('.img-fallback');
+                                                            if (fallback) {
+                                                                (fallback as HTMLElement).classList.remove('hidden');
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                                <span className="img-fallback hidden inline-flex items-center px-2 py-0.5 rounded text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700/50">
+                                                    {t('no_image')}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700/50">
+                                                {t('no_image')}
+                                            </span>
+                                        )}
+                                    </td>
 
-                                    <div className="inline-flex shadow-sm">
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleDeleteClick(item)}
-                                        >
-                                            <TrashIcon className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-
-                                </td>
-                            </tr>
-                        );
-                    })}
+                                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                                        <div className="inline-flex shadow-sm">
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => handleDeleteClick(item)}
+                                            >
+                                                <TrashIcon className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
 
                     {/* Pass selected worker to the DeleteWorkerModal */}
                     {selectedHikvisionAccessEvent && openDelete && (
                         <DeleteItemModal
                             item={selectedHikvisionAccessEvent}
-                            open={openDelete}  // Assuming you have a separate state for openDelete
-                            setOpen={setOpenDelete}  // Or you can manage this in its own state
-                            onDelete={handleDelete} // Handle deletion
+                            open={openDelete}
+                            setOpen={setOpenDelete}
+                            onDelete={handleDelete}
                         />
                     )}
-
                 </table>
-
 
                 {/* Pagination */}
                 <div className="mt-4 flex justify-between items-center text-sm text-gray-600 dark:text-gray-300">
@@ -170,7 +204,7 @@ const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: Hikv
                         {t('showing', {
                             from: hikvision_access_events.from,
                             to: hikvision_access_events.to,
-                            total: hikvision_access_events.total
+                            total: hikvision_access_events.total,
                         })}
                     </div>
                     <div className="flex gap-1">
@@ -182,68 +216,89 @@ const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: Hikv
                                     link.active
                                         ? 'bg-blue-600 text-white'
                                         : !link.url
-                                            ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                            : 'bg-white dark:bg-gray-800 dark:text-gray-200 text-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                          ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                          : 'bg-white dark:bg-gray-800 dark:text-gray-200 text-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
                         ))}
                     </div>
                 </div>
-
             </div>
 
-            {showModal && currentIndex !== null && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-                    <div className="relative">
+            {/* Modal Preview */}
+            {showModal && currentIndex !== null && validImages[currentIndex] && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+                    onClick={() => setShowModal(false)}
+                >
+                    <div
+                        className="relative max-w-4xl max-h-[90vh] flex flex-col items-center bg-gray-900/80 p-4 rounded-xl shadow-2xl border border-gray-700"
+                        onClick={e => e.stopPropagation()}
+                    >
                         {/* Close button */}
                         <button
                             onClick={() => setShowModal(false)}
-                            className="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75"
+                            className="absolute -top-3 -right-3 text-white bg-gray-800 hover:bg-gray-700 rounded-full p-1.5 shadow-lg border border-gray-600 transition"
+                            aria-label="Close"
                         >
                             ✕
                         </button>
 
                         {/* Previous button */}
-                        <button
-                            onClick={() =>
-                                setCurrentIndex(prev => {
-                                    if (prev === null) return 0;
-                                    return prev > 0 ? prev - 1 : images.length - 1;
-                                })
-                            }
-                            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded hover:bg-opacity-80"
-                        >
-                            ‹
-                        </button>
+                        {validImages.length > 1 && (
+                            <button
+                                onClick={() =>
+                                    setCurrentIndex(prev => {
+                                        if (prev === null) return 0;
+                                        return prev > 0 ? prev - 1 : validImages.length - 1;
+                                    })
+                                }
+                                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/60 text-white p-3 rounded-full hover:bg-black/90 transition text-lg"
+                                aria-label="Previous image"
+                            >
+                                ‹
+                            </button>
+                        )}
 
                         {/* Image */}
                         <img
-                            src={images[currentIndex].src}
-                            alt="Full"
-                            className="max-w-[90vw] max-h-[90vh] rounded-lg shadow-lg"
+                            src={validImages[currentIndex].src}
+                            alt={validImages[currentIndex].title || 'Full Image'}
+                            className="max-w-[85vw] max-h-[75vh] rounded-lg shadow-lg object-contain"
                         />
 
+                        {/* Caption info */}
+                        <div className="mt-3 text-center text-xs text-gray-300">
+                            {validImages[currentIndex].title && (
+                                <span className="font-semibold text-gray-200">{validImages[currentIndex].title}</span>
+                            )}
+                            {validImages.length > 1 && (
+                                <span className="ml-3 text-gray-400">
+                                    {currentIndex + 1} / {validImages.length}
+                                </span>
+                            )}
+                        </div>
+
                         {/* Next button */}
-                        <button
-                            onClick={() =>
-                                setCurrentIndex(prev => {
-                                    if (prev === null) return 0;
-                                    return prev < images.length - 1 ? prev + 1 : 0;
-                                })
-                            }
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded hover:bg-opacity-80"
-                        >
-                            ›
-                        </button>
+                        {validImages.length > 1 && (
+                            <button
+                                onClick={() =>
+                                    setCurrentIndex(prev => {
+                                        if (prev === null) return 0;
+                                        return prev < validImages.length - 1 ? prev + 1 : 0;
+                                    })
+                                }
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/60 text-white p-3 rounded-full hover:bg-black/90 transition text-lg"
+                                aria-label="Next image"
+                            >
+                                ›
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
-
-
         </div>
-
-
     );
 };
 

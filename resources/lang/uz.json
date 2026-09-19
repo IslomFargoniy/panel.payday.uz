@@ -233,5 +233,6 @@
     "encryption_key": "Xavfsizlik kaliti (Key)",
     "add_device": "Qurilma qo‘shish",
     "no_devices": "Hozircha ulangan qurilmalar mavjud emas.",
-    "sync_all": "Xodimlarni yuklash"
+    "sync_all": "Xodimlarni yuklash",
+    "no_image": "Rasm yo‘q"
 }

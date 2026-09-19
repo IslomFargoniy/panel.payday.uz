@@ -233,5 +233,6 @@
     "encryption_key": "Encryption Key",
     "add_device": "Add device",
     "no_devices": "No devices connected yet.",
-    "sync_all": "Sync workers"
+    "sync_all": "Sync workers",
+    "no_image": "No image"
 }
