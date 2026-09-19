@@ -84,18 +84,29 @@ const WorkerTable = ({ worker, branch, searchData }: WorkerTableProps) => {
                                 <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{globalIndex}</td>
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                        {item.avatar ? (
-                                            <img
-                                                src={`/storage/${item.avatar}`}
-                                                alt="Avatar"
-                                                className="h-10 w-10 rounded-full object-cover cursor-zoom-in transition-transform hover:scale-110"
-                                                onClick={() => setZoomedImage(`/storage/${item.avatar}`)}
-                                            />
-                                        ) : (
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-gray-500 dark:bg-gray-700">
-                                                N/A
+                                        <div className="flex items-center justify-center">
+                                            {item.avatar ? (
+                                                <img
+                                                    src={`/storage/${item.avatar}`}
+                                                    alt={item.name || "Avatar"}
+                                                    className="h-10 w-10 rounded-full object-cover cursor-zoom-in transition-transform hover:scale-110"
+                                                    onClick={() => setZoomedImage(`/storage/${item.avatar}`)}
+                                                    onError={(e) => {
+                                                        const target = e.currentTarget;
+                                                        target.style.display = 'none';
+                                                        const sibling = target.nextElementSibling as HTMLElement;
+                                                        if (sibling) {
+                                                            sibling.style.display = 'flex';
+                                                        }
+                                                    }}
+                                                />
+                                            ) : null}
+                                            <div
+                                                className={`h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 text-xs font-semibold ${item.avatar ? 'hidden' : 'flex'}`}
+                                            >
+                                                {item.name ? item.name.slice(0, 2).toUpperCase() : 'N/A'}
                                             </div>
-                                        )}
+                                        </div>
                                     </td>
                                     <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
                                         <div className="font-semibold text-blue-600 dark:text-blue-400">
