@@ -7,21 +7,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-
 import {
     Dialog,
     DialogClose,
     DialogContent,
     DialogDescription,
     DialogFooter,
+    DialogHeader,
     DialogTitle
 } from '@/components/ui/dialog';
 import { Firm } from '@/types';
 import DatePicker from 'react-datepicker';
 import { format } from 'date-fns';
+import { Pencil } from 'lucide-react';
 
 interface UpdateFirmModalProps {
-    firm: Firm
+    firm: Firm;
     open: boolean;
     setOpen: (open: boolean) => void;
 }
@@ -31,26 +32,26 @@ export default function UpdateFirmModal({ firm, open, setOpen }: UpdateFirmModal
     const nameInput = useRef<HTMLInputElement>(null);
 
     const { data, setData, put, processing, reset, errors, clearErrors } = useForm({
-        name: firm.name,
-        address: firm.address,
-        comment: firm.comment,
-        branch_limit: firm.branch_limit,
-        branch_price: firm.branch_price,
-        valid_date: firm.valid_date,
-        status: firm.status
+        name: firm.name || '',
+        address: firm.address || '',
+        comment: firm.comment || '',
+        branch_limit: firm.branch_limit || '',
+        branch_price: firm.branch_price || '',
+        valid_date: firm.valid_date || '',
+        status: firm.status ?? 1
     });
 
     useEffect(() => {
         setData({
-            name: firm.name,
-            address: firm.address,
-            comment: firm.comment,
-            branch_limit: firm.branch_limit,
-            branch_price: firm.branch_price,
-            valid_date: firm.valid_date,
-            status: firm.status
+            name: firm.name || '',
+            address: firm.address || '',
+            comment: firm.comment || '',
+            branch_limit: firm.branch_limit || '',
+            branch_price: firm.branch_price || '',
+            valid_date: firm.valid_date || '',
+            status: firm.status ?? 1
         });
-    }, [firm, setData]);
+    }, [firm]);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -60,33 +61,37 @@ export default function UpdateFirmModal({ firm, open, setOpen }: UpdateFirmModal
             onSuccess: () => {
                 reset();
                 clearErrors();
-                setOpen(false); // 🔒 CLOSE MODAL HERE
-                toast.success(t('updated_successfully'));
+                setOpen(false);
+                toast.success(t('updated_successfully', 'Muvaffaqiyatli saqlandi'));
             },
             onError: (err) => {
                 nameInput.current?.focus();
-                // Display a friendly error message if available
-                const errorMessage = err?.error || t('create_failed'); // Use fallback error message
-                toast.error(errorMessage); // Display error message
+                const errorMessage = err?.error || t('update_failed', 'Xatolik yuz berdi');
+                toast.error(errorMessage);
             }
         });
-
     };
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
+                        <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                            <Pencil className="w-4 h-4" />
+                        </div>
+                        <span>{t('modal.update_title', 'Firmani Tahrirlash')}</span>
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500">
+                        {firm.name} ma‘lumotlarini o‘zgartirish
+                    </DialogDescription>
+                </DialogHeader>
 
-            <DialogContent className="dark:border-gray-400">
-                <DialogDescription>
-                    <DialogTitle>{t('modal.update_title')}</DialogTitle>
-                    <DialogDescription>{t('modal.update_description')}</DialogDescription>
-                </DialogDescription>
-
-                <form onSubmit={submit} className="space-y-4">
+                <form onSubmit={submit} className="space-y-3.5">
                     <div>
-                        <Label htmlFor="name">{t('name')}</Label>
+                        <Label htmlFor="edit_name" className="text-xs">{t('name', 'Nomi')} *</Label>
                         <Input
-                            id="name"
+                            id="edit_name"
                             ref={nameInput}
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
@@ -95,9 +100,9 @@ export default function UpdateFirmModal({ firm, open, setOpen }: UpdateFirmModal
                     </div>
 
                     <div>
-                        <Label htmlFor="address">{t('address')}</Label>
+                        <Label htmlFor="edit_address" className="text-xs">{t('address', 'Manzil')}</Label>
                         <Input
-                            id="address"
+                            id="edit_address"
                             value={data.address}
                             onChange={(e) => setData('address', e.target.value)}
                         />
@@ -105,94 +110,102 @@ export default function UpdateFirmModal({ firm, open, setOpen }: UpdateFirmModal
                     </div>
 
                     <div>
-                        <Label htmlFor="comment">{t('comment')}</Label>
+                        <Label htmlFor="edit_comment" className="text-xs">{t('comment', 'Izoh')}</Label>
                         <Input
-                            id="comment"
+                            id="edit_comment"
                             value={data.comment}
                             onChange={(e) => setData('comment', e.target.value)}
                         />
                         <InputError message={errors.comment} />
                     </div>
 
-                    <div>
-                        <Label htmlFor="branch_limit">{t('branch_limit')}</Label>
-                        <Input
-                            id="branch_limit"
-                            type="number"
-                            inputMode="numeric"
-                            value={data.branch_limit}
-                            onChange={(e) => setData('branch_limit', e.target.value)}
-                        />
-                        <InputError message={errors.branch_limit} />
-                    </div>
-
-                    <div>
-                        <Label htmlFor="branch_price">{t('branch_price')}</Label>
-                        <Input
-                            id="branch_price"
-                            type="number"
-                            value={data.branch_price}
-                            onChange={(e) => setData('branch_price', e.target.value)}
-                        />
-                        <InputError message={errors.branch_price} />
-                    </div>
-
-
-                    <div>
-                        <Label htmlFor="valid_date" className="block mb-2">
-                            {t('valid_date')}
-                        </Label>
+                    <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <DatePicker
-                                id="work_time"
-                                value={data.valid_date}
-                                onChange={(date) => {
-                                    // Format the selected date as 'YYYY-MM-DD' before updating the state
-                                    setData('valid_date', date ? format(date, 'yyyy-MM-dd') : '');
-                                }}
-                                locale="sv-sv"
-                                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                            <Label htmlFor="edit_branch_limit" className="text-xs">{t('branch_limit', 'Filial limiti')}</Label>
+                            <Input
+                                id="edit_branch_limit"
+                                type="number"
+                                value={data.branch_limit}
+                                onChange={(e) => setData('branch_limit', e.target.value)}
                             />
+                            <InputError message={errors.branch_limit} />
                         </div>
+
+                        <div>
+                            <Label htmlFor="edit_branch_price" className="text-xs">{t('branch_price', 'Filial narxi')}</Label>
+                            <Input
+                                id="edit_branch_price"
+                                type="number"
+                                value={data.branch_price}
+                                onChange={(e) => setData('branch_price', e.target.value)}
+                            />
+                            <InputError message={errors.branch_price} />
+                        </div>
+                    </div>
+
+                    <div>
+                        <Label htmlFor="edit_valid_date" className="text-xs block mb-1">
+                            {t('valid_date', 'Amal qilish muddati')}
+                        </Label>
+                        <DatePicker
+                            id="edit_valid_date"
+                            selected={data.valid_date ? new Date(data.valid_date) : null}
+                            onChange={(date: Date | null) => {
+                                setData('valid_date', date ? format(date, 'yyyy-MM-dd') : '');
+                            }}
+                            locale="sv-sv"
+                            className="block w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-lg shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:text-white"
+                        />
                         <InputError message={errors.valid_date} />
                     </div>
 
                     <div>
-                        <Label htmlFor="status" className="mb-3 block">
-                            {t('status')}
+                        <Label htmlFor="edit_status" className="text-xs mb-2 block">
+                            {t('status', 'Holat')}
                         </Label>
-                        <label className="inline-flex items-center cursor-pointer">
+                        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                             <input
                                 type="checkbox"
-                                id="status"
+                                id="edit_status"
                                 className="sr-only peer"
                                 checked={data.status === 1}
                                 onChange={(e) => setData('status', e.target.checked ? 1 : 0)}
                             />
-                            <div
-                                className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:w-5 after:h-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+                            <div className="relative w-10 h-5.5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-indigo-600" />
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                {data.status === 1 ? t('active', 'Faol') : t('inactive', 'Nofaol')}
+                            </span>
                         </label>
                         <InputError message={errors.status} />
                     </div>
 
-                    <DialogFooter className="gap-2">
+                    <DialogFooter className="gap-2 pt-2">
                         <DialogClose asChild>
-                            <Button variant="secondary" onClick={() => {
-                                reset();
-                                clearErrors();
-                                setOpen(false);
-                            }}>
-                                {t('cancel')}
+                            <Button
+                                variant="secondary"
+                                type="button"
+                                size="sm"
+                                onClick={() => {
+                                    reset();
+                                    clearErrors();
+                                    setOpen(false);
+                                }}
+                            >
+                                {t('cancel', 'Bekor qilish')}
                             </Button>
                         </DialogClose>
 
-                        <Button type="submit" disabled={processing}>
-                            {t('save')}
+                        <Button
+                            type="submit"
+                            size="sm"
+                            disabled={processing}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                        >
+                            {t('save', 'Saqlash')}
                         </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
-
     );
 }

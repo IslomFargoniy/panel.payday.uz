@@ -14,8 +14,10 @@ import {
     DialogContent,
     DialogDescription,
     DialogFooter,
+    DialogHeader,
     DialogTitle
 } from '@/components/ui/dialog';
+import { Pencil } from 'lucide-react';
 import { User } from '@/types';
 
 interface UpdateUserModalProps {
@@ -52,90 +54,120 @@ export default function UpdateUserModal({ user, open, setOpen }: UpdateUserModal
             onSuccess: () => {
                 reset();
                 clearErrors();
-                setOpen(false); // 🔒 CLOSE MODAL HERE
+                setOpen(false);
                 toast.success(t('updated_successfully'));
             },
             onError: (err) => {
                 nameInput.current?.focus();
-                // Display a friendly error message if available
-                const errorMessage = err?.error || t('create_failed'); // Use fallback error message
-                toast.error(errorMessage); // Display error message
+                const errorMessage = err?.error || t('create_failed');
+                toast.error(errorMessage);
             }
         });
-
     };
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent className="max-w-md rounded-2xl border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                <DialogHeader className="space-y-2">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
+                            <Pencil className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                                {t('modal.update_title')}
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                                {t('modal.update_description')}
+                            </DialogDescription>
+                        </div>
+                    </div>
+                </DialogHeader>
 
-            <DialogContent className="dark:border-gray-400">
-                <DialogDescription>
-                    <DialogTitle>{t('modal.update_title')}</DialogTitle>
-                    <DialogDescription>{t('modal.update_description')}</DialogDescription>
-                </DialogDescription>
-
-                <form onSubmit={submit} className="space-y-4">
-                    <div>
-                        <Label htmlFor="name">{t('name')}</Label>
+                <form onSubmit={submit} className="mt-4 space-y-4">
+                    <div className="space-y-1.5">
+                        <Label htmlFor="name" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            {t('name')}
+                        </Label>
                         <Input
                             id="name"
                             ref={nameInput}
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
+                            className="h-9 rounded-xl border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                         />
                         <InputError message={errors.name} />
                     </div>
 
-                    <div>
-                        <Label htmlFor="phone">{t('phone')}</Label>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="phone" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            {t('phone')}
+                        </Label>
                         <Input
                             id="phone"
-                            type={'number'}
+                            type="text"
                             value={data.phone}
                             onChange={(e) => setData('phone', e.target.value)}
+                            className="h-9 rounded-xl border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                         />
                         <InputError message={errors.phone} />
                     </div>
 
-                    <div>
-                        <Label htmlFor="email">{t('email')}</Label>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="email" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            {t('email')}
+                        </Label>
                         <Input
                             id="email"
+                            type="email"
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
+                            className="h-9 rounded-xl border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                         />
                         <InputError message={errors.email} />
                     </div>
 
-                    <div>
-                        <Label htmlFor="password">{t('password')}</Label>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="password" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            {t('password')}
+                        </Label>
                         <Input
                             id="password"
-                            type="number"
-                            inputMode="numeric"
+                            type="password"
+                            placeholder="••••••••"
                             onChange={(e) => setData('password', e.target.value)}
+                            className="h-9 rounded-xl border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                         />
                         <InputError message={errors.password} />
                     </div>
 
-                    <DialogFooter className="gap-2">
+                    <DialogFooter className="mt-6 flex items-center justify-end gap-2 pt-2">
                         <DialogClose asChild>
-                            <Button variant="secondary" onClick={() => {
-                                reset();
-                                clearErrors();
-                                setOpen(false);
-                            }}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="h-9 rounded-lg border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
+                                onClick={() => {
+                                    reset();
+                                    clearErrors();
+                                    setOpen(false);
+                                }}
+                            >
                                 {t('cancel')}
                             </Button>
                         </DialogClose>
 
-                        <Button type="submit" disabled={processing}>
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="h-9 rounded-lg bg-indigo-600 px-4 text-xs font-medium text-white shadow-xs hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                        >
                             {t('save')}
                         </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
-
     );
 }
+

@@ -8,7 +8,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Branch } from '@/types';
-import { IoCreate } from 'react-icons/io5';
+import { Plus, UserPlus } from 'lucide-react';
 import TimePicker from 'react-time-picker';
 import 'react-time-picker/dist/TimePicker.css';
 import { toast } from 'sonner';
@@ -66,7 +66,7 @@ export default function CreateWorkerModal({ branch }: createWorker) {
         post('/worker', {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success(t('created_successfully'));
+                toast.success(t('created_successfully', 'Muvaffaqiyatli saqlandi'));
                 setOpen(false);
                 setPreviewUrl(null);
                 reset();
@@ -74,7 +74,7 @@ export default function CreateWorkerModal({ branch }: createWorker) {
             },
             onError: (err) => {
                 nameInput.current?.focus();
-                const errorMessage = err?.error || t('create_failed');
+                const errorMessage = err?.error || t('create_failed', 'Xatolik yuz berdi');
                 toast.error(errorMessage);
             },
         });
@@ -83,51 +83,58 @@ export default function CreateWorkerModal({ branch }: createWorker) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="h-8 gap-1.5 bg-indigo-600 px-3 py-1 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700 transition-colors rounded-lg">
-                    <IoCreate className="h-3.5 w-3.5" />
-                    {t('modal.create_title')}
+                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-8 px-2.5 rounded-lg shadow-xs flex items-center gap-1 text-xs">
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{t('create_worker', 'Xodim qo‘shish')}</span>
                 </Button>
             </DialogTrigger>
 
             <DialogContent className="max-w-2xl rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                <DialogHeader className="space-y-1">
-                    <DialogTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">{t('modal.create_title')}</DialogTitle>
-                    <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">{t('modal.create_description')}</DialogDescription>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
+                        <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                            <UserPlus className="w-4 h-4" />
+                        </div>
+                        <span>{t('modal.create_title', 'Yangi Xodim Qo‘shish')}</span>
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                        {t('modal.create_description', 'Xodimning shaxsiy va ish parametrlarini kiriting')}
+                    </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={submit}>
-                    <div className="max-h-[65vh] overflow-y-auto px-1 pr-3">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="name">{t('name')}</Label>
-                                <Input id="name" ref={nameInput} value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                <form onSubmit={submit} className="mt-4">
+                    <div className="max-h-[65vh] overflow-y-auto px-1 pr-3 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="name" className="text-xs">{t('name', 'F.I.SH')} *</Label>
+                                <Input id="name" ref={nameInput} value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Aliyev Vali" />
                                 <InputError message={errors.name} />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="phone">{t('phone')}</Label>
-                                <Input id="phone" value={data.phone} onChange={(e) => setData('phone', e.target.value)} />
+                            <div className="space-y-1.5">
+                                <Label htmlFor="phone" className="text-xs">{t('phone', 'Telefon')}</Label>
+                                <Input id="phone" value={data.phone} onChange={(e) => setData('phone', e.target.value)} placeholder="+998 90 123 45 67" />
                                 <InputError message={errors.phone} />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="address">{t('address')}</Label>
-                                <Input id="address" value={data.address} onChange={(e) => setData('address', e.target.value)} />
+                            <div className="space-y-1.5">
+                                <Label htmlFor="address" className="text-xs">{t('address', 'Manzil')}</Label>
+                                <Input id="address" value={data.address} onChange={(e) => setData('address', e.target.value)} placeholder="Toshkent sh." />
                                 <InputError message={errors.address} />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="comment">{t('comment')}</Label>
-                                <Input id="comment" value={data.comment} onChange={(e) => setData('comment', e.target.value)} />
+                            <div className="space-y-1.5">
+                                <Label htmlFor="comment" className="text-xs">{t('comment', 'Izoh')}</Label>
+                                <Input id="comment" value={data.comment} onChange={(e) => setData('comment', e.target.value)} placeholder="Qo‘shimcha izoh" />
                                 <InputError message={errors.comment} />
                             </div>
                             
-                            <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor="avatar">{t('avatar')}</Label>
+                            <div className="space-y-1.5 md:col-span-2">
+                                <Label htmlFor="avatar" className="text-xs">{t('avatar', 'Rasm')}</Label>
                                 <div className="flex items-center gap-4">
                                     {previewUrl ? (
-                                        <div className="relative group size-16 shrink-0">
+                                        <div className="relative group size-14 shrink-0">
                                             <img
                                                 src={previewUrl}
                                                 alt="Avatar preview"
-                                                className="size-16 rounded-full object-cover border-2 border-blue-500 shadow-sm"
+                                                className="size-14 rounded-xl object-cover border-2 border-indigo-500 shadow-xs"
                                             />
                                             <button
                                                 type="button"
@@ -137,14 +144,14 @@ export default function CreateWorkerModal({ branch }: createWorker) {
                                                     const fileInput = document.getElementById('avatar') as HTMLInputElement;
                                                     if (fileInput) fileInput.value = '';
                                                 }}
-                                                className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow hover:bg-red-600"
+                                                className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow hover:bg-rose-600"
                                             >
                                                 ✕
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="flex size-16 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-gray-300 bg-gray-100 p-1 text-center text-xs text-gray-400 dark:border-gray-600 dark:bg-gray-800">
-                                            {t('no_image') || 'Rasm yo\'q'}
+                                        <div className="flex size-14 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-1 text-center text-xs text-slate-400 dark:border-slate-800 dark:bg-slate-900">
+                                            {t('no_image', 'Rasm yo‘q')}
                                         </div>
                                     )}
                                     <div className="flex-1">
@@ -154,9 +161,9 @@ export default function CreateWorkerModal({ branch }: createWorker) {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="work_time" className="block text-sm font-medium">
-                                    {t('work_time')}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="work_time" className="block text-xs">
+                                    {t('work_time', 'Ish boshlanishi')}
                                 </Label>
                                 <TimePicker
                                     id="work_time"
@@ -165,14 +172,14 @@ export default function CreateWorkerModal({ branch }: createWorker) {
                                     format="HH:mm"
                                     locale="sv-sv"
                                     disableClock={true}
-                                    className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:text-white"
+                                    className="block w-full rounded-lg border border-slate-200 px-3 py-2 shadow-xs focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-slate-700 dark:text-white"
                                 />
                                 <InputError message={errors.work_time} />
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="end_time" className="block text-sm font-medium">
-                                    {t('end_time')}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="end_time" className="block text-xs">
+                                    {t('end_time', 'Ish tugashi')}
                                 </Label>
                                 <TimePicker
                                     id="end_time"
@@ -181,13 +188,13 @@ export default function CreateWorkerModal({ branch }: createWorker) {
                                     format="HH:mm"
                                     locale="sv-sv"
                                     disableClock={true}
-                                    className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:text-white"
+                                    className="block w-full rounded-lg border border-slate-200 px-3 py-2 shadow-xs focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-slate-700 dark:text-white"
                                 />
                                 <InputError message={errors.end_time} />
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="hour_price">{t('hour_price')}</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="hour_price" className="text-xs">{t('hour_price', 'Soatbay narx')}</Label>
                                 <Input
                                     id="hour_price"
                                     type="number"
@@ -197,8 +204,8 @@ export default function CreateWorkerModal({ branch }: createWorker) {
                                 <InputError message={errors.hour_price} />
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="fine_price">{t('fine_price')}</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="fine_price" className="text-xs">{t('fine_price', 'Jarima narxi')}</Label>
                                 <Input
                                     id="fine_price"
                                     type="number"
@@ -210,22 +217,29 @@ export default function CreateWorkerModal({ branch }: createWorker) {
                         </div>
                     </div>
 
-                    <DialogFooter className="mt-6 gap-2 border-t pt-4">
+                    <DialogFooter className="mt-6 gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
                         <DialogClose asChild>
                             <Button
                                 variant="secondary"
+                                type="button"
+                                size="sm"
                                 onClick={() => {
                                     reset();
                                     clearErrors();
                                     setOpen(false);
                                 }}
                             >
-                                {t('cancel')}
+                                {t('cancel', 'Bekor qilish')}
                             </Button>
                         </DialogClose>
 
-                        <Button type="submit" disabled={processing} className="bg-blue-600 hover:bg-blue-700">
-                            {t('save')}
+                        <Button
+                            type="submit"
+                            size="sm"
+                            disabled={processing}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                        >
+                            {t('save', 'Saqlash')}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -233,3 +247,4 @@ export default function CreateWorkerModal({ branch }: createWorker) {
         </Dialog>
     );
 }
+

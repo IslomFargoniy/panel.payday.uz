@@ -4,6 +4,7 @@ import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
+import { Button } from '@/components/ui/button';
 
 interface ReportFilterFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -15,19 +16,21 @@ interface ReportFilterFormProps {
 }
 
 const ReportFilterForm = ({
-                               handleSubmit, setData, data, firms,
-                               branches,
-                               workers
-                           }: ReportFilterFormProps) => {
+    handleSubmit,
+    setData,
+    data,
+    firms,
+    branches,
+    workers
+}: ReportFilterFormProps) => {
+    const { t } = useTranslation();
 
-    const { t } = useTranslation(); // Hook to access translations
-    // Update search or per_page
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setData('search', e.target.value);
     };
 
     const handlePerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('per_page', parseInt(e.target.value, 10));  // parse as number
+        setData('per_page', parseInt(e.target.value, 10));
     };
 
     const handleFirmChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -44,28 +47,28 @@ const ReportFilterForm = ({
 
     return (
         <form onSubmit={handleSubmit}>
-            <div className="inline-flex rounded shadow-xs flex-wrap" role="group">
+            <div className="flex flex-col gap-2 rounded-xl sm:gap-2 lg:inline-flex lg:flex-row lg:flex-wrap lg:items-center lg:gap-1.5" role="group">
                 {/* Search Bar */}
                 <input
                     type="text"
                     value={data.search}
                     onChange={handleSearch}
-                    className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-s-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
+                    className="h-9 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                     placeholder={t('search')}
                 />
 
-                {typeof data.total === 'number' &&
+                {typeof data.total === 'number' && (
                     <select
                         value={data.per_page}
                         onChange={handlePerPageChange}
-                        className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white">
-
+                        className="h-9 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
                         <option value={10}>10</option>
                         <option value={25}>25</option>
                         <option value={50}>50</option>
                         <option value={data.total}>{t('pagination_optionAll')}</option>
                     </select>
-                }
+                )}
 
                 <DatePicker
                     id="from-date"
@@ -74,8 +77,9 @@ const ReportFilterForm = ({
                     onChange={(from) => {
                         setData('from', from ? format(from, 'yyyy-MM-dd') : '');
                     }}
-                    className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-s border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
+                    className="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 />
+
                 <DatePicker
                     id="to-date"
                     placeholderText={t('to')}
@@ -83,14 +87,14 @@ const ReportFilterForm = ({
                     onChange={(to) => {
                         setData('to', to ? format(to, 'yyyy-MM-dd') : '');
                     }}
-                    className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-s border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
+                    className="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 />
 
                 {/* Firm Select */}
                 <select
                     value={data.firm_id || ''}
                     onChange={handleFirmChange}
-                    className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-s border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
+                    className="h-9 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                     <option value="">{t('select_firm')}</option>
                     {firms.map((firm) => (
@@ -104,7 +108,7 @@ const ReportFilterForm = ({
                 <select
                     value={data.branch_id || ''}
                     onChange={handleBranchChange}
-                    className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-s border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
+                    className="h-9 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                     <option value="">{t('select_branch')}</option>
                     {branches.map((branch) => (
@@ -118,7 +122,7 @@ const ReportFilterForm = ({
                 <select
                     value={data.worker_id || ''}
                     onChange={handleWorkerChange}
-                    className="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-s border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
+                    className="h-9 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                     <option value="">{t('select_worker')}</option>
                     {workers.map((worker) => (
@@ -128,16 +132,18 @@ const ReportFilterForm = ({
                     ))}
                 </select>
 
-
-                {/* Submit button to apply filter */}
-                <button type="submit"
-                        className="inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:outline-none text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 px-4 py-2 text-sm font-medium text-gray-900 border  border-gray-200 rounded-e-lg hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:border-gray-700 dark:text-white dark:hover:text-white dark:focus:text-white">
-                    <Search className={'text-sm text-white-500 dark:text-white-400'} size={20} />
-                </button>
+                {/* Submit button */}
+                <Button
+                    type="submit"
+                    className="h-9 gap-1.5 rounded-xl bg-indigo-600 px-3.5 text-xs font-medium text-white shadow-xs hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                >
+                    <Search className="h-4 w-4" />
+                    <span className="lg:hidden">{t('search')}</span>
+                </Button>
             </div>
         </form>
-
     );
 };
 
 export default ReportFilterForm;
+

@@ -1,12 +1,11 @@
 import { useForm } from '@inertiajs/react';
-import { FormEventHandler, useRef, useState } from 'react';
+import { FormEventHandler, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import 'react-time-picker/dist/TimePicker.css';
 import {
     Dialog,
     DialogClose,
@@ -17,7 +16,7 @@ import {
     DialogTitle,
     DialogTrigger
 } from '@/components/ui/dialog';
-import { IoCreate } from 'react-icons/io5';
+import { Plus, Cpu } from 'lucide-react';
 import { Branch } from '@/types';
 import { Input } from '@/components/ui/input';
 
@@ -68,23 +67,28 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="px-2 py-1 text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 flex items-center gap-1">
-                    <IoCreate className="w-3.5 h-3.5" />
+                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-8 px-2.5 rounded-lg shadow-xs flex items-center gap-1 text-xs">
+                    <Plus className="w-3.5 h-3.5" />
                     <span>{t('add_device', 'Qurilma qo‘shish')}</span>
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="dark:border-gray-700 max-w-md">
+            <DialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{t('modal.create_device_title', 'Yangi Qurilma Qo‘shish')}</DialogTitle>
-                    <DialogDescription>
-                        Filial: <strong>{branch.name}</strong>
+                    <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
+                        <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                            <Cpu className="w-4 h-4" />
+                        </div>
+                        <span>{t('modal.create_device_title', 'Yangi Qurilma Qo‘shish')}</span>
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500">
+                        Filial: <strong className="text-slate-700 dark:text-slate-300">{branch.name}</strong>
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={submit} className="space-y-3.5">
                     <div>
-                        <Label htmlFor="name">{t('device_name', 'Qurilma nomi')}</Label>
+                        <Label htmlFor="name" className="text-xs">{t('device_name', 'Qurilma nomi')}</Label>
                         <Input
                             id="name"
                             placeholder="Masalan: Kassa 1 terminali"
@@ -95,7 +99,7 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                     </div>
 
                     <div>
-                        <Label htmlFor="mac_address">{t('mac_address', 'MAC manzil')} *</Label>
+                        <Label htmlFor="mac_address" className="text-xs">{t('mac_address', 'MAC manzil')} *</Label>
                         <Input
                             id="mac_address"
                             placeholder="88:de:39:32:d8:0f"
@@ -106,10 +110,10 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                     </div>
 
                     <div>
-                        <Label htmlFor="connection_type">{t('connection_type', 'Ulanish turi')}</Label>
+                        <Label htmlFor="connection_type" className="text-xs">{t('connection_type', 'Ulanish turi')}</Label>
                         <select
                             id="connection_type"
-                            className="w-full mt-1 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                            className="w-full mt-1 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             value={data.connection_type}
                             onChange={(e) => setData('connection_type', e.target.value as 'isup' | 'http_listening')}
                         >
@@ -122,7 +126,7 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                     {data.connection_type === 'isup' && (
                         <>
                             <div>
-                                <Label htmlFor="device_id">{t('device_id', 'ISUP Device ID')}</Label>
+                                <Label htmlFor="device_id" className="text-xs">{t('device_id', 'ISUP Device ID')}</Label>
                                 <Input
                                     id="device_id"
                                     value={data.device_id}
@@ -132,7 +136,7 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                             </div>
 
                             <div>
-                                <Label htmlFor="encryption_key">{t('encryption_key', 'Xavfsizlik kaliti (Key)')}</Label>
+                                <Label htmlFor="encryption_key" className="text-xs">{t('encryption_key', 'Xavfsizlik kaliti (Key)')}</Label>
                                 <Input
                                     id="encryption_key"
                                     value={data.encryption_key}
@@ -148,6 +152,7 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                             <Button
                                 variant="secondary"
                                 type="button"
+                                size="sm"
                                 onClick={() => {
                                     reset();
                                     clearErrors();
@@ -158,7 +163,12 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                             </Button>
                         </DialogClose>
 
-                        <Button type="submit" disabled={processing} className="bg-blue-600 text-white">
+                        <Button
+                            type="submit"
+                            size="sm"
+                            disabled={processing}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                        >
                             {t('save', 'Saqlash')}
                         </Button>
                     </DialogFooter>
@@ -167,3 +177,4 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
         </Dialog>
     );
 }
+

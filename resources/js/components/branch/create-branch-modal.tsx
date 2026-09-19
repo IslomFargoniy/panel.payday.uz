@@ -15,9 +15,11 @@ import {
     DialogContent,
     DialogDescription,
     DialogFooter,
-    DialogTitle, DialogTrigger
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
 } from '@/components/ui/dialog';
-import { IoCreate } from 'react-icons/io5';
+import { Plus, Store } from 'lucide-react';
 import { Firm } from '@/types';
 import LocationPicker from '@/components/branch/location-picker';
 
@@ -52,16 +54,15 @@ export default function CreateBranchModal({ firm }: createBranch) {
         post('/branch', {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success(t('created_successfully'));
+                toast.success(t('created_successfully', 'Muvaffaqiyatli saqlandi'));
                 reset();
                 clearErrors();
                 setOpen(false);
             },
             onError: (err) => {
                 nameInput.current?.focus();
-                // Display a friendly error message if available
-                const errorMessage = err?.error || t('create_failed'); // Use fallback error message
-                toast.error(errorMessage); // Display error message
+                const errorMessage = err?.error || t('create_failed', 'Xatolik yuz berdi');
+                toast.error(errorMessage);
             }
         });
     };
@@ -69,17 +70,24 @@ export default function CreateBranchModal({ firm }: createBranch) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className={'bg-blue-600 px-1 py-1 text-sm font-medium text-white dark:bg-blue-600'}>
-                    <IoCreate />
-                    {t('create')}
+                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-8 px-2.5 rounded-lg shadow-xs flex items-center gap-1 text-xs">
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{t('create', 'Qo‘shish')}</span>
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="!max-w-[95%] !w-[95vw] lg:!max-w-[85vw] lg:!w-[85vw] xl:!max-w-[75vw] xl:!w-[75vw] max-h-[90vh] overflow-y-auto dark:border-gray-400">
-                <DialogDescription>
-                    <DialogTitle>{t('modal.create_title')}</DialogTitle>
-                    <DialogDescription>{t('modal.create_description')}</DialogDescription>
-                </DialogDescription>
+            <DialogContent className="!max-w-[95%] !w-[95vw] lg:!max-w-[85vw] lg:!w-[85vw] xl:!max-w-[75vw] xl:!w-[75vw] max-h-[90vh] overflow-y-auto rounded-2xl border-slate-200 dark:border-slate-800">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
+                        <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                            <Store className="w-4 h-4" />
+                        </div>
+                        <span>{t('modal.create_title', 'Yangi Filial Qo‘shish')}</span>
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500">
+                        Firma: {firm.name}
+                    </DialogDescription>
+                </DialogHeader>
 
                 <form onSubmit={submit} className="flex flex-col gap-6">
                     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
@@ -87,66 +95,66 @@ export default function CreateBranchModal({ firm }: createBranch) {
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="sm:col-span-2">
-                                    <Label htmlFor="name">{t('name')}</Label>
-                                    <Input id="name" ref={nameInput} value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                                    <Label htmlFor="branch_name" className="text-xs">{t('name', 'Nomi')} *</Label>
+                                    <Input id="branch_name" ref={nameInput} value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Filial nomi" />
                                     <InputError message={errors.name} />
                                 </div>
 
                                 <div className="sm:col-span-2">
-                                    <Label htmlFor="address">{t('address')}</Label>
-                                    <Input id="address" value={data.address} onChange={(e) => setData('address', e.target.value)} />
+                                    <Label htmlFor="branch_address" className="text-xs">{t('address', 'Manzil')}</Label>
+                                    <Input id="branch_address" value={data.address} onChange={(e) => setData('address', e.target.value)} placeholder="Filial manzili" />
                                     <InputError message={errors.address} />
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="work_time" className="mb-2 block">{t('work_time')}</Label>
+                                    <Label htmlFor="branch_work_time" className="mb-1 block text-xs">{t('work_time', 'Boshlanish vaqti')}</Label>
                                     <TimePicker
-                                        id="work_time"
+                                        id="branch_work_time"
                                         value={data.work_time}
                                         onChange={(time) => setData('work_time', time ?? '')}
                                         format="HH:mm"
                                         locale="sv-sv"
                                         disableClock={true}
-                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-500"
+                                        className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-xs focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                                     />
                                     <InputError message={errors.work_time} />
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="end_time" className="mb-2 block">{t('end_time')}</Label>
+                                    <Label htmlFor="branch_end_time" className="mb-1 block text-xs">{t('end_time', 'Tugash vaqti')}</Label>
                                     <TimePicker
-                                        id="end_time"
+                                        id="branch_end_time"
                                         value={data.end_time}
                                         onChange={(time) => setData('end_time', time ?? '')}
                                         format="HH:mm"
                                         locale="sv-sv"
                                         disableClock={true}
-                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-500"
+                                        className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-xs focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                                     />
                                     <InputError message={errors.end_time} />
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="hour_price">{t('hour_price')}</Label>
-                                    <Input id="hour_price" type="number" value={data.hour_price} onChange={(e) => setData('hour_price', e.target.value)} />
+                                    <Label htmlFor="branch_hour_price" className="text-xs">{t('hour_price', 'Soatbay narx')}</Label>
+                                    <Input id="branch_hour_price" type="number" value={data.hour_price} onChange={(e) => setData('hour_price', e.target.value)} placeholder="0" />
                                     <InputError message={errors.hour_price} />
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="fine_price">{t('fine_price')}</Label>
-                                    <Input id="fine_price" type="number" value={data.fine_price} onChange={(e) => setData('fine_price', e.target.value)} />
+                                    <Label htmlFor="branch_fine_price" className="text-xs">{t('fine_price', 'Jarima narxi')}</Label>
+                                    <Input id="branch_fine_price" type="number" value={data.fine_price} onChange={(e) => setData('fine_price', e.target.value)} placeholder="0" />
                                     <InputError message={errors.fine_price} />
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="telegram_group_id">{t('telegram_group_id')}</Label>
-                                    <Input id="telegram_group_id" value={data.telegram_group_id} onChange={(e) => setData('telegram_group_id', e.target.value)} />
+                                    <Label htmlFor="branch_telegram_group_id" className="text-xs">{t('telegram_group_id', 'Telegram Guruh ID')}</Label>
+                                    <Input id="branch_telegram_group_id" value={data.telegram_group_id} onChange={(e) => setData('telegram_group_id', e.target.value)} placeholder="-100..." />
                                     <InputError message={errors.telegram_group_id} />
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="comment">{t('comment')}</Label>
-                                    <Input id="comment" value={data.comment} onChange={(e) => setData('comment', e.target.value)} />
+                                    <Label htmlFor="branch_comment" className="text-xs">{t('comment', 'Izoh')}</Label>
+                                    <Input id="branch_comment" value={data.comment} onChange={(e) => setData('comment', e.target.value)} placeholder="Qo‘shimcha izoh" />
                                     <InputError message={errors.comment} />
                                 </div>
                             </div>
@@ -154,19 +162,19 @@ export default function CreateBranchModal({ firm }: createBranch) {
 
                         {/* RIGHT COLUMN: MAP */}
                         <div className="flex flex-col gap-4">
-                            <div className="rounded-lg border bg-gray-50 p-4 dark:bg-gray-900/50">
-                                <Label className="mb-3 block text-base font-semibold">{t('location')}</Label>
-                                <div className="mb-4 grid grid-cols-2 gap-4">
+                            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+                                <Label className="mb-3 block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">{t('location', 'Xarita Joylashuvi')}</Label>
+                                <div className="mb-3 grid grid-cols-2 gap-3">
                                     <div>
-                                        <Label htmlFor="latitude" className="text-xs">{t('latitude')}</Label>
-                                        <Input id="latitude" size={1} className="h-8 text-xs" value={data.latitude} onChange={(e) => setData('latitude', e.target.value)} />
+                                        <Label htmlFor="branch_latitude" className="text-[11px] text-slate-500">{t('latitude', 'Kenglik (Lat)')}</Label>
+                                        <Input id="branch_latitude" className="h-8 text-xs font-mono" value={data.latitude} onChange={(e) => setData('latitude', e.target.value)} />
                                     </div>
                                     <div>
-                                        <Label htmlFor="longitude" className="text-xs">{t('longitude')}</Label>
-                                        <Input id="longitude" size={1} className="h-8 text-xs" value={data.longitude} onChange={(e) => setData('longitude', e.target.value)} />
+                                        <Label htmlFor="branch_longitude" className="text-[11px] text-slate-500">{t('longitude', 'Uzunlik (Lng)')}</Label>
+                                        <Input id="branch_longitude" className="h-8 text-xs font-mono" value={data.longitude} onChange={(e) => setData('longitude', e.target.value)} />
                                     </div>
                                 </div>
-                                <div className="overflow-hidden rounded-md border shadow-sm">
+                                <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
                                     <LocationPicker 
                                         latitude={data.latitude} 
                                         longitude={data.longitude} 
@@ -179,22 +187,28 @@ export default function CreateBranchModal({ firm }: createBranch) {
                         </div>
                     </div>
 
-                    <DialogFooter className="mt-2 border-t pt-4 gap-2">
+                    <DialogFooter className="mt-2 border-t border-slate-200 dark:border-slate-800 pt-4 gap-2">
                         <DialogClose asChild>
                             <Button
                                 variant="secondary"
+                                size="sm"
                                 onClick={() => {
                                     reset();
                                     clearErrors();
                                     setOpen(false);
                                 }}
                             >
-                                {t('cancel')}
+                                {t('cancel', 'Bekor qilish')}
                             </Button>
                         </DialogClose>
 
-                        <Button type="submit" disabled={processing}>
-                            {t('save')}
+                        <Button
+                            type="submit"
+                            size="sm"
+                            disabled={processing}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                        >
+                            {t('save', 'Saqlash')}
                         </Button>
                     </DialogFooter>
                 </form>

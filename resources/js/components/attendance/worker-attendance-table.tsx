@@ -1,6 +1,6 @@
 import { SearchData, WorkerPaginate } from '@/types';
 import { Link } from '@inertiajs/react';
-import { CheckCircle, CheckIcon, DownloadIcon, MinusIcon, MoonStar } from 'lucide-react';
+import { Check, Clock, Minus, MoonStar, Download, FileSpreadsheet } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 
@@ -23,26 +23,21 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
 
     const exportToExcel = async () => {
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet(t('attendance'));
+        const worksheet = workbook.addWorksheet(t('attendance', 'Davomat'));
 
         const daysInMonth = searchData.daysInMonth ?? 30;
         // Header row
-        const headerRow = [t('n'), t('name'), t('firm')];
+        const headerRow = [t('n', '№'), t('name', 'F.I.SH'), t('firm', 'Firma')];
         for (let i = 1; i <= daysInMonth; i++) {
             headerRow.push(String(i));
         }
-        headerRow.push(t('on_time'), t('late'), t('absent'));
+        headerRow.push(t('on_time', 'O‘z vaqtida'), t('late', 'Kechikkan'), t('absent', 'Kelmadi'));
 
         worksheet.addRow(headerRow);
 
         // Set header styling
         worksheet.getRow(1).font = { bold: true };
         worksheet.getRow(1).alignment = { horizontal: 'center' };
-
-        // Global totals
-        let allCheckCount = 0;
-        let allLateCount = 0;
-        let allAbsentCount = 0;
 
         // Data rows
         worker.data?.forEach((item, rowIndex) => {
@@ -54,14 +49,13 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
             const globalIndex = (worker.current_page - 1) * worker.per_page + rowIndex + 1;
             row.push(globalIndex);
             row.push(item.name);
-            row.push(`${item.branch?.firm?.name} (${item.branch?.name})`);
+            row.push(`${item.branch?.firm?.name || ''} (${item.branch?.name || ''})`);
 
             for (let dayIndex = 0; dayIndex < daysInMonth; dayIndex++) {
                 const day = String(dayIndex + 1).padStart(2, '0');
-                const dateToCompare = `${searchData.month}-${day}`; // "YYYY-MM-DD"
+                const dateToCompare = `${searchData.month}-${day}`;
 
                 const event = item.hikvision_access_events?.find((event) => event.created_at.startsWith(dateToCompare));
-
                 const isOffDay = item.holidays?.includes(Number(day));
 
                 if (event) {
@@ -70,17 +64,17 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
 
                     if (eventTime <= workTime) {
                         checkCount++;
-                        row.push(t('on_time'));
+                        row.push(t('on_time', 'Vaqtida'));
                     } else {
                         lateCount++;
-                        row.push(t('late'));
+                        row.push(t('late', 'Kech'));
                     }
                 } else {
                     absentCount++;
                     if (isOffDay) {
-                        row.push(t('off_day'));
+                        row.push(t('off_day', 'Dam'));
                     } else {
-                        row.push(t('absent'));
+                        row.push(t('absent', 'Kelmadi'));
                     }
                 }
             }
@@ -92,10 +86,10 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
                 const cell = addedRow.getCell(colIndex);
                 const cellValue = cell.value?.toString().toLowerCase();
 
-                if (cellValue === t('absent').toLowerCase()) {
-                    cell.font = { color: { argb: 'FFFF0000' } }; // Red
-                } else if (cellValue === t('late').toLowerCase()) {
-                    cell.font = { color: { argb: '008000' } }; // Yellow
+                if (cellValue === t('absent', 'Kelmadi').toLowerCase()) {
+                    cell.font = { color: { argb: 'FFFF0000' } };
+                } else if (cellValue === t('late', 'Kech').toLowerCase()) {
+                    cell.font = { color: { argb: '008000' } };
                 }
             }
 
@@ -105,14 +99,13 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
         });
 
         // Totals row
-        const totalsRow = [t('n'), t('all'), ''];
+        const totalsRow = [t('n', '№'), t('all', 'Jami'), ''];
         for (let i = 0; i < daysInMonth; i++) totalsRow.push('');
         totalsRow.push(allCheckCount.toString(), allLateCount.toString(), allAbsentCount.toString());
 
         const lastRow = worksheet.addRow(totalsRow.map((cell) => cell.toString()));
         lastRow.font = { bold: true };
 
-        // Auto width for columns
         worksheet.columns?.forEach((column) => {
             let maxLength = 10;
             column.eachCell?.({ includeEmpty: true }, (cell) => {
@@ -122,166 +115,183 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
             column.width = maxLength + 2;
         });
 
-        // Generate buffer and save file
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/octet-stream' });
         saveAs(blob, `Attendance_${searchData.month}.xlsx`);
     };
 
     return (
-        <div>
-            {/*<h3 className="capitalize text-center py-2">{t('attendance')}</h3>*/}
+        <div className="space-y-3">
+            <div className="flex items-center justify-between">
+                <Button
+                    onClick={exportToExcel}
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium h-8 px-3 rounded-lg shadow-xs flex items-center gap-1.5 text-xs"
+                >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    <span>{t('excel', 'Excel yuklab olish')}</span>
+                    <Download className="w-3.5 h-3.5 opacity-80" />
+                </Button>
 
-            <Button
-                variant="success"
-                size="sm"
-                onClick={exportToExcel}
-                className="mb-4"
-            >
-                {t('excel')} <DownloadIcon className="ml-2 h-4 w-4" />
-            </Button>
+                {/* Legend */}
+                <div className="hidden sm:flex items-center gap-4 text-xs font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                    <span className="flex items-center gap-1.5">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                        </span>
+                        {t('on_time', 'O‘z vaqtida')}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-md bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">
+                            <Clock className="w-3 h-3 stroke-[2.5]" />
+                        </span>
+                        {t('late', 'Kechikkan')}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-md bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400">
+                            <Minus className="w-3 h-3 stroke-[3]" />
+                        </span>
+                        {t('absent', 'Kelmadi')}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
+                            <MoonStar className="w-3 h-3" />
+                        </span>
+                        {t('off_day', 'Dam olish')}
+                    </span>
+                </div>
+            </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-left text-sm text-gray-800 dark:text-gray-100">
-                    <thead className="bg-gray-100 dark:bg-gray-700">
-                        <tr>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('n')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('name')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('firm')}</td>
+            {/* Table Card */}
+            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-700 dark:text-slate-200">
+                        <thead className="border-b border-slate-200/80 bg-slate-50/80 font-semibold text-slate-500 uppercase tracking-wider dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+                            <tr>
+                                <th className="px-3 py-2.5 text-center w-8 font-mono">{t('n', '№')}</th>
+                                <th className="px-3 py-2.5 min-w-[140px]">{t('name', 'F.I.SH')}</th>
+                                <th className="px-3 py-2.5 min-w-[120px]">{t('firm', 'Filial')}</th>
 
-                            {[...Array(searchData.daysInMonth)].map((_, index) => (
-                                <td key={index} className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                    {index + 1}
-                                </td>
-                            ))}
+                                {[...Array(searchData.daysInMonth)].map((_, index) => (
+                                    <th key={index} className="px-1.5 py-2.5 text-center font-mono w-7 text-[11px]">
+                                        {index + 1}
+                                    </th>
+                                ))}
 
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                <CheckIcon className="text-green-400" />
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                <CheckCircle className="text-yellow-400" />
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                <MinusIcon className="text-red-400" />
-                            </td>
-                        </tr>
-                    </thead>
+                                <th className="px-2 py-2.5 text-center text-emerald-600 dark:text-emerald-400 font-bold" title={t('on_time')}>
+                                    <Check className="w-3.5 h-3.5 mx-auto" />
+                                </th>
+                                <th className="px-2 py-2.5 text-center text-amber-600 dark:text-amber-400 font-bold" title={t('late')}>
+                                    <Clock className="w-3.5 h-3.5 mx-auto" />
+                                </th>
+                                <th className="px-2 py-2.5 text-center text-rose-600 dark:text-rose-400 font-bold" title={t('absent')}>
+                                    <Minus className="w-3.5 h-3.5 mx-auto" />
+                                </th>
+                            </tr>
+                        </thead>
 
-                    <tbody className="bg-white dark:bg-gray-800">
-                        {worker.data?.map((item, rowIndex) => {
-                            const globalIndex = (worker.current_page - 1) * worker.per_page + rowIndex + 1;
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900">
+                            {worker.data?.map((item, rowIndex) => {
+                                const globalIndex = (worker.current_page - 1) * worker.per_page + rowIndex + 1;
 
-                            let checkCount = 0;
-                            let lateCount = 0;
-                            let absentCount = 0;
+                                let checkCount = 0;
+                                let lateCount = 0;
+                                let absentCount = 0;
 
-                            const dayCells = [...Array(searchData.daysInMonth)].map((_, dayIndex) => {
-                                const day = String(dayIndex + 1).padStart(2, '0');
-                                const dateToCompare = `${searchData.month}-${day}`; // "YYYY-MM-DD"
+                                const dayCells = [...Array(searchData.daysInMonth)].map((_, dayIndex) => {
+                                    const day = String(dayIndex + 1).padStart(2, '0');
+                                    const dateToCompare = `${searchData.month}-${day}`;
 
-                                const event = item.hikvision_access_events?.find((event) => event.created_at.startsWith(dateToCompare));
+                                    const event = item.hikvision_access_events?.find((event) => event.created_at.startsWith(dateToCompare));
 
-                                if (event) {
-                                    const eventTime = new Date(event.created_at).toLocaleTimeString('en-US', {
-                                        hour12: false,
-                                    });
-                                    const workTime = event.work_time;
+                                    if (event) {
+                                        const eventTime = new Date(event.created_at).toLocaleTimeString('en-US', { hour12: false });
+                                        const workTime = event.work_time;
 
-                                    if (eventTime <= workTime) {
-                                        checkCount++;
+                                        if (eventTime <= workTime) {
+                                            checkCount++;
+                                        } else {
+                                            lateCount++;
+                                        }
                                     } else {
-                                        lateCount++;
+                                        absentCount++;
                                     }
-                                } else {
-                                    absentCount++;
-                                }
 
-                                const isOffDay = item.holidays?.includes(Number(day));
+                                    const isOffDay = item.holidays?.includes(Number(day));
+
+                                    return (
+                                        <td key={dayIndex} className="px-1 py-2 text-center">
+                                            {event ? (
+                                                (() => {
+                                                    const eventTimeStr = new Date(event.created_at).toLocaleTimeString('en-US', { hour12: false });
+                                                    const workTimeStr = event.work_time;
+
+                                                    return eventTimeStr <= workTimeStr ? (
+                                                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+                                                            <Check className="w-3 h-3 stroke-[3]" />
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+                                                            <Clock className="w-3 h-3 stroke-[2.5]" />
+                                                        </span>
+                                                    );
+                                                })()
+                                            ) : (
+                                                <>
+                                                    {isOffDay ? (
+                                                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-indigo-50 text-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                                            <MoonStar className="w-3 h-3" />
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-rose-50 text-rose-500 dark:bg-rose-950/40 dark:text-rose-400">
+                                                            <Minus className="w-3 h-3 stroke-[3]" />
+                                                        </span>
+                                                    )}
+                                                </>
+                                            )}
+                                        </td>
+                                    );
+                                });
+
+                                allCheckCount += checkCount;
+                                allLateCount += lateCount;
+                                allAbsentCount += absentCount;
 
                                 return (
-                                    <td key={dayIndex} className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                        {event ? (
-                                            (() => {
-                                                const eventTimeStr = new Date(event.created_at).toLocaleTimeString('en-US', {
-                                                    hour12: false,
-                                                });
-                                                const workTimeStr = event.work_time;
-
-                                                return eventTimeStr <= workTimeStr ? (
-                                                    <CheckIcon className="text-green-400" />
-                                                ) : (
-                                                    <CheckCircle className="text-yellow-400" />
-                                                );
-                                            })()
-                                        ) : (
-                                            <>
-                                                {isOffDay ? (
-                                                    <>
-                                                        <MoonStar className="text-yellow-200" />
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <MinusIcon className="text-red-400" />
-                                                    </>
-                                                )}
-                                            </>
-                                        )}
-                                    </td>
+                                    <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                                        <td className="px-3 py-2 text-center font-mono text-slate-400 dark:text-slate-500">{globalIndex}</td>
+                                        <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-100">
+                                            <Link href={`/worker/${item.id}`} className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                                {item.name}
+                                            </Link>
+                                        </td>
+                                        <td className="px-3 py-2 text-slate-500 truncate max-w-[140px]">
+                                            {item.branch?.firm?.name} ({item.branch?.name})
+                                        </td>
+                                        {dayCells}
+                                        <td className="px-2 py-2 text-center font-bold font-mono text-emerald-600 dark:text-emerald-400">{checkCount}</td>
+                                        <td className="px-2 py-2 text-center font-bold font-mono text-amber-600 dark:text-amber-400">{lateCount}</td>
+                                        <td className="px-2 py-2 text-center font-bold font-mono text-rose-600 dark:text-rose-400">{absentCount}</td>
+                                    </tr>
                                 );
-                            });
+                            })}
+                        </tbody>
 
-                            // Add to global totals AFTER processing the days
-                            allCheckCount += checkCount;
-                            allLateCount += lateCount;
-                            allAbsentCount += absentCount;
-
-                            return (
-                                <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{globalIndex}</td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                        <Link href={`/worker/${item.id}`}>{item.name}</Link>
-                                    </td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                        {item.branch?.firm?.name} ( {item.branch?.name} )
-                                    </td>
-                                    {dayCells}
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{checkCount}</td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{lateCount}</td>
-                                    <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{absentCount}</td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-
-                    <thead className="bg-gray-100 dark:bg-gray-700">
-                        <tr>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('n')}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{t('all')}</td>
-                            <td colSpan={(searchData.daysInMonth ?? 0) + 1} className="border border-gray-300 px-4 py-2 dark:border-gray-600">
-                                <ul className={'flex gap-6'}>
-                                    <ol>
-                                        <CheckIcon className="inline text-green-400" /> : {t('on_time')}
-                                    </ol>
-                                    <ol>
-                                        <CheckCircle className="inline text-yellow-400" /> : {t('late')}
-                                    </ol>
-                                    <ol>
-                                        <MinusIcon className="inline text-red-400" /> : {t('absent')}
-                                    </ol>
-                                    <ol>
-                                        <MoonStar className="inline text-yellow-200" /> : {t('off_day')}
-                                    </ol>
-                                </ul>
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{allCheckCount}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{allLateCount}</td>
-                            <td className="border border-gray-300 px-4 py-2 dark:border-gray-600">{allAbsentCount}</td>
-                        </tr>
-                    </thead>
-                </table>
+                        <tfoot className="border-t-2 border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 font-semibold text-slate-700 dark:text-slate-200">
+                            <tr>
+                                <td className="px-3 py-2.5 text-center font-mono">∑</td>
+                                <td className="px-3 py-2.5">{t('all', 'Jami')}</td>
+                                <td colSpan={(searchData.daysInMonth ?? 0) + 1} className="px-3 py-2.5 text-slate-400"></td>
+                                <td className="px-2 py-2.5 text-center font-mono text-emerald-600 dark:text-emerald-400 font-bold">{allCheckCount}</td>
+                                <td className="px-2 py-2.5 text-center font-mono text-amber-600 dark:text-amber-400 font-bold">{allLateCount}</td>
+                                <td className="px-2 py-2.5 text-center font-mono text-rose-600 dark:text-rose-400 font-bold">{allAbsentCount}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
 
                 {/* Pagination */}
-                <div className="mt-4 flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200/80 dark:border-slate-800 text-xs text-slate-500">
                     <div>
                         {t('showing', {
                             from: worker.from,
@@ -294,12 +304,13 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
                             <Link
                                 key={index}
                                 href={`${link.url ?? '?'}&search=${searchData.search}&per_page=${searchData.per_page}&firm_id=${searchData.firm_id}&branch_id=${searchData.branch_id}&month=${searchData.month}`}
-                                className={`rounded-md px-3 py-1 text-sm transition ${link.active
-                                        ? 'bg-blue-600 text-white'
+                                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                                    link.active
+                                        ? 'bg-indigo-600 text-white shadow-xs'
                                         : !link.url
-                                            ? 'cursor-not-allowed text-gray-400 dark:text-gray-500'
-                                            : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
-                                    }`}
+                                            ? 'cursor-not-allowed opacity-40'
+                                            : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                                }`}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
                         ))}
@@ -311,3 +322,4 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
 };
 
 export default WorkerAttendanceTable;
+

@@ -1,21 +1,22 @@
 import { useForm } from '@inertiajs/react';
-import { FormEventHandler, useRef, useState } from 'react';
+import { FormEventHandler, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import 'react-time-picker/dist/TimePicker.css';
 import {
     Dialog,
     DialogClose,
     DialogContent,
     DialogDescription,
     DialogFooter,
-    DialogTitle, DialogTrigger
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
 } from '@/components/ui/dialog';
-import { IoCreate } from 'react-icons/io5';
+import { Plus, Calendar } from 'lucide-react';
 import { Worker, Day } from '@/types';
 
 interface createWorker {
@@ -30,8 +31,6 @@ type FormData = {
 
 export default function CreateWorkerDayModal({ worker, days }: createWorker) {
     const { t } = useTranslation();
-    const nameInput = useRef<HTMLInputElement>(null);
-
     const [open, setOpen] = useState(false);
 
     const { data, setData, post, processing, reset, errors, clearErrors } = useForm<FormData>({
@@ -45,85 +44,102 @@ export default function CreateWorkerDayModal({ worker, days }: createWorker) {
         post('/worker_day', {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success(t('created_successfully'));
+                toast.success(t('created_successfully', 'Muvaffaqiyatli saqlandi'));
                 reset();
                 clearErrors();
                 setOpen(false);
             },
             onError: (err) => {
-                // Display a friendly error message if available
-                const errorMessage = err?.error || t('create_failed'); // Use fallback error message
-                toast.error(errorMessage); // Display error message
+                const errorMessage = err?.error || t('create_failed', 'Xatolik yuz berdi');
+                toast.error(errorMessage);
             }
-
         });
     };
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="info" size="sm" className="px-2">
-                    <IoCreate />
+                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-8 px-2.5 rounded-lg shadow-xs flex items-center gap-1 text-xs">
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{t('add_day', 'Ish kunlarini sozlash')}</span>
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="dark:border-gray-400">
-                <DialogDescription>
-                    <DialogTitle>{t('modal.create_title')}</DialogTitle>
-                    <DialogDescription>{t('modal.create_description')}</DialogDescription>
-                </DialogDescription>
+            <DialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
+                        <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                            <Calendar className="w-4 h-4" />
+                        </div>
+                        <span>{t('modal.create_title', 'Ish Kunlarini Sozlash')}</span>
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500">
+                        {worker.name} {t('modal.create_description', 'uchun ish kunlarini belgilang')}
+                    </DialogDescription>
+                </DialogHeader>
 
                 <form onSubmit={submit} className="space-y-4">
-                    {/*<div>*/}
-                    {/*    <Label htmlFor="name">{t('name')}</Label>*/}
-                    {/*    <Input*/}
-                    {/*        id="name"*/}
-                    {/*        ref={nameInput}*/}
-                    {/*        value={data.name}*/}
-                    {/*        onChange={(e) => setData('name', e.target.value)}*/}
-                    {/*    />*/}
-                    {/*    <InputError message={errors.name} />*/}
-                    {/*</div>*/}
-
                     <div>
-                        <Label className={'py-5'}>{t('weekdays')}</Label>
+                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-2">
+                            {t('weekdays', 'Hafta kunlari')}
+                        </Label>
                         <div className="grid grid-cols-2 gap-2">
-                            {days.map((day) => (
-                                <label key={day.id} className="flex items-center space-x-2">
-                                    <input
-                                        type="checkbox"
-                                        value={day.id}
-                                        checked={data.day_ids.includes(day.id)}
-                                        onChange={(e) => {
-                                            const checked = e.target.checked;
-                                            if (checked) {
-                                                setData('day_ids', [...data.day_ids, day.id]);
-                                            } else {
-                                                setData('day_ids', data.day_ids.filter(id => id !== day.id));
-                                            }
-                                        }}
-                                    />
-                                    <span>{day.name}</span>
-                                </label>
-                            ))}
+                            {days.map((day) => {
+                                const isChecked = data.day_ids.includes(day.id);
+                                return (
+                                    <label
+                                        key={day.id}
+                                        className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs font-medium cursor-pointer transition-all ${
+                                            isChecked
+                                                ? 'border-indigo-600 bg-indigo-50/60 text-indigo-700 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300 shadow-xs'
+                                                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-300'
+                                        }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                            value={day.id}
+                                            checked={isChecked}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                if (checked) {
+                                                    setData('day_ids', [...data.day_ids, day.id]);
+                                                } else {
+                                                    setData('day_ids', data.day_ids.filter(id => id !== day.id));
+                                                }
+                                            }}
+                                        />
+                                        <span>{day.name}</span>
+                                    </label>
+                                );
+                            })}
                         </div>
                         <InputError message={errors.day_ids} />
                     </div>
 
-
-                    <DialogFooter className="gap-2">
+                    <DialogFooter className="gap-2 pt-2">
                         <DialogClose asChild>
-                            <Button variant="secondary" onClick={() => {
-                                reset();
-                                clearErrors();
-                                setOpen(false);
-                            }}>
-                                {t('cancel')}
+                            <Button
+                                variant="secondary"
+                                type="button"
+                                size="sm"
+                                onClick={() => {
+                                    reset();
+                                    clearErrors();
+                                    setOpen(false);
+                                }}
+                            >
+                                {t('cancel', 'Bekor qilish')}
                             </Button>
                         </DialogClose>
 
-                        <Button type="submit" disabled={processing}>
-                            {t('save')}
+                        <Button
+                            type="submit"
+                            size="sm"
+                            disabled={processing}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                        >
+                            {t('save', 'Saqlash')}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -131,3 +147,4 @@ export default function CreateWorkerDayModal({ worker, days }: createWorker) {
         </Dialog>
     );
 }
+

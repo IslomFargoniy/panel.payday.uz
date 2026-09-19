@@ -1,186 +1,186 @@
 import React, { useState } from 'react';
-import { PencilIcon, TrashIcon } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import UpdateUserModal from '@/components/user/update-user-modal';
 import DeleteItemModal from '@/components/delete-item-modal';
 import { Link, useForm } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
 import { User, type UserPaginate, SearchData } from '@/types';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 
 interface UserTableProps extends UserPaginate {
     searchData: SearchData;
 }
 
 const UserTable = ({ searchData, ...user }: UserTableProps) => {
-
-    const { t } = useTranslation();  // Using the translation hook
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     const handleUpdateClick = (userData: User) => {
-        setSelectedUser(userData); // Set the selected user data
-        setOpen(true); // Open the modal
+        setSelectedUser(userData);
+        setOpen(true);
     };
 
     const handleDeleteClick = (userData: User) => {
-        setSelectedUser(userData); // Set the selected user for deletion
-        setOpenDelete(true); // Open the delete modal
+        setSelectedUser(userData);
+        setOpenDelete(true);
     };
 
-    const { delete: deleteUser, reset, errors: deleteError, clearErrors } = useForm();
+    const { delete: deleteUser, reset, clearErrors } = useForm();
 
     const handleDelete = (id: number) => {
-        console.log(deleteError);  // Log to see if errors are populated
-
         deleteUser(`/user/${id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 reset();
                 clearErrors();
-                setOpen(false); // 🔒 CLOSE MODAL HERE
-                toast.success(t('deleted_successfully')); // Success message
+                setOpenDelete(false);
+                toast.success(t('deleted_successfully'));
             },
             onError: (err) => {
-                // Display a friendly error message if available
-                const errorMessage = err?.error || t('delete_failed'); // Use fallback error message
-                toast.error(errorMessage); // Display error message
+                const errorMessage = err?.error || t('delete_failed');
+                toast.error(errorMessage);
             }
         });
     };
 
     return (
-        <div>
-            {/* Table */}
-            <div className="overflow-x-auto">
-                <table className="border-collapse w-full text-sm text-left text-gray-800 dark:text-gray-100">
-                    <thead className="bg-gray-100 dark:bg-gray-700">
-                    <tr>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('n')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('name')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('firm')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('role')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('phone')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('email')}</td>
-                        <th className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-
-                        </th>
-                    </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800">
-                    {user.data.map((item, index) => {
-                        const globalIndex = (user.current_page - 1) * user.per_page + index + 1;
-                        return (
-                            <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{globalIndex}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    <Link href={`/user/${item.id}`}>
-                                        {item.name}
-                                    </Link>
-                                </td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 space-x-1">
-                                    <ol className="list-decimal list-inside space-y-1 text-sm text-gray-800 dark:text-gray-200">
-                                        {item.user_firms?.map(user_firm => (
-                                            <li key={user_firm.id}>
-                                                <span className="font-medium">{user_firm.firm?.name ?? '—'}</span>
-                                            </li>
-                                        ))}
-                                    </ol>
-                                </td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {item.roles?.map((role) => {
-                                        return (
-                                            <span key={role.id}>{role.name}</span>
-                                        );
-                                    })}
-                                </td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.phone}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.email}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-
-                                    <div className="inline-flex shadow-sm">
-
-                                    <div className="inline-flex shadow-sm">
-                                        <Button
-                                            variant="success"
-                                            size="sm"
-                                            onClick={() => handleUpdateClick(item)}
-                                            className="rounded-r-none border-r-0"
-                                        >
-                                            <PencilIcon className="w-4 h-4" />
-                                        </Button>
-
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleDeleteClick(item)}
-                                            className="rounded-l-none"
-                                        >
-                                            <TrashIcon className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                    </div>
-
-
-                                </td>
+        <div className="space-y-4">
+            {/* Table Card */}
+            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                        <thead className="border-b border-slate-200/80 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+                            <tr>
+                                <th className="px-4 py-3.5">{t('n')}</th>
+                                <th className="px-4 py-3.5">{t('name')}</th>
+                                <th className="px-4 py-3.5">{t('firm')}</th>
+                                <th className="px-4 py-3.5">{t('role')}</th>
+                                <th className="px-4 py-3.5">{t('phone')}</th>
+                                <th className="px-4 py-3.5">{t('email')}</th>
+                                <th className="px-4 py-3.5 text-right font-medium">{t('actions') ?? ''}</th>
                             </tr>
-                        );
-                    })}
-                    </tbody>
-
-                    {/* Place the UpdateUserModal here */}
-                    {selectedUser && open && (
-                        <UpdateUserModal
-                            user={selectedUser}
-                            open={open}
-                            setOpen={setOpen}
-                        />
-                    )}
-
-                    {/* Pass selected user to the DeleteUserModal */}
-                    {selectedUser && openDelete && (
-                        <DeleteItemModal
-                            item={selectedUser}
-                            open={openDelete}  // Assuming you have a separate state for openDelete
-                            setOpen={setOpenDelete}  // Or you can manage this in its own state
-                            onDelete={handleDelete} // Handle deletion
-                        />
-                    )}
-
-                </table>
-
-                {/* Pagination */}
-                <div className="mt-4 flex justify-between items-center text-sm text-gray-600 dark:text-gray-300">
-                    <div>
-                        {t('showing', {
-                            from: user.from,
-                            to: user.to,
-                            total: user.total
-                        })}
-                    </div>
-                    <div className="flex gap-1">
-                        {user.links.map((link, index) => (
-                            <Link
-                                key={index}
-                                href={`${link.url ?? '?'}&search=${searchData.search}&per_page=${searchData.per_page}`}
-                                className={`px-3 py-1 rounded-md text-sm transition ${
-                                    link.active
-                                        ? 'bg-blue-600 text-white'
-                                        : !link.url
-                                            ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                            : 'bg-white dark:bg-gray-800 dark:text-gray-200 text-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ))}
-                    </div>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                            {user.data.map((item, index) => {
+                                const globalIndex = (user.current_page - 1) * user.per_page + index + 1;
+                                return (
+                                    <tr key={item.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                                        <td className="px-4 py-3 font-medium text-slate-500 dark:text-slate-400">{globalIndex}</td>
+                                        <td className="px-4 py-3">
+                                            <Link
+                                                href={`/user/${item.id}`}
+                                                className="font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                            >
+                                                {item.name}
+                                            </Link>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex flex-wrap gap-1">
+                                                {item.user_firms && item.user_firms.length > 0 ? (
+                                                    item.user_firms.map((user_firm) => (
+                                                        <span
+                                                            key={user_firm.id}
+                                                            className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                                        >
+                                                            {user_firm.firm?.name ?? '—'}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-xs text-slate-400">—</span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex flex-wrap gap-1">
+                                                {item.roles?.map((role) => (
+                                                    <span
+                                                        key={role.id}
+                                                        className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
+                                                    >
+                                                        {role.name}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.phone || '—'}</td>
+                                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{item.email || '—'}</td>
+                                        <td className="px-4 py-3 text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleUpdateClick(item)}
+                                                    className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/40 dark:hover:text-amber-400"
+                                                    title={t('edit') ?? 'Edit'}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteClick(item)}
+                                                    className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
+                                                    title={t('delete') ?? 'Delete'}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
+            </div>
 
+            {/* Modals */}
+            {selectedUser && open && (
+                <UpdateUserModal
+                    user={selectedUser}
+                    open={open}
+                    setOpen={setOpen}
+                />
+            )}
 
+            {selectedUser && openDelete && (
+                <DeleteItemModal
+                    item={selectedUser}
+                    open={openDelete}
+                    setOpen={setOpenDelete}
+                    onDelete={handleDelete}
+                />
+            )}
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <div>
+                    {t('showing', {
+                        from: user.from,
+                        to: user.to,
+                        total: user.total
+                    })}
+                </div>
+                <div className="flex items-center gap-1">
+                    {user.links.map((link, index) => (
+                        <Link
+                            key={index}
+                            href={`${link.url ?? '?'}&search=${searchData.search || ''}&per_page=${searchData.per_page || 10}`}
+                            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                                link.active
+                                    ? 'bg-indigo-600 text-white shadow-xs'
+                                    : !link.url
+                                        ? 'cursor-not-allowed opacity-40'
+                                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                            }`}
+                            dangerouslySetInnerHTML={{ __html: link.label }}
+                        />
+                    ))}
+                </div>
             </div>
         </div>
     );
 };
 
 export default UserTable;
+

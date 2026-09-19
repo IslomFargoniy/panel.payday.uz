@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import CreateSalaryPaymentModal from '@/components/salary_payment/create-salary_payment-modal';
-import { PencilIcon, TrashIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Pencil, Trash2 } from 'lucide-react';
 import UpdateSalaryPaymentModal from '@/components/salary_payment/update-salary_payment-modal';
 import DeleteItemModal from '@/components/delete-item-modal';
 import { Link, useForm } from '@inertiajs/react';
@@ -16,165 +15,159 @@ interface SalaryPaymentTableProps extends SalaryPaymentPaginate {
 }
 
 const Salary_paymentTable = ({ searchData, workers, ...salary_payment }: SalaryPaymentTableProps) => {
-
-    const { t } = useTranslation();  // Using the translation hook
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
     const [selectedSalaryPayment, setSelectedSalaryPayment] = useState<SalaryPayment | null>(null);
 
     const handleUpdateClick = (salary_paymentData: SalaryPayment) => {
-        setSelectedSalaryPayment(salary_paymentData); // Set the selected salary_payment data
-        setOpen(true); // Open the modal
+        setSelectedSalaryPayment(salary_paymentData);
+        setOpen(true);
     };
 
     const handleDeleteClick = (salary_paymentData: SalaryPayment) => {
-        setSelectedSalaryPayment(salary_paymentData); // Set the selected salary_payment for deletion
-        setOpenDelete(true); // Open the delete modal
+        setSelectedSalaryPayment(salary_paymentData);
+        setOpenDelete(true);
     };
 
-    const { delete: deleteSalaryPayment, reset, errors: deleteError, clearErrors } = useForm();
+    const { delete: deleteSalaryPayment, reset, clearErrors } = useForm();
 
     const handleDelete = (id: number) => {
-        console.log(deleteError);  // Log to see if errors are populated
-
         deleteSalaryPayment(`/salary_payment/${id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 reset();
                 clearErrors();
-                setOpen(false); // 🔒 CLOSE MODAL HERE
-                toast.success(t('deleted_successfully')); // Success message
+                setOpenDelete(false);
+                toast.success(t('deleted_successfully'));
             },
             onError: (err) => {
-                // Display a friendly error message if available
-                const errorMessage = err?.error || t('delete_failed'); // Use fallback error message
-                toast.error(errorMessage); // Display error message
+                const errorMessage = err?.error || t('delete_failed');
+                toast.error(errorMessage);
             }
         });
     };
 
     return (
-        <div>
-            {/* Table */}
-            <div className="overflow-x-auto">
-                <table className="border-collapse w-full text-sm text-left text-gray-800 dark:text-gray-100">
-                    <thead className="bg-gray-100 dark:bg-gray-700">
-                    <tr>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('n')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('user')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('worker')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('firm')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('amount')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('comment')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('date')}</td>
-                        <th className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                            <CreateSalaryPaymentModal
-                                workers={workers}
-                            />
-                        </th>
-                    </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800">
-                    {salary_payment.data.map((item, index) => {
-                        const globalIndex = (salary_payment.current_page - 1) * salary_payment.per_page + index + 1;
-                        return (
-                            <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{globalIndex}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.user?.name}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    <Link href={`/worker/${item.worker?.id}`}>
-                                        {item.worker?.name}
-                                    </Link>
-                                </td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {item.worker?.branch?.firm?.name} ( {item.worker?.branch?.name} )
-                                </td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.amount}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.comment}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {format(item.created_at, 'yyyy-MM-dd H:i:s')}
-                                </td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-
-                                    <div className="inline-flex shadow-sm">
-                                        <Button
-                                            variant="warning"
-                                            size="sm"
-                                            onClick={() => handleUpdateClick(item)}
-                                            className="rounded-none rounded-l-md"
-                                        >
-                                            <PencilIcon className="w-4 h-4" />
-                                        </Button>
-
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleDeleteClick(item)}
-                                            className="rounded-none rounded-r-md border-l-0"
-                                        >
-                                            <TrashIcon className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-
-
-                                </td>
+        <div className="space-y-4">
+            {/* Table Card */}
+            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                        <thead className="border-b border-slate-200/80 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+                            <tr>
+                                <th className="px-4 py-3.5">{t('n')}</th>
+                                <th className="px-4 py-3.5">{t('user')}</th>
+                                <th className="px-4 py-3.5">{t('worker')}</th>
+                                <th className="px-4 py-3.5">{t('firm')}</th>
+                                <th className="px-4 py-3.5">{t('amount')}</th>
+                                <th className="px-4 py-3.5">{t('comment')}</th>
+                                <th className="px-4 py-3.5">{t('date')}</th>
+                                <th className="px-4 py-3.5 text-right font-medium">
+                                    <CreateSalaryPaymentModal workers={workers} />
+                                </th>
                             </tr>
-                        );
-                    })}
-                    </tbody>
-
-                    {/* Place the UpdateSalaryPaymentModal here */}
-                    {selectedSalaryPayment && open && (
-                        <UpdateSalaryPaymentModal
-                            salary_payment={selectedSalaryPayment}
-                            open={open}
-                            setOpen={setOpen}
-                        />
-                    )}
-
-                    {/* Pass selected salary_payment to the DeleteSalaryPaymentModal */}
-                    {selectedSalaryPayment && openDelete && (
-                        <DeleteItemModal
-                            item={selectedSalaryPayment}
-                            open={openDelete}  // Assuming you have a separate state for openDelete
-                            setOpen={setOpenDelete}  // Or you can manage this in its own state
-                            onDelete={handleDelete} // Handle deletion
-                        />
-                    )}
-
-                </table>
-
-                {/* Pagination */}
-                <div className="mt-4 flex justify-between items-center text-sm text-gray-600 dark:text-gray-300">
-                    <div>
-                        {t('showing', {
-                            from: salary_payment.from,
-                            to: salary_payment.to,
-                            total: salary_payment.total
-                        })}
-                    </div>
-                    <div className="flex gap-1">
-                        {salary_payment.links.map((link, index) => (
-                            <Link
-                                key={index}
-                                href={`${link.url ?? '?'}&search=${searchData.search}&per_page=${searchData.per_page}`}
-                                className={`px-3 py-1 rounded-md text-sm transition ${
-                                    link.active
-                                        ? 'bg-blue-600 text-white'
-                                        : !link.url
-                                            ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                            : 'bg-white dark:bg-gray-800 dark:text-gray-200 text-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ))}
-                    </div>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                            {salary_payment.data.map((item, index) => {
+                                const globalIndex = (salary_payment.current_page - 1) * salary_payment.per_page + index + 1;
+                                return (
+                                    <tr key={item.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                                        <td className="px-4 py-3 font-medium text-slate-500 dark:text-slate-400">{globalIndex}</td>
+                                        <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{item.user?.name ?? '—'}</td>
+                                        <td className="px-4 py-3">
+                                            <Link
+                                                href={`/worker/${item.worker?.id}`}
+                                                className="font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                            >
+                                                {item.worker?.name}
+                                            </Link>
+                                        </td>
+                                        <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                                            {item.worker?.branch?.firm?.name} ({item.worker?.branch?.name})
+                                        </td>
+                                        <td className="px-4 py-3 font-semibold text-emerald-600 dark:text-emerald-400">
+                                            {typeof item.amount === 'number' ? item.amount.toLocaleString('ru-RU') : item.amount}
+                                        </td>
+                                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{item.comment || '—'}</td>
+                                        <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                                            {format(new Date(item.created_at), 'yyyy-MM-dd HH:mm')}
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleUpdateClick(item)}
+                                                    className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/40 dark:hover:text-amber-400"
+                                                    title={t('edit') ?? 'Edit'}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteClick(item)}
+                                                    className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
+                                                    title={t('delete') ?? 'Delete'}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
+            </div>
 
+            {/* Modals */}
+            {selectedSalaryPayment && open && (
+                <UpdateSalaryPaymentModal
+                    salary_payment={selectedSalaryPayment}
+                    open={open}
+                    setOpen={setOpen}
+                />
+            )}
 
+            {selectedSalaryPayment && openDelete && (
+                <DeleteItemModal
+                    item={selectedSalaryPayment}
+                    open={openDelete}
+                    setOpen={setOpenDelete}
+                    onDelete={handleDelete}
+                />
+            )}
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <div>
+                    {t('showing', {
+                        from: salary_payment.from,
+                        to: salary_payment.to,
+                        total: salary_payment.total
+                    })}
+                </div>
+                <div className="flex items-center gap-1">
+                    {salary_payment.links.map((link, index) => (
+                        <Link
+                            key={index}
+                            href={`${link.url ?? '?'}&search=${searchData.search || ''}&per_page=${searchData.per_page || 10}`}
+                            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                                link.active
+                                    ? 'bg-indigo-600 text-white shadow-xs'
+                                    : !link.url
+                                        ? 'cursor-not-allowed opacity-40'
+                                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                            }`}
+                            dangerouslySetInnerHTML={{ __html: link.label }}
+                        />
+                    ))}
+                </div>
             </div>
         </div>
     );
 };
 
 export default Salary_paymentTable;
+

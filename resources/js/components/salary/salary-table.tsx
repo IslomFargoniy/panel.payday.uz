@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { TrashIcon } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import DeleteItemModal from '@/components/delete-item-modal';
 import { Link, useForm } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
 import { Salary, type SalaryPaginate, SearchData } from '@/types';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 
 interface SalaryTableProps extends SalaryPaginate {
@@ -13,124 +12,118 @@ interface SalaryTableProps extends SalaryPaginate {
 }
 
 const SalaryTable = ({ searchData, ...salary }: SalaryTableProps) => {
-
-    const { t } = useTranslation();  // Using the translation hook
+    const { t } = useTranslation();
     const [openDelete, setOpenDelete] = useState(false);
     const [selectedSalary, setSelectedSalary] = useState<Salary | null>(null);
 
-
     const handleDeleteClick = (salaryData: Salary) => {
-        setSelectedSalary(salaryData); // Set the selected salary for deletion
-        setOpenDelete(true); // Open the delete modal
+        setSelectedSalary(salaryData);
+        setOpenDelete(true);
     };
 
-
-    const { delete: deleteSalary, reset, errors: deleteError, clearErrors } = useForm();
+    const { delete: deleteSalary, reset, clearErrors } = useForm();
 
     const handleDelete = (id: number) => {
-        console.log(id);  // Log to see if errors are populated
-
         deleteSalary(`/salary/${id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 reset();
                 clearErrors();
-                setOpenDelete(false); // 🔒 CLOSE MODAL HERE
-                toast.success(t('deleted_successfully')); // Success message
+                setOpenDelete(false);
+                toast.success(t('deleted_successfully', 'Muvaffaqiyatli o‘chirildi'));
             },
             onError: (err) => {
-                // Display a friendly error message if available
-                const errorMessage = err?.error || t('delete_failed'); // Use fallback error message
-                toast.error(errorMessage); // Display error message
+                const errorMessage = err?.error || t('delete_failed', 'O‘chirishda xatolik yuz berdi');
+                toast.error(errorMessage);
             }
         });
     };
 
     return (
-        <div>
-            {/* Table */}
-            <div className="overflow-x-auto">
-                <table className="border-collapse w-full text-sm text-left text-gray-800 dark:text-gray-100">
-                    <thead className="bg-gray-100 dark:bg-gray-700">
-                    <tr>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('n')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('user')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('worker')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('firm')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('amount')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('worked_minutes')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('break_minutes')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('hour_price')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('from')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('to')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('date')}</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{t('action')}</td>
-
-                    </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800">
-                    {salary.data.map((item, index) => {
-                        const globalIndex = (salary.current_page - 1) * salary.per_page + index + 1;
-                        return (
-                            <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{globalIndex}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {item.user?.name}
-                                </td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    <Link href={`/worker/${item.worker?.id}`}>
-                                        {item.worker?.name}
-                                    </Link>
-                                </td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {item.worker?.branch?.firm?.name} ( {item.worker?.branch?.name} )
-                                </td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.amount}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {item.worked_minute} ({~~(item.worked_minute! / 60)} : {item.worked_minute! % 60})
-                                </td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {item.break_minute} ({~~(item.worked_minute! / 60)} : {item.worked_minute! % 60})
-                                </td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.hour_price}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.from}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">{item.to}</td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                    {format(item.created_at, 'yyyy-MM-dd H:i:s')}
-                                </td>
-                                <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-
-                                    <div className="inline-flex shadow-sm">
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleDeleteClick(item)}
-                                        >
-                                            <TrashIcon className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-
-
-                                </td>
+        <div className="space-y-3">
+            {/* Table Card */}
+            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-700 dark:text-slate-200">
+                        <thead className="border-b border-slate-200/80 bg-slate-50/80 font-semibold text-slate-500 uppercase tracking-wider dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+                            <tr>
+                                <th className="px-3.5 py-3 text-center w-10 font-mono">{t('n', '№')}</th>
+                                <th className="px-3.5 py-3">{t('user', 'Hisoblagan')}</th>
+                                <th className="px-3.5 py-3">{t('worker', 'Xodim')}</th>
+                                <th className="px-3.5 py-3">{t('firm', 'Filial')}</th>
+                                <th className="px-3.5 py-3">{t('amount', 'Summa')}</th>
+                                <th className="px-3.5 py-3">{t('worked_minutes', 'Ish vaqti')}</th>
+                                <th className="px-3.5 py-3">{t('break_minutes', 'Tanaffus')}</th>
+                                <th className="px-3.5 py-3">{t('hour_price', 'Soat narxi')}</th>
+                                <th className="px-3.5 py-3">{t('from', 'Boshlanishi')}</th>
+                                <th className="px-3.5 py-3">{t('to', 'Tugashi')}</th>
+                                <th className="px-3.5 py-3">{t('date', 'Sana')}</th>
+                                <th className="px-3.5 py-3 text-right w-16">{t('action', 'Amal')}</th>
                             </tr>
-                        );
-                    })}
-                    </tbody>
-
-                    {/* Pass selected salary to the DeleteSalaryModal */}
-                    {selectedSalary && openDelete && (
-                        <DeleteItemModal
-                            item={selectedSalary}
-                            open={openDelete}  // Assuming you have a separate state for openDelete
-                            setOpen={setOpenDelete}  // Or you can manage this in its own state
-                            onDelete={handleDelete} // Handle deletion
-                        />
-                    )}
-
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900">
+                            {(!salary.data || salary.data.length === 0) ? (
+                                <tr>
+                                    <td colSpan={12} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+                                        {t('no_data', 'Ma’lumot mavjud emas')}
+                                    </td>
+                                </tr>
+                            ) : (
+                                salary.data.map((item, index) => {
+                                    const globalIndex = (salary.current_page - 1) * salary.per_page + index + 1;
+                                    return (
+                                        <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                                            <td className="px-3.5 py-2.5 text-center font-mono text-slate-400 dark:text-slate-500">{globalIndex}</td>
+                                            <td className="px-3.5 py-2.5 font-medium text-slate-600 dark:text-slate-300">
+                                                {item.user?.name || '—'}
+                                            </td>
+                                            <td className="px-3.5 py-2.5 font-medium text-slate-900 dark:text-slate-100">
+                                                <Link href={`/worker/${item.worker?.id}`} className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                                    {item.worker?.name}
+                                                </Link>
+                                            </td>
+                                            <td className="px-3.5 py-2.5 text-slate-500 truncate max-w-[140px]">
+                                                {item.worker?.branch?.firm?.name} ({item.worker?.branch?.name})
+                                            </td>
+                                            <td className="px-3.5 py-2.5 font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
+                                                {Number(item.amount).toLocaleString()} {t('sum', 'so‘m')}
+                                            </td>
+                                            <td className="px-3.5 py-2.5 font-mono text-slate-600 dark:text-slate-300">
+                                                {~~(item.worked_minute! / 60)}s {item.worked_minute! % 60}daq
+                                            </td>
+                                            <td className="px-3.5 py-2.5 font-mono text-slate-500">
+                                                {~~(item.break_minute! / 60)}s {item.break_minute! % 60}daq
+                                            </td>
+                                            <td className="px-3.5 py-2.5 font-mono text-slate-600 dark:text-slate-300">
+                                                {Number(item.hour_price).toLocaleString()}
+                                            </td>
+                                            <td className="px-3.5 py-2.5 font-mono text-[11px] text-slate-500">{item.from}</td>
+                                            <td className="px-3.5 py-2.5 font-mono text-[11px] text-slate-500">{item.to}</td>
+                                            <td className="px-3.5 py-2.5 font-mono text-[11px] text-slate-500">
+                                                {format(new Date(item.created_at), 'yyyy-MM-dd HH:mm')}
+                                            </td>
+                                            <td className="px-3.5 py-2.5 text-right">
+                                                <div className="flex items-center justify-end">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteClick(item)}
+                                                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors inline-flex items-center justify-center"
+                                                        title={t('delete', 'O‘chirish')}
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
 
                 {/* Pagination */}
-                <div className="mt-4 flex justify-between items-center text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200/80 dark:border-slate-800 text-xs text-slate-500">
                     <div>
                         {t('showing', {
                             from: salary.from,
@@ -143,23 +136,32 @@ const SalaryTable = ({ searchData, ...salary }: SalaryTableProps) => {
                             <Link
                                 key={index}
                                 href={`${link.url ?? '?'}&search=${searchData.search}&per_page=${searchData.per_page}`}
-                                className={`px-3 py-1 rounded-md text-sm transition ${
+                                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                                     link.active
-                                        ? 'bg-blue-600 text-white'
+                                        ? 'bg-indigo-600 text-white shadow-xs'
                                         : !link.url
-                                            ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                            : 'bg-white dark:bg-gray-800 dark:text-gray-200 text-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            ? 'cursor-not-allowed opacity-40'
+                                            : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
                                 }`}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
                         ))}
                     </div>
                 </div>
-
-
             </div>
+
+            {/* Pass selected salary to the DeleteItemModal */}
+            {selectedSalary && openDelete && (
+                <DeleteItemModal
+                    item={selectedSalary}
+                    open={openDelete}
+                    setOpen={setOpenDelete}
+                    onDelete={handleDelete}
+                />
+            )}
         </div>
     );
 };
 
 export default SalaryTable;
+
