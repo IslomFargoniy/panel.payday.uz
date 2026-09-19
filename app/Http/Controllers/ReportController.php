@@ -40,6 +40,10 @@ class ReportController extends Controller
                 $per_page = 15;
             }
 
+            $from = $request->from ?: Carbon::now()->startOfMonth()->toDateString();
+            $to = $request->to ?: Carbon::now()->toDateString();
+            $request->merge(['from' => $from, 'to' => $to]);
+
             $days = $this->countWorkingDays($request);
 
 
@@ -63,9 +67,7 @@ class ReportController extends Controller
                 ->join('branches as b', 'w.branch_id', '=', 'b.id')
                 ->join('firms as f', 'b.firm_id', '=', 'f.id');
 
-            if ($request->from && $request->to) {
-                $baseQuery->whereBetween('hae.created_at', [$request->from, $request->to . " 23:59:59"]);
-            }
+            $baseQuery->whereBetween('hae.created_at', [$from, $to . " 23:59:59"]);
             if ($request->worker_id) {
                 $baseQuery->where('w.id', $request->worker_id);
             }
@@ -353,7 +355,7 @@ class ReportController extends Controller
             $to = $request->to;
         } else {
             $from = Carbon::now()->startOfMonth()->toDateString();
-            $to = Carbon::now()->endOfMonth()->toDateString();
+            $to = Carbon::now()->toDateString();
         }
 
 //        $workers = Worker::with([

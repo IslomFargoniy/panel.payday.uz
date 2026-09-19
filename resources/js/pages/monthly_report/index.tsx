@@ -3,6 +3,7 @@ import MobileSearchModal from '@/components/MobileSearchModal';
 import SearchForm from '@/components/search-form';
 import AppLayout from '@/layouts/app-layout';
 import { Branch, type BreadcrumbItem, Firm, SearchData, WorkerPaginate } from '@/types';
+import { format, startOfMonth } from 'date-fns';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +15,9 @@ export default function MonthlyAttendance() {
         branches: Branch[];
     }>().props;
     const { t } = useTranslation(); // Using the translation hook
+
+    const defaultFrom = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+    const defaultTo = format(new Date(), 'yyyy-MM-dd');
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -29,8 +33,8 @@ export default function MonthlyAttendance() {
         total: worker.total,
         firm_id: 0,
         branch_id: 0,
-        from: '',
-        to: '',
+        from: defaultFrom,
+        to: defaultTo,
     });
 
     console.log(worker.data);
@@ -58,8 +62,8 @@ export default function MonthlyAttendance() {
         const branch_id = parseInt(branchIdStr);
         setData('branch_id', branch_id);
 
-        setData('from', getTrimmed('from'));
-        setData('to', getTrimmed('to'));
+        setData('from', getTrimmed('from') || defaultFrom);
+        setData('to', getTrimmed('to') || defaultTo);
     }, [location.search]);
 
     return (

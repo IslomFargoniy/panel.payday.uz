@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem as LayoutBreadcrumbItem, type Worker, Day, HikvisionAccessEventPaginate, SearchData } from '@/types';
+import { format, startOfMonth } from 'date-fns';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { Building2 } from 'lucide-react';
 import React, { useEffect } from 'react';
@@ -29,6 +30,9 @@ export default function WorkerShow() {
     }>().props;
     const { t } = useTranslation(); // Using the translation hook
 
+    const defaultFrom = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+    const defaultTo = format(new Date(), 'yyyy-MM-dd');
+
     const breadcrumbs: LayoutBreadcrumbItem[] = [
         {
             title: `${t('worker')} ( ${worker.name} )`,
@@ -41,8 +45,8 @@ export default function WorkerShow() {
         per_page: hikvision_access_events.per_page,
         page: hikvision_access_events.current_page,
         total: hikvision_access_events.total,
-        from: '',
-        to: '',
+        from: defaultFrom,
+        to: defaultTo,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -54,8 +58,11 @@ export default function WorkerShow() {
         const urlParams = new URLSearchParams(location.search);
 
         const searchQuery = urlParams.get('search') || ''; // Get 'search' query from the URL
-        const from = !String(urlParams.get('from')) || String(urlParams.get('from')) === 'null' ? '' : String(urlParams.get('from'));
-        const to = !String(urlParams.get('to')) || String(urlParams.get('to')) === 'null' ? '' : String(urlParams.get('to'));
+        const fromParam = urlParams.get('from');
+        const toParam = urlParams.get('to');
+
+        const from = fromParam && fromParam !== 'null' && fromParam !== '' ? String(fromParam) : defaultFrom;
+        const to = toParam && toParam !== 'null' && toParam !== '' ? String(toParam) : defaultTo;
 
         setData('search', searchQuery); // Set it to the form state
         setData('from', from);

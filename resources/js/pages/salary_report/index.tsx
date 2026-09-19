@@ -8,6 +8,7 @@ import {
     Report as ReportType,
     SearchData, Worker
 } from '@/types';
+import { format, startOfMonth } from 'date-fns';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +32,9 @@ export default function SalaryReport() {
     }>().props;
     const { t } = useTranslation(); // Using the translation hook
 
+    const defaultFrom = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+    const defaultTo = format(new Date(), 'yyyy-MM-dd');
+
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: t('sidebar.salary_report'),
@@ -47,8 +51,8 @@ export default function SalaryReport() {
         worker_id: 0,
         branch_id: 0,
         firm_id: 0,
-        from: '',
-        to: ''
+        from: defaultFrom,
+        to: defaultTo
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -68,8 +72,8 @@ export default function SalaryReport() {
         setData('worker_id', Number(urlParams.get('worker_id')) || 0);
         setData('branch_id', Number(urlParams.get('branch_id')) || 0);
         setData('firm_id', Number(urlParams.get('firm_id')) || 0);
-        setData('from', getTrimmed('from'));
-        setData('to', getTrimmed('to'));
+        setData('from', getTrimmed('from') || defaultFrom);
+        setData('to', getTrimmed('to') || defaultTo);
     }, [location.search, setData]);
 
     return (

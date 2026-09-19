@@ -10,6 +10,7 @@ use App\Models\Day;
 use App\Models\Firm\Firm;
 use App\Models\Hikvision\HikvisionAccessEvent;
 use App\Models\Worker\Worker;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -154,9 +155,10 @@ class WorkerController extends Controller
             ->where('employeeNoString', '=', $worker->employeeNoString)
             ->orderBy('id', 'desc');
 
-        if ($request->from && $request->to) {
-            $hikvision_access_events->whereBetween('created_at', [$request->from, $request->to . " 23:59:59"]);
-        }
+        $from = $request->from ?: Carbon::now()->startOfMonth()->toDateString();
+        $to = $request->to ?: Carbon::now()->toDateString();
+
+        $hikvision_access_events->whereBetween('created_at', [$from, $to . " 23:59:59"]);
 
         if ($request->search) {
             $hikvision_access_events->whereLike('label', "%$request->search%");

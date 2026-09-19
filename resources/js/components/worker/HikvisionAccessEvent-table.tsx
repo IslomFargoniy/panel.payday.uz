@@ -260,7 +260,7 @@ const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: Hikv
                     {hikvision_access_events.links.map((link, index) => (
                         <Link
                             key={index}
-                            href={`${link.url ?? '?'}&search=${searchData.search}&per_page=${searchData.per_page}`}
+                            href={`${link.url ?? '?'}&search=${searchData.search}&per_page=${searchData.per_page}&from=${searchData.from ?? ''}&to=${searchData.to ?? ''}`}
                             className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                                 link.active
                                     ? 'bg-indigo-600 text-white shadow-xs'
