@@ -110,16 +110,15 @@ export default function WorkerShow() {
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="overflow-x-auto">
-                    <div className={'grid grid-cols-12 gap-4'}>
-                        <div className={'col-span-12 sm:col-span-12 md:col-span-12 lg:col-span-8'}>
+                {/* Content Layout */}
+                <div className="pt-1">
+                    <div className="grid grid-cols-12 gap-6">
+                        <div className="col-span-12 lg:col-span-8 space-y-6">
                             <HikvisionAccessEventTable worker={worker} hikvision_access_events={hikvision_access_events} searchData={data} />
                             <SalaryTable worker={worker} />
                         </div>
-                        <div className={'col-span-12 sm:col-span-12 md:col-span-12 lg:col-span-4'}>
+                        <div className="col-span-12 lg:col-span-4 space-y-6">
                             <WorkerDayTable worker={worker} days={days} />
-
                             <WorkerHolidayTable worker={worker} />
                             <SalaryPaymentTable worker={worker} />
                         </div>

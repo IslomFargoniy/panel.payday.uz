@@ -15,6 +15,13 @@ interface ReportFilterFormProps {
     workers: Worker[];
 }
 
+const parseDate = (val?: string | null) => {
+    if (!val || val === 'null' || val === 'undefined' || val === '') return null;
+    const dateStr = val.includes('T') ? val : `${val}T00:00:00`;
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+};
+
 const ReportFilterForm = ({
     handleSubmit,
     setData,
@@ -70,25 +77,22 @@ const ReportFilterForm = ({
                     </select>
                 )}
 
-                <DatePicker
-                    id="from-date"
-                    placeholderText={t('from')}
-                    value={data.from}
-                    onChange={(from) => {
-                        setData('from', from ? format(from, 'yyyy-MM-dd') : '');
-                    }}
-                    className="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                />
-
-                <DatePicker
-                    id="to-date"
-                    placeholderText={t('to')}
-                    value={data.to}
-                    onChange={(to) => {
-                        setData('to', to ? format(to, 'yyyy-MM-dd') : '');
-                    }}
-                    className="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                />
+                {(typeof data.from === 'string' || typeof data.to === 'string') && (
+                    <DatePicker
+                        selectsRange={true}
+                        startDate={parseDate(data.from)}
+                        endDate={parseDate(data.to)}
+                        onChange={(update: [Date | null, Date | null] | null) => {
+                            const [start, end] = update ?? [null, null];
+                            setData('from', start ? format(start, 'yyyy-MM-dd') : '');
+                            setData('to', end ? format(end, 'yyyy-MM-dd') : '');
+                        }}
+                        isClearable={true}
+                        dateFormat="yyyy-MM-dd"
+                        placeholderText={`${t('from')} — ${t('to')}`}
+                        className="h-9 w-48 sm:w-56 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                    />
+                )}
 
                 {/* Firm Select */}
                 <select

@@ -111,13 +111,13 @@ export default function Branch() {
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="overflow-x-auto pt-1">
-                    <div className={'grid grid-cols-12 gap-4'}>
-                        <div className={'col-span-12 sm:col-span-12 md:col-span-12 lg:col-span-8'}>
+                {/* Content Layout */}
+                <div className="pt-1">
+                    <div className="grid grid-cols-12 gap-6">
+                        <div className="col-span-12 lg:col-span-8 space-y-6">
                             {branch.workers && <WorkerTable worker={worker} branch={branch} searchData={data} />}
                         </div>
-                        <div className={'col-span-12 sm:col-span-12 md:col-span-12 lg:col-span-4'}>
+                        <div className="col-span-12 lg:col-span-4 space-y-6">
                             <BranchDayTable branch={branch} days={days} />
                             <BranchDeviceTable branch={branch} />
                             <BranchHolidayTable branch={branch} />
