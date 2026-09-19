@@ -32,7 +32,7 @@ export default function DeviceConnectionGuideModal({ branch }: DeviceConnectionG
     };
 
     const isupDeviceId = `branch${branch.id}`;
-    const isupKey = `PayDay${branch.id}2026`;
+    const isupKey = branch.id === 14 ? 'PayDay14!2026' : `PayDay${branch.id}2026`;
     const serverIp = '193.180.213.188';
 
     return (
@@ -94,10 +94,11 @@ export default function DeviceConnectionGuideModal({ branch }: DeviceConnectionG
                 {activeTab === 'isup' && (
                     <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
                         <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg text-xs leading-relaxed text-blue-800 dark:text-blue-300">
-                            <strong>✨ ISUP 5.0 Afzalliklari:</strong>
+                            <strong>✨ ISUP 5.0 (2-tomonlama to‘liq integratsiya):</strong>
                             <ul className="list-disc list-inside mt-1 space-y-0.5">
-                                <li>Filialga <strong>statik (oq) IP kerak emas</strong> (oddiy Wi-Fi yoki 4G orqali ham ishlaydi).</li>
-                                <li>Panelda yangi xodim qo‘shilgan zahoti — <strong>xodim va uning yuzi terminalga avtomat yuklanadi</strong>.</li>
+                                <li><strong>Statik IP kerak emas</strong> (oddiy Wi-Fi yoki 4G orqali ishlaydi).</li>
+                                <li><strong>Xodimlar + Yuz rasmlari:</strong> Panelda yangi xodim qo‘shilganda terminalga avtomatik yuklanadi.</li>
+                                <li><strong>Keldi-Ketdi (Davomat):</strong> Xodim yuzini skaner qilganda davomat real vaqtda ISUP orqali serverga yoziladi.</li>
                             </ul>
                         </div>
 

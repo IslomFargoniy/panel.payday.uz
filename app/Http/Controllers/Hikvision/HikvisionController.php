@@ -221,18 +221,29 @@ class HikvisionController extends Controller
                     return response()->json(['success' => true, 'message' => 'No employeeNoString']);
                 }
 
+                $deviceId = $eventData->device_id ?? null;
+
                 $checkWorker = Worker::with([])
                     ->where('employeeNoString', '=', $accessEventData->employeeNoString)
                     ->where('status', '=', 1)
-                    ->whereHas('branch', function ($query) use ($macAddress) {
+                    ->whereHas('branch', function ($query) use ($macAddress, $shortSerial, $deviceId) {
                         $query->whereHas('firm', function ($query) {
                             $query->where('status', '=', 1)
                                 ->where('valid_date', '>=', date('Y-m-d'));
                         })
-                            ->whereHas('branch_devices', function ($query) use ($macAddress) {
-                                if ($macAddress) {
-                                    $query->where('mac_address', '=', $macAddress);
-                                }
+                            ->whereHas('branch_devices', function ($query) use ($macAddress, $shortSerial, $deviceId) {
+                                $query->where(function ($q) use ($macAddress, $shortSerial, $deviceId) {
+                                    if ($macAddress) {
+                                        $q->orWhere('mac_address', '=', $macAddress);
+                                    }
+                                    if ($shortSerial && $shortSerial !== 'default') {
+                                        $q->orWhere('serial_number', 'LIKE', "%$shortSerial%");
+                                        $q->orWhere('device_id', '=', $shortSerial);
+                                    }
+                                    if ($deviceId) {
+                                        $q->orWhere('device_id', '=', $deviceId);
+                                    }
+                                });
                                 $query->where('status', '=', 1);
                             });
                     })->first();
@@ -441,4 +452,11 @@ class HikvisionController extends Controller
 
         return response()->json(['success' => true]);
     }
+
+    public function syncDeviceEvents(\App\Models\Branch\BranchDevice $device, \App\Services\Hikvision\HikvisionSyncService $syncService)
+    {
+        $res = $syncService->syncEventsFromDevice($device);
+        return response()->json($res);
+    }
 }
+
