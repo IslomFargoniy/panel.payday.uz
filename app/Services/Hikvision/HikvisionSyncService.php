@@ -79,6 +79,30 @@ class HikvisionSyncService
                 ]);
 
                 $status = $isupRes->json();
+
+                // Upload face picture via ISUP using public FaceURL
+                if ($worker->avatar && Storage::disk('public')->exists($worker->avatar)) {
+                    $faceUrl = "https://panel.payday.uz/storage/" . ltrim($worker->avatar, '/');
+                    $facePayload = [
+                        'faceLibType' => 'blackFD',
+                        'FDID' => '1',
+                        'FPID' => $employeeNo,
+                        'faceURL' => $faceUrl,
+                    ];
+
+                    $faceRes = \Illuminate\Support\Facades\Http::timeout(10)->post('http://127.0.0.1:7661/api/isapi', [
+                        'device_id' => $device->device_id,
+                        'method' => 'POST',
+                        'url' => 'POST /ISAPI/Intelligent/FDLib/FaceDataRecord?format=json',
+                        'body' => json_encode($facePayload),
+                    ]);
+
+                    Log::info("HikvisionSync [ISUP Face]: Worker {$employeeNo} face uploaded", [
+                        'faceUrl' => $faceUrl,
+                        'response' => $faceRes->json(),
+                    ]);
+                }
+
                 Log::info("HikvisionSync [ISUP]: Worker {$employeeNo} synced to device {$device->device_id}", [
                     'status' => $status
                 ]);
