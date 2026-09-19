@@ -40,12 +40,12 @@ export function AppSidebar() {
     const footerNavItems: NavItem[] = [
         {
             title: t('sidebar.repository'),
-            href: 'https://github.com/islamabdurahman',
+            href: 'https://github.com/IslomFargoniy',
             icon: Github
         },
         {
             title: t('sidebar.telegram'),
-            href: 'https://t.me/livelongevity',
+            href: 'https://t.me/IslomFargoniy',
             icon: Send
         }
     ];

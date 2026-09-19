@@ -174,10 +174,10 @@ Loyiha yuzasidan savollar yoki xavfsizlikka oid muammolar topgan bo'lsangiz, ilt
 <br>
 
 **Ijtimoiy Tarmoqlar:**
-- 🐙 [GitHub](https://github.com/islamabdurahman)
-- 🦊 [GitLab](https://gitlab.com/islamabdurahman)
-- 📺 [YouTube](https://www.youtube.com/@IslamAbdurahman)
-- ✈️ [Telegram](https://t.me/LiveLongevity)
+- 🐙 [GitHub](https://github.com/IslomFargoniy)
+- 💬 [Telegram](https://t.me/IslomFargoniy)
+- 📺 [YouTube](https://www.youtube.com/@IslomFargoniy)
+- ✈️ [Telegram](https://t.me/IslomFargoniy)
 
 ---
 

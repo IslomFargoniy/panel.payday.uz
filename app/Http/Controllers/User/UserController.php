@@ -23,7 +23,7 @@ class UserController extends Controller
         if ($request->per_page) {
             $per_page = $request->per_page;
         } else {
-            $per_page = 10;
+            $per_page = 15;
         }
 
         if (!Auth::user()->hasRole('Admin')) {

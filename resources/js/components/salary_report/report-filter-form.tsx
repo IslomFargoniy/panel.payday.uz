@@ -63,8 +63,8 @@ const ReportFilterForm = ({
                         onChange={handlePerPageChange}
                         className="h-9 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
+                        <option value={15}>15</option>
+                        <option value={30}>30</option>
                         <option value={50}>50</option>
                         <option value={data.total}>{t('pagination_optionAll')}</option>
                     </select>

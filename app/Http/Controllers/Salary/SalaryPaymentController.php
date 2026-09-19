@@ -25,7 +25,7 @@ class SalaryPaymentController extends Controller
         if ($request->per_page) {
             $per_page = $request->per_page;
         } else {
-            $per_page = 10;
+            $per_page = 15;
         }
 
         $salary_payment = SalaryPayment::with([]);

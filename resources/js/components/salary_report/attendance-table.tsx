@@ -78,7 +78,7 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
                     {attendance.links.map((link, index) => (
                         <Link
                             key={index}
-                            href={`${link.url ?? '?'}&search=${searchData.search || ''}&firm_id=${searchData.firm_id || 0}&branch_id=${searchData.branch_id || 0}&worker_id=${searchData.worker_id || 0}&from=${searchData.from ?? ''}&to=${searchData.to ?? ''}&per_page=${searchData.per_page || 10}`}
+                            href={`${link.url ?? '?'}&search=${searchData.search || ''}&firm_id=${searchData.firm_id || 0}&branch_id=${searchData.branch_id || 0}&worker_id=${searchData.worker_id || 0}&from=${searchData.from ?? ''}&to=${searchData.to ?? ''}&per_page=${searchData.per_page || 15}`}
                             className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                                 link.active
                                     ? 'bg-indigo-600 text-white shadow-xs'

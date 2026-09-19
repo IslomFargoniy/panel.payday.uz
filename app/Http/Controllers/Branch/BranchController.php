@@ -91,7 +91,7 @@ class BranchController extends Controller
                     ->orWhere('address', 'like', "%{$request->search}%")
                     ->orWhere('comment', 'like', "%{$request->search}%");
             })
-            ->paginate($request->per_page ?? 10);
+            ->paginate($request->per_page ?? 15);
 
         $days = Day::all();
 

@@ -37,7 +37,7 @@ class ReportController extends Controller
             if ($request->per_page) {
                 $per_page = $request->per_page;
             } else {
-                $per_page = 10;
+                $per_page = 15;
             }
 
             $days = $this->countWorkingDays($request);
@@ -345,7 +345,7 @@ class ReportController extends Controller
         if ($request->per_page) {
             $per_page = $request->per_page;
         } else {
-            $per_page = 10;
+            $per_page = 15;
         }
 
         if ($request->from && $request->to) {

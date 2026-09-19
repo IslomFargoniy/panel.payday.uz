@@ -13,7 +13,7 @@ type WorkerDayTableProps = {
 
 // Fallback days metadata if DB days not loaded yet
 const defaultWeekDays = [
-    { id: 2, name: 'Dushanba', name_ru: 'Понедельnik', name_en: 'Monday', short_uz: 'Du', short_ru: 'Пн', short_en: 'Mon' },
+    { id: 2, name: 'Dushanba', name_ru: 'Понедельник', name_en: 'Monday', short_uz: 'Du', short_ru: 'Пн', short_en: 'Mon' },
     { id: 3, name: 'Seshanba', name_ru: 'Вторник', name_en: 'Tuesday', short_uz: 'Se', short_ru: 'Вт', short_en: 'Tue' },
     { id: 4, name: 'Chorshanba', name_ru: 'Среда', name_en: 'Wednesday', short_uz: 'Chor', short_ru: 'Ср', short_en: 'Wed' },
     { id: 5, name: 'Payshanba', name_ru: 'Четверг', name_en: 'Thursday', short_uz: 'Pay', short_ru: 'Чт', short_en: 'Thu' },

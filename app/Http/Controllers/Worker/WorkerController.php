@@ -26,7 +26,7 @@ class WorkerController extends Controller
         if ($request->per_page) {
             $per_page = $request->per_page;
         } else {
-            $per_page = 10;
+            $per_page = 15;
         }
 
         $workers = Worker::with([])
@@ -145,7 +145,7 @@ class WorkerController extends Controller
         if ($request->per_page) {
             $per_page = $request->per_page;
         } else {
-            $per_page = 10;
+            $per_page = 15;
         }
 
         $hikvision_access_events = HikvisionAccessEvent::with([

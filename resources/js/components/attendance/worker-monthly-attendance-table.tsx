@@ -213,7 +213,7 @@ const WorkerMonthlyAttendanceTable = ({ worker, searchData }: WorkerTableProps) 
                         {worker.links.map((link, index) => (
                             <Link
                                 key={index}
-                                href={`${link.url ?? '?'}&search=${searchData.search || ''}&per_page=${searchData.per_page || 10}&firm_id=${searchData.firm_id || 0}&branch_id=${searchData.branch_id || 0}&month=${searchData.month || ''}`}
+                                href={`${link.url ?? '?'}&search=${searchData.search || ''}&per_page=${searchData.per_page || 15}&firm_id=${searchData.firm_id || 0}&branch_id=${searchData.branch_id || 0}&month=${searchData.month || ''}`}
                                 className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                                     link.active
                                         ? 'bg-indigo-600 text-white shadow-xs'
