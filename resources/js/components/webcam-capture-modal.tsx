@@ -29,8 +29,8 @@ export default function WebcamCaptureModal({ open, onOpenChange, onCapture }: We
             const mediaStream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode: cameraFacing,
-                    width: { ideal: 640 },
-                    height: { ideal: 640 },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
                 },
                 audio: false,
             });
@@ -69,14 +69,25 @@ export default function WebcamCaptureModal({ open, onOpenChange, onCapture }: We
         const width = video.videoWidth || 640;
         const height = video.videoHeight || 640;
 
-        canvas.width = width;
-        canvas.height = height;
+        // Exact square crop centered to match the 1:1 square viewfinder
+        const size = Math.min(width, height);
+        const startX = (width - size) / 2;
+        const startY = (height - size) / 2;
+
+        canvas.width = size;
+        canvas.height = size;
 
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        ctx.drawImage(video, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        // Front camera mirroring to match live viewfinder
+        if (cameraFacing === 'user') {
+            ctx.translate(size, 0);
+            ctx.scale(-1, 1);
+        }
+
+        ctx.drawImage(video, startX, startY, size, size, 0, 0, size, size);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
         setCapturedImage(dataUrl);
 
         // Stop video stream after snapshot
@@ -117,9 +128,9 @@ export default function WebcamCaptureModal({ open, onOpenChange, onCapture }: We
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="mt-3 flex flex-col items-center justify-center overflow-hidden rounded-xl bg-slate-950">
+                <div className="mt-3 flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-slate-950 p-2">
                     {error ? (
-                        <div className="flex h-64 w-full flex-col items-center justify-center p-6 text-center text-rose-400">
+                        <div className="flex h-72 w-full flex-col items-center justify-center p-6 text-center text-rose-400">
                             <AlertCircle className="mb-2 h-10 w-10 text-rose-500" />
                             <p className="text-xs leading-relaxed">{error}</p>
                             <Button variant="outline" size="sm" onClick={startCamera} className="mt-4 text-xs">
@@ -127,20 +138,23 @@ export default function WebcamCaptureModal({ open, onOpenChange, onCapture }: We
                             </Button>
                         </div>
                     ) : capturedImage ? (
-                        <div className="relative aspect-square w-full max-h-72 overflow-hidden bg-black flex items-center justify-center">
+                        <div className="relative aspect-square w-full max-w-[320px] mx-auto overflow-hidden rounded-xl bg-black flex items-center justify-center shadow-md">
                             <img src={capturedImage} alt="Captured" className="h-full w-full object-cover" />
                         </div>
                     ) : (
-                        <div className="relative aspect-square w-full max-h-72 overflow-hidden bg-black flex items-center justify-center">
+                        <div className="relative aspect-square w-full max-w-[320px] mx-auto overflow-hidden rounded-xl bg-black flex items-center justify-center shadow-md">
                             <video
                                 ref={videoRef}
                                 autoPlay
                                 playsInline
                                 muted
-                                className="h-full w-full object-cover"
+                                className={`h-full w-full object-cover ${cameraFacing === 'user' ? 'transform -scale-x-100' : ''}`}
                             />
-                            <div className="absolute inset-0 border-2 border-dashed border-white/30 pointer-events-none rounded-xl m-4 flex items-center justify-center">
-                                <span className="text-[11px] text-white/60 bg-black/40 px-2 py-0.5 rounded">
+                            {/* Guide overlay */}
+                            <div className="absolute inset-0 pointer-events-none rounded-xl flex flex-col items-center justify-between p-3">
+                                <div className="h-44 w-36 rounded-[50%] border-2 border-dashed border-white/40 mt-3 flex items-center justify-center">
+                                </div>
+                                <span className="text-[11px] font-medium text-white/90 bg-black/60 backdrop-blur-xs px-2.5 py-1 rounded-full shadow-xs">
                                     {t('camera.align_face', 'Yuzni markazga joylashtiring')}
                                 </span>
                             </div>
