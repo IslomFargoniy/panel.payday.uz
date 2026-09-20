@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Search } from 'lucide-react';
 import React, { useEffect } from 'react';
 import DatePicker from 'react-datepicker';
+import { MaskedDateInput } from '@/components/ui/masked-date-input';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 
@@ -133,7 +134,12 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, cla
                             }}
                             isClearable={true}
                             dateFormat="yyyy-MM-dd"
-                            className="h-9 w-full sm:w-36 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                            customInput={
+                                <MaskedDateInput
+                                    className="h-9 w-full sm:w-36 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                                    placeholder={t('date')}
+                                />
+                            }
                         />
                     </div>
                 )}
