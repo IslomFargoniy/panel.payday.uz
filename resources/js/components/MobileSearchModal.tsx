@@ -34,7 +34,7 @@ const MobileSearchModal = ({ data, setData, handleSubmit, workers, firms, branch
             {/* Modal Overlay */}
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs lg:hidden">
-                    <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                    <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                         {/* Close Button */}
                         <button
                             type="button"
@@ -60,6 +60,7 @@ const MobileSearchModal = ({ data, setData, handleSubmit, workers, firms, branch
                             workers={workers}
                             firms={firms}
                             branches={branches}
+                            isModal={true}
                         />
                     </div>
                 </div>
