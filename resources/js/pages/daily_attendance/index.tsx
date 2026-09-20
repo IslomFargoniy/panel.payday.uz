@@ -64,11 +64,11 @@ export default function Attendance() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('worker')} />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-3 sm:p-4 md:p-6 min-w-0 max-w-full">
                 {/* Search and Per-Page Selection */}
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-card p-3 rounded-xl border border-border shadow-xs">
-                    <Breadcrumb>
-                        <BreadcrumbList className="text-sm font-medium">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs min-w-0 max-w-full">
+                    <Breadcrumb className="min-w-0">
+                        <BreadcrumbList className="text-xs sm:text-sm font-medium flex-wrap">
                             <BreadcrumbItem>
                                 <BreadcrumbLink asChild>
                                     <Link href="/firm" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors">
@@ -80,7 +80,7 @@ export default function Attendance() {
                             <BreadcrumbSeparator />
                             <BreadcrumbItem>
                                 <BreadcrumbLink asChild>
-                                    <Link href={`/firm/${branch.firm_id}`} className="text-muted-foreground hover:text-primary transition-colors">
+                                    <Link href={`/firm/${branch.firm_id}`} className="text-muted-foreground hover:text-primary transition-colors truncate max-w-[120px] sm:max-w-none">
                                         {branch.firm?.name}
                                     </Link>
                                 </BreadcrumbLink>
@@ -88,26 +88,26 @@ export default function Attendance() {
                             <BreadcrumbSeparator />
                             <BreadcrumbItem>
                                 <BreadcrumbLink asChild>
-                                    <Link href={`/branch/${branch.id}`} className="text-muted-foreground hover:text-primary transition-colors">
+                                    <Link href={`/branch/${branch.id}`} className="text-muted-foreground hover:text-primary transition-colors truncate max-w-[120px] sm:max-w-none">
                                         {branch.name}
                                     </Link>
                                 </BreadcrumbLink>
                             </BreadcrumbItem>
                             <BreadcrumbSeparator />
                             <BreadcrumbItem>
-                                <BreadcrumbPage className="font-semibold text-foreground px-2.5 py-1 rounded-md bg-muted">
+                                <BreadcrumbPage className="font-semibold text-foreground px-2.5 py-1 rounded-md bg-muted text-xs">
                                     {t('daily_attendance')}
                                 </BreadcrumbPage>
                             </BreadcrumbItem>
                         </BreadcrumbList>
                     </Breadcrumb>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                         <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} />
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto">
+                <div className="w-full min-w-0 max-w-full">
                     {worker &&
                         <WorkerDailyAttendanceTable
                             worker={worker}

@@ -49,11 +49,11 @@ export default function Branch() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${t('branch')} ${firm.name}`} />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-3 sm:p-4 md:p-6 min-w-0 max-w-full">
                 {/* Search and Per-Page Selection */}
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-card p-3 rounded-xl border border-border shadow-xs">
-                    <Breadcrumb>
-                        <BreadcrumbList className="text-sm font-medium">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs min-w-0 max-w-full">
+                    <Breadcrumb className="min-w-0">
+                        <BreadcrumbList className="text-xs sm:text-sm font-medium flex-wrap">
                             <BreadcrumbItem>
                                 <BreadcrumbLink asChild>
                                     <Link href="/firm" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors">
@@ -64,31 +64,31 @@ export default function Branch() {
                             </BreadcrumbItem>
                             <BreadcrumbSeparator />
                             <BreadcrumbItem>
-                                <BreadcrumbPage className="font-semibold text-foreground px-2.5 py-1 rounded-md bg-muted">
+                                <BreadcrumbPage className="font-semibold text-foreground px-2.5 py-1 rounded-md bg-muted text-xs">
                                     {firm.name}
                                 </BreadcrumbPage>
                             </BreadcrumbItem>
                         </BreadcrumbList>
                     </Breadcrumb>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                         <MobileSearchModal
                             data={data}
                             setData={setData}
                             handleSubmit={handleSubmit}
                         />
-                        <div className={'hidden lg:block'}>
+                        <div className="hidden lg:block">
                             <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} />
                         </div>
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto">
-                    <div className={'grid grid-cols-12 gap-4'}>
-                        <div className={'col-span-12 sm:col-span-12 md:col-span-12 lg:col-span-8'}>
+                <div className="w-full min-w-0 max-w-full">
+                    <div className="grid grid-cols-12 gap-6 min-w-0 max-w-full">
+                        <div className="col-span-12 lg:col-span-8 min-w-0 max-w-full">
                             <BranchTable firm={firm} />
                         </div>
-                        <div className={'col-span-12 sm:col-span-12 md:col-span-12 lg:col-span-4'}>
+                        <div className="col-span-12 lg:col-span-4 min-w-0 max-w-full">
                             <FirmHolidayTable firm={firm} />
                         </div>
                     </div>

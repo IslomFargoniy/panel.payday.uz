@@ -42,24 +42,22 @@ export default function User() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('sidebar.user')} />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-3 sm:p-4 md:p-6 min-w-0 max-w-full">
                 {/* Search and Per-Page Selection */}
-                <div className="flex justify-end items-center">
+                <div className="flex justify-end items-center w-full min-w-0">
                     <MobileSearchModal
                         data={data}
                         setData={setData}
                         handleSubmit={handleSubmit}
                     />
-                    <div className={'hidden lg:block'}>
+                    <div className="hidden lg:block w-full max-w-full">
                         <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} />
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto">
-
+                <div className="w-full min-w-0 max-w-full">
                     <UserTable {...user} searchData={data} />
-
                 </div>
             </div>
         </AppLayout>

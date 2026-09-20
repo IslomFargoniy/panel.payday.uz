@@ -87,7 +87,7 @@ export default function Dashboard() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('sidebar.dashboard')} />
 
-            <div className="flex h-full flex-col gap-5 p-4 sm:p-6">
+            <div className="flex h-full flex-col gap-5 p-3 sm:p-4 md:p-6 min-w-0 max-w-full">
                 {/* 1. Header Greeting & Filter Ribbon */}
                 <div className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs dark:border-slate-800 dark:bg-slate-900 lg:flex-row lg:items-center">
                     <div>

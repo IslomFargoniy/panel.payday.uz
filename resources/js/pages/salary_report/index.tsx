@@ -79,9 +79,9 @@ export default function SalaryReport() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('sidebar.salary_report')} />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-3 sm:p-4 md:p-6 min-w-0 max-w-full">
                 {/* Search and Per-Page Selection */}
-                <div className="flex items-center justify-end">
+                <div className="flex items-center justify-end w-full min-w-0">
                     <MobileSearchModal
                         handleSubmit={handleSubmit}
                         setData={setData}
@@ -90,7 +90,7 @@ export default function SalaryReport() {
                         branches={branches}
                         workers={workers}
                     />
-                    <div className={'hidden lg:block'}>
+                    <div className="hidden lg:block w-full max-w-full">
                         <SearchForm handleSubmit={handleSubmit}
                                     setData={setData}
                                     data={data}
@@ -100,12 +100,12 @@ export default function SalaryReport() {
                         />
                     </div>
                 </div>
-                <div className="pt-1">
-                    <div className="grid grid-cols-12 gap-6">
-                        <div className="col-span-12 lg:col-span-9 space-y-6">
+                <div className="pt-1 w-full min-w-0 max-w-full">
+                    <div className="grid grid-cols-12 gap-6 min-w-0 max-w-full">
+                        <div className="col-span-12 lg:col-span-9 space-y-6 min-w-0 max-w-full">
                             <AttendanceTable {...attendance} searchData={data} />
                         </div>
-                        <div className="col-span-12 lg:col-span-3 space-y-6">
+                        <div className="col-span-12 lg:col-span-3 space-y-6 min-w-0 max-w-full">
                             <RightBar {...report} />
                             {(data.worker_id && report.from && report.to)
                                 ? <CalculateSalary report={report} search_data={data} />

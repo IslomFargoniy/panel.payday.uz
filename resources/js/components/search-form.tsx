@@ -67,14 +67,14 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
     }, [data, setBranches, branches]);
 
     return (
-        <form onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-2 rounded-xl sm:gap-2 lg:inline-flex lg:flex-row lg:flex-wrap lg:items-center lg:gap-1.5" role="group">
+        <form onSubmit={handleSubmit} className="w-full">
+            <div className="flex flex-wrap items-center justify-start sm:justify-end gap-1.5 w-full max-w-full" role="group">
                 {/* Search Bar */}
                 <input
                     type="text"
                     value={data.search}
                     onChange={handleSearch}
-                    className="h-9 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                    className="h-9 w-full sm:w-auto min-w-[140px] rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                     placeholder={t('search')}
                 />
 
@@ -82,7 +82,7 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
                     <select
                         value={data.per_page}
                         onChange={handlePerPageChange}
-                        className="h-9 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        className="h-9 w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
                         <option value={15}>15</option>
                         <option value={30}>30</option>
@@ -92,20 +92,22 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
                 )}
 
                 {(typeof data.from === 'string' || typeof data.to === 'string') && (
-                    <DatePicker
-                        selectsRange={true}
-                        startDate={parseDate(data.from)}
-                        endDate={parseDate(data.to)}
-                        onChange={(update: [Date | null, Date | null] | null) => {
-                            const [start, end] = update ?? [null, null];
-                            setData('from', start ? format(start, 'yyyy-MM-dd') : '');
-                            setData('to', end ? format(end, 'yyyy-MM-dd') : '');
-                        }}
-                        isClearable={true}
-                        dateFormat="yyyy-MM-dd"
-                        placeholderText={`${t('from')} — ${t('to')}`}
-                        className="h-9 w-48 sm:w-56 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
-                    />
+                    <div className="w-full sm:w-auto">
+                        <DatePicker
+                            selectsRange={true}
+                            startDate={parseDate(data.from)}
+                            endDate={parseDate(data.to)}
+                            onChange={(update: [Date | null, Date | null] | null) => {
+                                const [start, end] = update ?? [null, null];
+                                setData('from', start ? format(start, 'yyyy-MM-dd') : '');
+                                setData('to', end ? format(end, 'yyyy-MM-dd') : '');
+                            }}
+                            isClearable={true}
+                            dateFormat="yyyy-MM-dd"
+                            placeholderText={`${t('from')} — ${t('to')}`}
+                            className="h-9 w-full sm:w-52 md:w-56 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                        />
+                    </div>
                 )}
 
                 {typeof data.month === 'string' && (
@@ -114,30 +116,32 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
                         value={data.month}
                         max={format(new Date(), 'yyyy-MM')}
                         onChange={handleMonth}
-                        className="h-9 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        className="h-9 w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                         placeholder={t('month')}
                     />
                 )}
 
                 {typeof data.date === 'string' && (
-                    <DatePicker
-                        id="date"
-                        placeholderText={t('date')}
-                        selected={parseDate(data.date)}
-                        onChange={(date) => {
-                            setData('date', date ? format(date, 'yyyy-MM-dd') : '');
-                        }}
-                        isClearable={true}
-                        dateFormat="yyyy-MM-dd"
-                        className="h-9 w-full sm:w-36 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
-                    />
+                    <div className="w-full sm:w-auto">
+                        <DatePicker
+                            id="date"
+                            placeholderText={t('date')}
+                            selected={parseDate(data.date)}
+                            onChange={(date) => {
+                                setData('date', date ? format(date, 'yyyy-MM-dd') : '');
+                            }}
+                            isClearable={true}
+                            dateFormat="yyyy-MM-dd"
+                            className="h-9 w-full sm:w-36 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                        />
+                    </div>
                 )}
 
                 {firms && (
                     <select
                         value={data.firm_id || ''}
                         onChange={handleFirmChange}
-                        className="h-9 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        className="h-9 w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
                         <option value="0">{t('firm')}</option>
                         {firms.map((firm) => (
@@ -152,7 +156,7 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
                     <select
                         value={data.branch_id || ''}
                         onChange={handleBranchChange}
-                        className="h-9 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        className="h-9 w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
                         <option value="0">{t('branch')}</option>
                         {filteredBranches.map((branch) => (
@@ -167,7 +171,7 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
                     <select
                         value={data.worker_id || 0}
                         onChange={handleWorkerChange}
-                        className="h-9 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        className="h-9 w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
                         <option value="0">{t('worker')}</option>
                         {workers.map((worker) => (
@@ -180,10 +184,10 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
 
                 <Button
                     type="submit"
-                    className="h-9 gap-1.5 rounded-xl bg-indigo-600 px-3.5 text-xs font-medium text-white shadow-xs hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                    className="h-9 w-full sm:w-auto gap-1.5 rounded-xl bg-indigo-600 px-3.5 text-xs font-medium text-white shadow-xs hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500"
                 >
                     <Search className="h-4 w-4" />
-                    <span className="lg:hidden">{t('search')}</span>
+                    <span>{t('search')}</span>
                 </Button>
             </div>
         </form>

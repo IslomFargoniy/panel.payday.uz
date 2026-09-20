@@ -52,9 +52,9 @@ const BranchTable = ({ firm }: BranchTableProps) => {
     return (
         <div className="space-y-4">
             {/* Table Card Container */}
-            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs text-slate-700 dark:text-slate-200">
+            <div className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                <div className="w-full overflow-x-auto">
+                    <table className="w-full min-w-[900px] text-left text-xs text-slate-700 dark:text-slate-200">
                         <thead className="border-b border-slate-200/80 bg-slate-50/80 font-semibold text-slate-500 uppercase tracking-wider dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
                             <tr>
                                 <th className="px-4 py-3 text-center w-12 font-mono">{t('n', '№')}</th>

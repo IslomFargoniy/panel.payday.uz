@@ -70,9 +70,9 @@ export default function SalaryPayment() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('sidebar.salary_payment')} />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-3 sm:p-4 md:p-6 min-w-0 max-w-full">
                 {/* Search and Per-Page Selection */}
-                <div className="flex justify-end items-center ">
+                <div className="flex justify-end items-center w-full min-w-0">
                     <MobileSearchModal
                         data={data}
                         setData={setData}
@@ -81,8 +81,7 @@ export default function SalaryPayment() {
                         firms={firms}
                         branches={branches}
                     />
-                    <div className={'hidden lg:block'}>
-
+                    <div className="hidden lg:block w-full max-w-full">
                         <SearchForm
                             handleSubmit={handleSubmit}
                             setData={setData}
@@ -95,14 +94,12 @@ export default function SalaryPayment() {
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto">
-
+                <div className="w-full min-w-0 max-w-full">
                     <SalaryPaymentTable
                         {...salary_payment}
                         searchData={data}
                         workers={workers}
                     />
-
                 </div>
             </div>
         </AppLayout>
