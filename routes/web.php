@@ -79,3 +79,11 @@ Route::any('/pay/{paysys}/{key}/{amount}', function ($paysys, $key, $amount) {
 Route::get('/bot/mini-app', function () {
     return inertia('bot/MiniApp');
 });
+
+Route::get('/privacy-policy', function () {
+    return view('privacy');
+})->name('privacy.policy');
+
+Route::get('/terms-of-service', function () {
+    return view('terms');
+})->name('terms.service');

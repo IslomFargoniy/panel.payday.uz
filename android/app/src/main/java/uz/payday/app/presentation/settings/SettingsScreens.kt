@@ -244,6 +244,50 @@ fun SettingsScreen(
                 }
             }
 
+            // Legal & Privacy Policy
+            item {
+                Text(
+                    text = "Hujjatlar va Shartlar",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+
+            item {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        SettingsRowItem(
+                            icon = Icons.Outlined.PrivacyTip,
+                            title = "Maxfiylik siyosati (Privacy Policy)",
+                            onClick = {
+                                val intent = android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse("https://panel.payday.uz/privacy-policy")
+                                )
+                                context.startActivity(intent)
+                            }
+                        )
+                        Divider(color = Slate100)
+                        SettingsRowItem(
+                            icon = Icons.Outlined.Description,
+                            title = "Foydalanish shartlari (Terms of Service)",
+                            onClick = {
+                                val intent = android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse("https://panel.payday.uz/terms-of-service")
+                                )
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
+                }
+            }
+
+
             // Logout Button
             item {
                 Spacer(modifier = Modifier.height(8.dp))

@@ -80,7 +80,7 @@ fun AddEditWorkerScreen(
                         color = Rose50
                     ) {
                         Text(
-                            text = formState.errorMessage!,
+                            text = formState.errorMessage!!,
                             modifier = Modifier.padding(12.dp),
                             color = Rose600,
                             style = MaterialTheme.typography.bodyMedium

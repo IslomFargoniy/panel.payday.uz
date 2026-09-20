@@ -1,0 +1,27 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="1.2"
+        android:scaleY="1.2"
+        android:translateX="-10.8"
+        android:translateY="-10.8">
+        <!-- Card / Wallet Outer Shape -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M34,36h40c2.2,0 4,1.8 4,4v28c0,2.2 -1.8,4 -4,4H34c-2.2,0 -4,-1.8 -4,-4V40C30,37.8 31.8,36 34,36z" />
+        <!-- Accent Stripe -->
+        <path
+            android:fillColor="#10B981"
+            android:pathData="M30,44h48v6H30z" />
+        <!-- Badge Lock / Check -->
+        <path
+            android:fillColor="#4F46E5"
+            android:pathData="M60,56m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M59,54h2v4h-2z" />
+    </group>
+</vector>
