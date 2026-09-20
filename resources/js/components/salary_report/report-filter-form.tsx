@@ -149,7 +149,6 @@ const ReportFilterForm = ({
             </div>
         </form>
     );
-    );
 };
 
 export default ReportFilterForm;
