@@ -78,7 +78,7 @@ const ReportFilterForm = ({
                 )}
 
                 {(typeof data.from === 'string' || typeof data.to === 'string') && (
-                    <div className="w-full sm:w-auto">
+                    <div className="w-full sm:w-[196px]">
                         <DatePicker
                             selectsRange={true}
                             startDate={parseDate(data.from)}
@@ -91,8 +91,8 @@ const ReportFilterForm = ({
                             isClearable={true}
                             dateFormat="yyyy-MM-dd"
                             placeholderText={`${t('from')} — ${t('to')}`}
-                            wrapperClassName="w-full sm:w-auto"
-                            className="h-9 w-full sm:w-[204px] rounded-xl border border-slate-200 bg-white pl-2.5 pr-5.5 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                            wrapperClassName="w-full sm:w-[196px]"
+                            className="h-9 w-full sm:w-[196px] sm:min-w-[196px] rounded-xl border border-slate-200 bg-white pl-2.5 pr-5.5 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
                         />
                     </div>
                 )}
