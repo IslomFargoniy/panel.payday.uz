@@ -67,24 +67,24 @@ export default function CreateWorkerHolidayModal({ worker }: createWorker) {
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
-                        <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+            <DialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md p-6 bg-white dark:bg-slate-900 shadow-xl">
+                <DialogHeader className="space-y-1.5 pb-2">
+                    <DialogTitle className="flex items-center gap-2.5 text-base font-bold text-slate-900 dark:text-slate-100">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                             <CalendarPlus className="w-4 h-4" />
                         </div>
                         <span>{t('modal.create_title', 'Ta’til Qo‘shish')}</span>
                     </DialogTitle>
-                    <DialogDescription className="text-xs text-slate-500">
-                        {worker.name} {t('modal.create_description', 'uchun ta’til muddatini belgilang')}
+                    <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                        <strong className="font-semibold text-slate-700 dark:text-slate-300">{worker.name}</strong> {t('modal.create_description', 'uchun ta’til muddatini belgilang')}
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={submit} className="space-y-3.5">
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <Label htmlFor="from" className="text-xs block mb-1">
-                                {t('from', 'Boshlanishi')} *
+                <form onSubmit={submit} className="space-y-4 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="from" className="text-xs font-medium text-slate-700 dark:text-slate-300 block">
+                                {t('from', 'Boshlanishi')} <span className="text-rose-500">*</span>
                             </Label>
                             <DatePicker
                                 id="from"
@@ -93,14 +93,15 @@ export default function CreateWorkerHolidayModal({ worker }: createWorker) {
                                     setData('from', from ? format(from, 'yyyy-MM-dd') : '');
                                 }}
                                 locale="sv-sv"
-                                className="block w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-lg shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:text-white"
+                                wrapperClassName="w-full"
+                                className="block w-full h-9.5 px-3 py-2 text-xs sm:text-sm border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 rounded-xl shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:text-white"
                                 placeholderText="YYYY-MM-DD"
                             />
                             <InputError message={errors.from} />
                         </div>
-                        <div>
-                            <Label htmlFor="to" className="text-xs block mb-1">
-                                {t('to', 'Tugashi')} *
+                        <div className="space-y-1.5">
+                            <Label htmlFor="to" className="text-xs font-medium text-slate-700 dark:text-slate-300 block">
+                                {t('to', 'Tugashi')} <span className="text-rose-500">*</span>
                             </Label>
                             <DatePicker
                                 id="to"
@@ -109,30 +110,35 @@ export default function CreateWorkerHolidayModal({ worker }: createWorker) {
                                     setData('to', to ? format(to, 'yyyy-MM-dd') : '');
                                 }}
                                 locale="sv-sv"
-                                className="block w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-lg shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:text-white"
+                                wrapperClassName="w-full"
+                                className="block w-full h-9.5 px-3 py-2 text-xs sm:text-sm border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 rounded-xl shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:text-white"
                                 placeholderText="YYYY-MM-DD"
                             />
                             <InputError message={errors.to} />
                         </div>
                     </div>
 
-                    <div>
-                        <Label htmlFor="comment" className="text-xs">{t('comment', 'Izoh')}</Label>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="comment" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            {t('comment', 'Izoh')}
+                        </Label>
                         <Input
                             id="comment"
                             value={data.comment}
                             onChange={(e) => setData('comment', e.target.value)}
-                            placeholder="Ta’til sababi yoki qo‘shimcha izoh"
+                            placeholder="Ta’til sababi yoki qo‘shimcha izoh (ixtiyoriy)"
+                            className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                         />
                         <InputError message={errors.comment} />
                     </div>
 
-                    <DialogFooter className="gap-2 pt-2">
+                    <DialogFooter className="gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end">
                         <DialogClose asChild>
                             <Button
-                                variant="secondary"
+                                variant="outline"
                                 type="button"
                                 size="sm"
+                                className="h-9 rounded-xl border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
                                 onClick={() => {
                                     reset();
                                     clearErrors();
@@ -147,7 +153,7 @@ export default function CreateWorkerHolidayModal({ worker }: createWorker) {
                             type="submit"
                             size="sm"
                             disabled={processing}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                            className="h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 text-xs font-semibold text-white shadow-xs dark:bg-indigo-600 dark:hover:bg-indigo-500"
                         >
                             {t('save', 'Saqlash')}
                         </Button>

@@ -73,47 +73,55 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
-                        <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+            <DialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md p-6 bg-white dark:bg-slate-900 shadow-xl">
+                <DialogHeader className="space-y-1.5 pb-2">
+                    <DialogTitle className="flex items-center gap-2.5 text-base font-bold text-slate-900 dark:text-slate-100">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                             <Cpu className="w-4 h-4" />
                         </div>
                         <span>{t('modal.create_device_title', 'Yangi Qurilma Qo‘shish')}</span>
                     </DialogTitle>
-                    <DialogDescription className="text-xs text-slate-500">
-                        Filial: <strong className="text-slate-700 dark:text-slate-300">{branch.name}</strong>
+                    <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                        Filial: <strong className="font-semibold text-slate-700 dark:text-slate-300">{branch.name}</strong>
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={submit} className="space-y-3.5">
-                    <div>
-                        <Label htmlFor="name" className="text-xs">{t('device_name', 'Qurilma nomi')}</Label>
+                <form onSubmit={submit} className="space-y-4 pt-1">
+                    <div className="space-y-1.5">
+                        <Label htmlFor="name" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            {t('device_name', 'Qurilma nomi')}
+                        </Label>
                         <Input
                             id="name"
                             placeholder="Masalan: Kassa 1 terminali"
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
+                            className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                         />
                         <InputError message={errors.name} />
                     </div>
 
-                    <div>
-                        <Label htmlFor="mac_address" className="text-xs">{t('mac_address', 'MAC manzil')} *</Label>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="mac_address" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            {t('mac_address', 'MAC manzil')} <span className="text-rose-500">*</span>
+                        </Label>
                         <Input
                             id="mac_address"
                             placeholder="88:de:39:32:d8:0f"
                             value={data.mac_address}
                             onChange={(e) => setData('mac_address', e.target.value)}
+                            className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                         />
                         <InputError message={errors.mac_address} />
                     </div>
 
-                    <div>
-                        <Label htmlFor="connection_type" className="text-xs">{t('connection_type', 'Ulanish turi')}</Label>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="connection_type" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            {t('connection_type', 'Ulanish turi')}
+                        </Label>
                         <select
                             id="connection_type"
-                            className="w-full mt-1 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                            className="w-full h-9.5 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             value={data.connection_type}
                             onChange={(e) => setData('connection_type', e.target.value as 'isup' | 'http_listening')}
                         >
@@ -124,35 +132,42 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                     </div>
 
                     {data.connection_type === 'isup' && (
-                        <>
-                            <div>
-                                <Label htmlFor="device_id" className="text-xs">{t('device_id', 'ISUP Device ID')}</Label>
+                        <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 dark:border-indigo-950 dark:bg-indigo-950/30 space-y-3">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="device_id" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                    {t('device_id', 'ISUP Device ID')}
+                                </Label>
                                 <Input
                                     id="device_id"
                                     value={data.device_id}
                                     onChange={(e) => setData('device_id', e.target.value)}
+                                    className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm font-mono dark:border-slate-800 dark:bg-slate-800"
                                 />
                                 <InputError message={errors.device_id} />
                             </div>
 
-                            <div>
-                                <Label htmlFor="encryption_key" className="text-xs">{t('encryption_key', 'Xavfsizlik kaliti (Key)')}</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="encryption_key" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                    {t('encryption_key', 'Xavfsizlik kaliti (Key)')}
+                                </Label>
                                 <Input
                                     id="encryption_key"
                                     value={data.encryption_key}
                                     onChange={(e) => setData('encryption_key', e.target.value)}
+                                    className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm font-mono dark:border-slate-800 dark:bg-slate-800"
                                 />
                                 <InputError message={errors.encryption_key} />
                             </div>
-                        </>
+                        </div>
                     )}
 
-                    <DialogFooter className="gap-2 pt-2">
+                    <DialogFooter className="gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end">
                         <DialogClose asChild>
                             <Button
-                                variant="secondary"
+                                variant="outline"
                                 type="button"
                                 size="sm"
+                                className="h-9 rounded-xl border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
                                 onClick={() => {
                                     reset();
                                     clearErrors();
@@ -167,7 +182,7 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                             type="submit"
                             size="sm"
                             disabled={processing}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                            className="h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 text-xs font-semibold text-white shadow-xs dark:bg-indigo-600 dark:hover:bg-indigo-500"
                         >
                             {t('save', 'Saqlash')}
                         </Button>

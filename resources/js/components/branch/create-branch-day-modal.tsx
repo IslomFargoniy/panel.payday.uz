@@ -65,20 +65,24 @@ export default function CreateBranchDayModal({ branch, days }: createBranch) {
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
-                        <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                            <Calendar className="w-4 h-4" />
+            <DialogContent className="rounded-2xl border-slate-200 dark:border-slate-800 max-w-md bg-white dark:bg-slate-900 p-6 shadow-xl">
+                <DialogHeader className="space-y-2">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                            <Calendar className="w-4.5 h-4.5" />
                         </div>
-                        <span>{t('modal.create_title', 'Ish Kunlarini Sozlash')}</span>
-                    </DialogTitle>
-                    <DialogDescription className="text-xs text-slate-500">
-                        {t('modal.create_description', 'Filial uchun haftalik ish kunlarini tanlang')}
-                    </DialogDescription>
+                        <div>
+                            <DialogTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                                {t('modal.create_title', 'Ish Kunlarini Sozlash')}
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                                {t('modal.create_description', 'Filial uchun haftalik ish kunlarini tanlang')}
+                            </DialogDescription>
+                        </div>
+                    </div>
                 </DialogHeader>
 
-                <form onSubmit={submit} className="space-y-4">
+                <form onSubmit={submit} className="mt-4 space-y-4">
                     <div>
                         <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-2">
                             {t('weekdays', 'Hafta kunlari')}
@@ -117,12 +121,12 @@ export default function CreateBranchDayModal({ branch, days }: createBranch) {
                         <InputError message={errors.day_ids} />
                     </div>
 
-                    <DialogFooter className="gap-2 pt-2">
+                    <DialogFooter className="mt-6 flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                         <DialogClose asChild>
                             <Button
-                                variant="secondary"
+                                variant="outline"
                                 type="button"
-                                size="sm"
+                                className="h-9 rounded-xl border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
                                 onClick={() => {
                                     reset();
                                     clearErrors();
@@ -135,9 +139,8 @@ export default function CreateBranchDayModal({ branch, days }: createBranch) {
 
                         <Button
                             type="submit"
-                            size="sm"
                             disabled={processing}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                            className="h-9 rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500"
                         >
                             {t('save', 'Saqlash')}
                         </Button>
@@ -147,4 +150,5 @@ export default function CreateBranchDayModal({ branch, days }: createBranch) {
         </Dialog>
     );
 }
+
 

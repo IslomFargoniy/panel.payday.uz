@@ -76,26 +76,22 @@ export default function CreateSalaryPaymentModal({ workers }: PageProps) {
             </DialogTrigger>
 
             <DialogContent className="max-w-md rounded-2xl border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                <DialogHeader className="space-y-2">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
-                            <CreditCard className="h-5 w-5" />
+                <DialogHeader className="space-y-1.5 pb-2">
+                    <DialogTitle className="flex items-center gap-2.5 text-base font-bold text-slate-900 dark:text-slate-100">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                            <CreditCard className="w-4 h-4" />
                         </div>
-                        <div>
-                            <DialogTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                                {t('modal.create_title')}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-                                {t('modal.create_description')}
-                            </DialogDescription>
-                        </div>
-                    </div>
+                        <span>{t('modal.create_title', 'Maosh To‘lovi')}</span>
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                        {t('modal.create_description', 'Xodimga to‘langan maosh summasini kiriting')}
+                    </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={submit} className="mt-4 space-y-4">
+                <form onSubmit={submit} className="space-y-4 pt-1">
                     <div className="space-y-1.5">
                         <Label htmlFor="worker_id" className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                            {t('worker')}
+                            {t('worker', 'Xodim')} <span className="text-rose-500">*</span>
                         </Label>
 
                         <Select
@@ -105,17 +101,17 @@ export default function CreateSalaryPaymentModal({ workers }: PageProps) {
                                 setData('worker_id', parseInt(val));
                             }}
                         >
-                            <SelectTrigger className="h-9 rounded-xl border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800">
-                                <SelectValue placeholder={t('select')} />
+                            <SelectTrigger className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800">
+                                <SelectValue placeholder={t('select', 'Xodimni tanlang')} />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800">
                                 {workers.map((worker) => (
                                     <SelectItem
                                         key={worker.id}
                                         value={worker.id.toString()}
-                                        className="text-xs"
+                                        className="text-xs sm:text-sm"
                                     >
-                                        {worker.name} ({worker?.balance?.toLocaleString('ru-RU')})
+                                        {worker.name} ({worker?.balance?.toLocaleString('ru-RU')} so‘m)
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -126,7 +122,7 @@ export default function CreateSalaryPaymentModal({ workers }: PageProps) {
 
                     <div className="space-y-1.5">
                         <Label htmlFor="amount" className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                            {t('amount')}
+                            {t('amount', 'Summa')} (so‘m) <span className="text-rose-500">*</span>
                         </Label>
                         <Input
                             type="number"
@@ -134,46 +130,50 @@ export default function CreateSalaryPaymentModal({ workers }: PageProps) {
                             ref={nameInput}
                             value={data.amount > 0 ? data.amount : ''}
                             onChange={(e) => setData('amount', parseInt(e.target.value) || 0)}
-                            className="h-9 rounded-xl border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
+                            placeholder="0"
+                            className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                         />
                         <InputError message={errors.amount} />
                     </div>
 
                     <div className="space-y-1.5">
                         <Label htmlFor="comment" className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                            {t('comment')}
+                            {t('comment', 'Izoh')}
                         </Label>
                         <Input
                             id="comment"
                             value={data.comment}
                             onChange={(e) => setData('comment', e.target.value)}
-                            className="h-9 rounded-xl border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
+                            placeholder="To‘lov bo‘yicha izoh (ixtiyoriy)"
+                            className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                         />
                         <InputError message={errors.comment} />
                     </div>
 
-                    <DialogFooter className="mt-6 flex items-center justify-end gap-2 pt-2">
+                    <DialogFooter className="mt-6 flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                         <DialogClose asChild>
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="h-9 rounded-lg border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
+                                size="sm"
+                                className="h-9 rounded-xl border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
                                 onClick={() => {
                                     reset();
                                     clearErrors();
                                     setOpen(false);
                                 }}
                             >
-                                {t('cancel')}
+                                {t('cancel', 'Bekor qilish')}
                             </Button>
                         </DialogClose>
 
                         <Button
                             type="submit"
+                            size="sm"
                             disabled={processing}
-                            className="h-9 rounded-lg bg-indigo-600 px-4 text-xs font-medium text-white shadow-xs hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                            className="h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 text-xs font-semibold text-white shadow-xs dark:bg-indigo-600 dark:hover:bg-indigo-500"
                         >
-                            {t('save')}
+                            {t('save', 'Saqlash')}
                         </Button>
                     </DialogFooter>
                 </form>

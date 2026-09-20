@@ -289,3 +289,30 @@
     padding: 0 !important;
 }
 
+/* Ensure react-datepicker always stretches 100% full width */
+.react-datepicker-wrapper,
+.react-datepicker__input-container {
+    width: 100% !important;
+    display: block !important;
+}
+
+.react-datepicker__input-container input {
+    width: 100% !important;
+}
+
+/* TimePicker styling unification */
+.react-time-picker {
+    display: inline-flex !important;
+    width: 100% !important;
+}
+
+.react-time-picker__wrapper {
+    border: none !important;
+    width: 100% !important;
+}
+
+.react-time-picker__inputGroup {
+    flex-grow: 1 !important;
+}
+
+
