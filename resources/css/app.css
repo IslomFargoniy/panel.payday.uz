@@ -277,22 +277,55 @@
 }
 
 .react-datepicker__close-icon {
+    position: absolute !important;
+    top: 0 !important;
+    bottom: 0 !important;
     right: 8px !important;
-    padding: 0 !important;
-}
-
-.react-datepicker__close-icon::after {
-    background-color: var(--color-muted-foreground) !important;
-    color: var(--color-card) !important;
-    font-size: 0.75rem !important;
+    margin: auto 0 !important;
     height: 16px !important;
     width: 16px !important;
-    border-radius: 50% !important;
+    padding: 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    cursor: pointer !important;
+}
+
+.react-datepicker__close-icon::after {
+    position: static !important;
+    margin: 0 !important;
     padding: 0 !important;
+    height: 14px !important;
+    width: 14px !important;
+    min-width: 14px !important;
+    border-radius: 50% !important;
+    background-color: #94a3b8 !important;
+    color: #ffffff !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
     line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    transition: background-color 0.15s ease, transform 0.15s ease !important;
+}
+
+.react-datepicker__close-icon:hover::after {
+    background-color: #64748b !important;
+    transform: scale(1.08) !important;
+}
+
+.dark .react-datepicker__close-icon::after {
+    background-color: #64748b !important;
+    color: #0f172a !important;
+}
+
+.dark .react-datepicker__close-icon:hover::after {
+    background-color: #94a3b8 !important;
 }
 
 /* Ensure react-datepicker always stretches 100% full width */
@@ -306,9 +339,9 @@
     width: 100% !important;
 }
 
-/* Ensure inputs with clearable 'x' icon have generous right padding so text never overlaps */
+/* Ensure inputs with clearable 'x' icon have clean right padding */
 .react-datepicker__input-container:has(.react-datepicker__close-icon) input {
-    padding-right: 2.25rem !important;
+    padding-right: 1.75rem !important;
 }
 
 /* TimePicker styling unification */
