@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PayDay</string>
+    <string name="login_title">PayDay tizimiga xush kelibsiz</string>
+    <string name="login_subtitle">Xodimlar va maosh boshqaruvi</string>
+    <string name="email_or_phone">Email yoki Telefon</string>
+    <string name="password">Parol</string>
+    <string name="login_button">Kirish</string>
+    <string name="biometric_login">Barmoq izi orqali kirish</string>
+    <string name="dashboard">Bosh sahifa</string>
+    <string name="workers">Xodimlar</string>
+    <string name="attendance">Davomat</string>
+    <string name="daily_attendance">Kunlik davomat</string>
+    <string name="monthly_report">Oylik hisobot</string>
+    <string name="salary">Oylik</string>
+    <string name="salary_report">Oylik hisoboti</string>
+    <string name="salary_payment">Oylik to‘lovi</string>
+    <string name="firms">Firmalar</string>
+    <string name="branches">Filiallar</string>
+    <string name="settings">Sozlamalar</string>
+    <string name="excel">Excel</string>
+    <string name="excel_download">Excel yuklab olish</string>
+    <string name="search">Qidirish…</string>
+    <string name="filter">Filtr</string>
+    <string name="add">Qo‘shish</string>
+    <string name="save">Saqlash</string>
+    <string name="cancel">Bekor qilish</string>
+    <string name="delete">O‘chirish</string>
+    <string name="logout">Chiqish</string>
+    <string name="on_time">O‘z vaqtida</string>
+    <string name="late">Kechikkan</string>
+    <string name="absent">Kelmadi</string>
+    <string name="off_day">Dam olish</string>
+    <string name="worked_hours">Ishlagan soat</string>
+    <string name="break_hours">Tanaffus</string>
+    <string name="late_hours">Kechikish (soat)</string>
+    <string name="net_hours">Sof soat</string>
+    <string name="schedule_hours">Grafik soati</string>
+</resources>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PayDay</string>
+    <string name="login_title">Добро пожаловать в PayDay</string>
+    <string name="login_subtitle">Управление персоналом и зарплатой</string>
+    <string name="email_or_phone">Email или телефон</string>
+    <string name="password">Пароль</string>
+    <string name="login_button">Войти</string>
+    <string name="biometric_login">Вход по биометрии</string>
+    <string name="dashboard">Главная</string>
+    <string name="workers">Сотрудники</string>
+    <string name="attendance">Посещаемость</string>
+    <string name="daily_attendance">Ежедневная посещаемость</string>
+    <string name="monthly_report">Отчёт</string>
+    <string name="salary">Зарплата</string>
+    <string name="salary_report">Отчёт по зарплате</string>
+    <string name="salary_payment">Выплата зарплаты</string>
+    <string name="firms">Фирмы</string>
+    <string name="branches">Филиалы</string>
+    <string name="settings">Настройки</string>
+    <string name="excel">Excel</string>
+    <string name="excel_download">Скачать Excel</string>
+    <string name="search">Поиск…</string>
+    <string name="filter">Фильтр</string>
+    <string name="add">Добавить</string>
+    <string name="save">Сохранить</string>
+    <string name="cancel">Отмена</string>
+    <string name="delete">Удалить</string>
+    <string name="logout">Выйти</string>
+    <string name="on_time">Вовремя</string>
+    <string name="late">Опоздание</string>
+    <string name="absent">Не пришёл</string>
+    <string name="off_day">Выходной</string>
+    <string name="worked_hours">Отработанные часы</string>
+    <string name="break_hours">Часы перерыва</string>
+    <string name="late_hours">Часы опоздания</string>
+    <string name="net_hours">Чистые часы</string>
+    <string name="schedule_hours">Рабочие часы</string>
+</resources>
