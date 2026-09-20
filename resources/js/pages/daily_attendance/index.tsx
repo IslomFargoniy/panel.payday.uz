@@ -103,12 +103,12 @@ export default function Attendance() {
                             </BreadcrumbItem>
                         </BreadcrumbList>
                     </Breadcrumb>
-                    <div className="flex items-center gap-2 min-w-0 flex-wrap justify-end">
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap justify-start sm:justify-end">
                         <ExcelExportButton
                             onClick={() => exportDailyAttendanceToExcel(worker, data, t)}
                             disabled={!worker?.data || worker.data.length === 0}
                         />
-                        <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} />
+                        <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} className="w-full sm:w-auto" />
                     </div>
                 </div>
 

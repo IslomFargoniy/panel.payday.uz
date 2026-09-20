@@ -13,6 +13,7 @@ interface SearchFormProps {
     workers?: Worker[];
     firms?: Firm[];
     branches?: Branch[];
+    className?: string;
 }
 
 const parseDate = (val?: string | null) => {
@@ -22,7 +23,7 @@ const parseDate = (val?: string | null) => {
     return isNaN(d.getTime()) ? null : d;
 };
 
-const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: SearchFormProps) => {
+const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, className }: SearchFormProps) => {
     const { t } = useTranslation(); // Hook to access translations
 
     const [filteredBranches, setBranches] = React.useState<Branch[] | undefined>(branches);
@@ -67,7 +68,7 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches }: S
     }, [data, setBranches, branches]);
 
     return (
-        <form onSubmit={handleSubmit} className="w-full">
+        <form onSubmit={handleSubmit} className={className || 'w-full sm:w-auto'}>
             <div className="flex flex-wrap items-center justify-start sm:justify-end gap-1.5 w-full max-w-full" role="group">
                 {/* Search Bar */}
                 <input
