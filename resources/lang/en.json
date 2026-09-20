@@ -287,5 +287,15 @@
     "attendance_distribution": "Attendance Distribution",
     "in_building": "Inside building",
     "registered_staff": "Registered staff",
-    "branches_overview": "Branches Overview"
+    "branches_overview": "Branches Overview",
+    "camera": {
+        "snap": "Camera",
+        "take_photo": "Take Photo",
+        "modal_title": "Take Photo via Camera",
+        "align_face": "Align face in center",
+        "retake": "Retake",
+        "use_photo": "Use Photo",
+        "flip": "Flip Camera"
+    },
+    "camera_permission_denied": "Camera connection error. Please allow camera access in your browser."
 }

@@ -287,5 +287,15 @@
     "attendance_distribution": "Davomat taqsimoti",
     "in_building": "Bino ichida",
     "registered_staff": "Ro‘yxatdagi tarkib",
-    "branches_overview": "Filiallar ko‘rsatkichlari"
+    "branches_overview": "Filiallar ko‘rsatkichlari",
+    "camera": {
+        "snap": "Kamera",
+        "take_photo": "Rasmga olish",
+        "modal_title": "Kamera orqali rasmga olish",
+        "align_face": "Yuzni markazga to‘g‘rilang",
+        "retake": "Qayta olish",
+        "use_photo": "Tanlash",
+        "flip": "Kamerani almashtirish"
+    },
+    "camera_permission_denied": "Kameraga ulanishda xatolik. Brauzerda kamera ruxsatini yoqing."
 }

@@ -1,9 +1,16 @@
 package uz.payday.app.presentation.workers
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -16,6 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -23,6 +33,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import uz.payday.app.presentation.components.PaydayTopBar
 import uz.payday.app.presentation.theme.*
+import java.io.File
+import java.io.FileOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,9 +43,35 @@ fun AddEditWorkerScreen(
     navController: NavController,
     viewModel: WorkerViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val formState by viewModel.formState.collectAsState()
     var branchMenuExpanded by remember { mutableStateOf(false) }
     var salaryTypeMenuExpanded by remember { mutableStateOf(false) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            val file = File(context.cacheDir, "worker_cam_${System.currentTimeMillis()}.jpg")
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            }
+            viewModel.onFormAvatarChange(file)
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            val inputStream = context.contentResolver.openInputStream(uri)
+            val file = File(context.cacheDir, "worker_gal_${System.currentTimeMillis()}.jpg")
+            FileOutputStream(file).use { out ->
+                inputStream?.copyTo(out)
+            }
+            viewModel.onFormAvatarChange(file)
+        }
+    }
 
     LaunchedEffect(workerId) {
         viewModel.initForm(workerId)
@@ -85,6 +123,83 @@ fun AddEditWorkerScreen(
                             color = Rose600,
                             style = MaterialTheme.typography.bodyMedium
                         )
+                    }
+                }
+
+                // Avatar Photo Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(Indigo50)
+                                .border(1.5.dp, Indigo600.copy(alpha = 0.5f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (formState.avatarFile != null) {
+                                val bitmap = remember(formState.avatarFile) {
+                                    BitmapFactory.decodeFile(formState.avatarFile!!.absolutePath)
+                                }
+                                if (bitmap != null) {
+                                    Image(
+                                        bitmap = bitmap.asImageBitmap(),
+                                        contentDescription = "Avatar",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Icon(Icons.Default.Person, contentDescription = null, tint = Indigo600, modifier = Modifier.size(32.dp))
+                                }
+                            } else {
+                                Icon(Icons.Default.Person, contentDescription = null, tint = Indigo600, modifier = Modifier.size(32.dp))
+                            }
+                        }
+
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "Xodim Rasmi",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { cameraLauncher.launch(null) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.height(36.dp)
+                                ) {
+                                    Icon(Icons.Default.CameraAlt, contentDescription = "Kamera", modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Kamera", style = MaterialTheme.typography.labelMedium)
+                                }
+
+                                OutlinedButton(
+                                    onClick = { galleryLauncher.launch("image/*") },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.height(36.dp)
+                                ) {
+                                    Icon(Icons.Default.PhotoLibrary, contentDescription = "Galereya", modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Galereya", style = MaterialTheme.typography.labelMedium)
+                                }
+                            }
+                        }
                     }
                 }
 

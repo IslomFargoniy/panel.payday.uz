@@ -16,11 +16,12 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/components/ui/dialog';
-import { Pencil } from 'lucide-react';
+import { Pencil, Camera } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Worker } from '@/types';
 import TimePicker from 'react-time-picker';
 import 'react-time-picker/dist/TimePicker.css';
+import WebcamCaptureModal from '@/components/webcam-capture-modal';
 
 interface Props {
     worker: Worker;
@@ -67,6 +68,8 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
         }
     }, [open, worker]);
 
+    const [cameraModalOpen, setCameraModalOpen] = useState(false);
+
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null;
         setData('avatar', file);
@@ -75,6 +78,11 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
         } else {
             setPreviewUrl(worker.avatar ? `/storage/${worker.avatar}` : null);
         }
+    };
+
+    const handleCameraCapture = (file: File) => {
+        setData('avatar', file);
+        setPreviewUrl(URL.createObjectURL(file));
     };
 
     const submit: FormEventHandler = (e) => {
@@ -165,8 +173,19 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
                                             {t('no_image', 'Rasm yo‘q')}
                                         </div>
                                     )}
-                                    <div className="flex-1">
-                                        <Input id="update-avatar" type="file" accept="image/*" onChange={handleAvatarChange} />
+                                    <div className="flex-1 flex gap-2">
+                                        <Input id="update-avatar" type="file" accept="image/*" onChange={handleAvatarChange} className="flex-1" />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCameraModalOpen(true)}
+                                            className="shrink-0 flex items-center gap-1.5 h-9 px-3 text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-950/50"
+                                            title="Kamera orqali rasmga olish"
+                                        >
+                                            <Camera className="w-3.5 h-3.5" />
+                                            <span className="hidden sm:inline">{t('camera.snap', 'Kamera')}</span>
+                                        </Button>
                                         <InputError message={errors.avatar as string} />
                                     </div>
                                 </div>
@@ -274,6 +293,11 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
                     </DialogFooter>
                 </form>
             </DialogContent>
+            <WebcamCaptureModal
+                open={cameraModalOpen}
+                onOpenChange={setCameraModalOpen}
+                onCapture={handleCameraCapture}
+            />
         </Dialog>
     );
 }

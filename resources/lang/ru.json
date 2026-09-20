@@ -287,5 +287,15 @@
     "attendance_distribution": "Распределение посещаемости",
     "in_building": "В здании",
     "registered_staff": "В штате",
-    "branches_overview": "Показатели филиалов"
+    "branches_overview": "Показатели филиалов",
+    "camera": {
+        "snap": "Камера",
+        "take_photo": "Сделать фото",
+        "modal_title": "Снимок с камеры",
+        "align_face": "Выровняйте лицо по центру",
+        "retake": "Переснять",
+        "use_photo": "Использовать",
+        "flip": "Переключить камеру"
+    },
+    "camera_permission_denied": "Ошибка подключения к камере. Разрешите доступ к камере в браузере."
 }
