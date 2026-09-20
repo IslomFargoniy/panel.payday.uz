@@ -23,9 +23,9 @@ import uz.payday.app.presentation.components.AttendanceBadge
 import uz.payday.app.presentation.components.PaydayTopBar
 import uz.payday.app.presentation.components.WorkerAvatar
 import uz.payday.app.presentation.navigation.Screen
+import uz.payday.app.util.DateUtils
 import uz.payday.app.presentation.theme.*
 import uz.payday.app.util.CurrencyFormatter
-import uz.payday.app.util.DateUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -305,7 +305,7 @@ fun AccessEventItem(event: AccessEvent) {
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                     )
                     Text(
-                        text = event.createdAt,
+                        text = DateUtils.formatDisplayDateTime(event.createdAt),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

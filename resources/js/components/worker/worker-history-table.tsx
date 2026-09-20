@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { WorkerHistory } from '@/types';
 import { History } from 'lucide-react';
+import { formatDateTime } from '@/lib/format-utils';
 
 type WorkerTableProps = {
     history: WorkerHistory[];
@@ -70,7 +71,9 @@ const WorkerHistoryTable = ({ history }: WorkerTableProps) => {
                                                 {Number(item.balance).toLocaleString()} {t('sum', 'so‘m')}
                                             </td>
                                             <td className="px-3.5 py-2.5 text-slate-600 dark:text-slate-300">{item.user_name || '—'}</td>
-                                            <td className="px-3.5 py-2.5 font-mono text-[11px] text-slate-500">{item.created_at}</td>
+                                            <td className="px-3.5 py-2.5 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                                                {formatDateTime(item.created_at)}
+                                            </td>
                                             <td className="px-3.5 py-2.5 text-slate-400 dark:text-slate-500 truncate max-w-[150px]" title={item.comment || ''}>
                                                 {item.comment || '—'}
                                             </td>

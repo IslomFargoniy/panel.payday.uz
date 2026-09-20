@@ -97,8 +97,8 @@ const Salary_paymentTable = ({ searchData, workers, ...salary_payment }: SalaryP
                                             {typeof item.amount === 'number' ? item.amount.toLocaleString('ru-RU') : item.amount}
                                         </td>
                                         <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{item.comment || '—'}</td>
-                                        <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
-                                            {format(new Date(item.created_at), 'yyyy-MM-dd HH:mm')}
+                                        <td className="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">
+                                            {format(new Date(item.created_at), 'yyyy-MM-dd HH:mm:ss')}
                                         </td>
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex items-center justify-end gap-1">

@@ -6,6 +6,7 @@ import StatsPieChart from '@/components/dashboard/stats-pie-chart';
 import DashboardFilterForm from '@/components/dashboard/dashboard-filter-form';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
 import {
     Users,
     UserCheck,
@@ -71,17 +72,10 @@ export default function Dashboard() {
         return Math.min(100, Math.round((present / stats.all_worker) * 1000) / 10);
     }, [stats]);
 
-    // Format current localized date
+    // Format current date as yyyy-MM-dd
     const currentDateFormatted = useMemo(() => {
-        const now = new Date();
-        const locale = i18n.language === 'ru' ? 'ru-RU' : i18n.language === 'en' ? 'en-US' : 'uz-UZ';
-        return new Intl.DateTimeFormat(locale, {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        }).format(now);
-    }, [i18n.language]);
+        return format(new Date(), 'yyyy-MM-dd');
+    }, []);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

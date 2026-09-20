@@ -2,6 +2,7 @@ import { SearchData, WorkerPaginate } from '@/types';
 import { Link } from '@inertiajs/react';
 import { Check, Clock, Minus, MoonStar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
 
 type WorkerTableProps = {
     worker: WorkerPaginate;
@@ -92,7 +93,7 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
                                     const event = item.hikvision_access_events?.find((event) => event.created_at.startsWith(dateToCompare));
 
                                     if (event) {
-                                        const eventTime = new Date(event.created_at).toLocaleTimeString('en-US', { hour12: false });
+                                        const eventTime = format(new Date(event.created_at), 'HH:mm:ss');
                                         const workTime = event.work_time;
 
                                         if (eventTime <= workTime) {
@@ -110,7 +111,7 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
                                         <td key={dayIndex} className="px-1 py-2 text-center">
                                             {event ? (
                                                 (() => {
-                                                    const eventTimeStr = new Date(event.created_at).toLocaleTimeString('en-US', { hour12: false });
+                                                    const eventTimeStr = format(new Date(event.created_at), 'HH:mm:ss');
                                                     const workTimeStr = event.work_time;
 
                                                     return eventTimeStr <= workTimeStr ? (

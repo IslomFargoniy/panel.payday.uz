@@ -68,7 +68,7 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                                         {checkIns.map((ci, i) => (
                                                             <span key={i} className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-mono text-[11px]">
                                                                 <ArrowDownLeft className="w-3 h-3 text-emerald-500" />
-                                                                {new Date(ci.created_at).toLocaleTimeString('en-US', { hour12: false })}
+                                                                {format(new Date(ci.created_at), 'HH:mm:ss')}
                                                             </span>
                                                         ))}
                                                     </div>
@@ -83,7 +83,7 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                                         {checkOuts.map((co, i) => (
                                                             <span key={i} className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 font-mono text-[11px]">
                                                                 <ArrowUpRight className="w-3 h-3 text-blue-500" />
-                                                                {new Date(co.created_at).toLocaleTimeString('en-US', { hour12: false })}
+                                                                {format(new Date(co.created_at), 'HH:mm:ss')}
                                                             </span>
                                                         ))}
                                                     </div>

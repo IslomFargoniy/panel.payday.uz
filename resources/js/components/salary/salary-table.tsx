@@ -99,8 +99,8 @@ const SalaryTable = ({ searchData, ...salary }: SalaryTableProps) => {
                                             </td>
                                             <td className="px-3.5 py-2.5 font-mono text-[11px] text-slate-500">{item.from}</td>
                                             <td className="px-3.5 py-2.5 font-mono text-[11px] text-slate-500">{item.to}</td>
-                                            <td className="px-3.5 py-2.5 font-mono text-[11px] text-slate-500">
-                                                {format(new Date(item.created_at), 'yyyy-MM-dd HH:mm')}
+                                            <td className="px-3.5 py-2.5 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                                                {format(new Date(item.created_at), 'yyyy-MM-dd HH:mm:ss')}
                                             </td>
                                             <td className="px-3.5 py-2.5 text-right">
                                                 <div className="flex items-center justify-end">

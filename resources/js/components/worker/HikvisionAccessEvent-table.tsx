@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Worker, HikvisionAccessEvent, HikvisionAccessEventPaginate, SearchData } from '@/types';
 import DeleteItemModal from '@/components/delete-item-modal';
 import { toast } from 'sonner';
+import { formatDateTime } from '@/lib/format-utils';
 
 type HikvisionAccessEventTableProps = {
     worker: Worker;
@@ -180,8 +181,8 @@ const HikvisionAccessEventTable = ({ searchData, hikvision_access_events }: Hikv
                                     return (
                                         <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
                                             <td className="px-3 py-2.5 text-center font-mono text-slate-400 dark:text-slate-500">{globalIndex}</td>
-                                            <td className="px-3 py-2.5 whitespace-nowrap font-mono text-slate-700 dark:text-slate-300">
-                                                {item.hikvision_access?.dateTime || '—'}
+                                            <td className="px-3.5 py-2.5 whitespace-nowrap font-mono text-slate-700 dark:text-slate-300">
+                                                {formatDateTime(item.hikvision_access?.dateTime || item.created_at)}
                                             </td>
                                             <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-slate-100">
                                                 {item.hikvision_access?.shortSerialNumber || '—'}

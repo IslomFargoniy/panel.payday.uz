@@ -31,8 +31,10 @@ object CurrencyFormatter {
 
 object DateUtils {
     private val apiDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-    private val displayDateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.US)
-    private val monthYearFormat = SimpleDateFormat("MMMM yyyy", Locale("uz"))
+    private val displayDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    private val displayDateTimeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+    private val displayTimeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
+    private val monthYearFormat = SimpleDateFormat("yyyy-MM", Locale.US)
 
     fun today(): String = apiDateFormat.format(Date())
 
@@ -46,10 +48,44 @@ object DateUtils {
     fun formatDisplayDate(dateStr: String?): String {
         if (dateStr.isNullOrBlank()) return "-"
         return try {
-            val date = apiDateFormat.parse(dateStr)
-            if (date != null) displayDateFormat.format(date) else dateStr
+            val cleanStr = if (dateStr.contains("T")) dateStr.substringBefore("T") else if (dateStr.contains(" ")) dateStr.substringBefore(" ") else dateStr
+            val date = apiDateFormat.parse(cleanStr)
+            if (date != null) displayDateFormat.format(date) else cleanStr
         } catch (e: Exception) {
             dateStr
+        }
+    }
+
+    fun formatDisplayDateTime(dateTimeStr: String?): String {
+        if (dateTimeStr.isNullOrBlank()) return "-"
+        return try {
+            val normalized = dateTimeStr.replace("T", " ").substringBefore(".")
+            if (normalized.length == 19) {
+                normalized
+            } else {
+                val parsed = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).parse(normalized)
+                    ?: SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(normalized)
+                if (parsed != null) displayDateTimeFormat.format(parsed) else dateTimeStr
+            }
+        } catch (e: Exception) {
+            dateTimeStr
+        }
+    }
+
+    fun formatDisplayTime(timeStr: String?): String {
+        if (timeStr.isNullOrBlank()) return "-"
+        return try {
+            if (timeStr.contains("T") || timeStr.contains(" ")) {
+                val timePart = if (timeStr.contains("T")) timeStr.substringAfter("T") else timeStr.substringAfter(" ")
+                val cleanTime = timePart.substringBefore(".")
+                if (cleanTime.length == 5) "$cleanTime:00" else cleanTime
+            } else if (timeStr.matches(Regex("^\\d{2}:\\d{2}$"))) {
+                "$timeStr:00"
+            } else {
+                timeStr
+            }
+        } catch (e: Exception) {
+            timeStr
         }
     }
 

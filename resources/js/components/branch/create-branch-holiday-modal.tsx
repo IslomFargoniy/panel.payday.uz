@@ -106,6 +106,7 @@ export default function CreateBranchHolidayModal({ branch }: createBranch) {
                             onChange={(date: Date | null) => {
                                 setData('date', date ? format(date, 'yyyy-MM-dd') : '');
                             }}
+                            dateFormat="yyyy-MM-dd"
                             locale="sv-sv"
                             wrapperClassName="w-full"
                             className="block w-full h-9.5 px-3 py-2 text-xs sm:text-sm border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 rounded-xl shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:text-white"

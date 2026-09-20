@@ -156,7 +156,7 @@ export const exportAttendanceToExcel = async (
             const isOffDay = item.holidays?.includes(Number(day));
 
             if (event) {
-                const eventTime = new Date(event.created_at).toLocaleTimeString('en-US', { hour12: false });
+                const eventTime = format(new Date(event.created_at), 'HH:mm:ss');
                 const workTime = event.work_time;
 
                 if (eventTime <= workTime) {
@@ -247,11 +247,11 @@ export const exportDailyAttendanceToExcel = async (
         const checkOuts = item.hikvision_access_events?.filter((e) => e.attendanceStatus === 'checkOut') || [];
 
         const checkInTimes = checkIns.length
-            ? checkIns.map((ci) => new Date(ci.created_at).toLocaleTimeString('en-US', { hour12: false })).join(', ')
+            ? checkIns.map((ci) => format(new Date(ci.created_at), 'HH:mm:ss')).join(', ')
             : '-';
 
         const checkOutTimes = checkOuts.length
-            ? checkOuts.map((co) => new Date(co.created_at).toLocaleTimeString('en-US', { hour12: false })).join(', ')
+            ? checkOuts.map((co) => format(new Date(co.created_at), 'HH:mm:ss')).join(', ')
             : '-';
 
         let lateTime = '-';
