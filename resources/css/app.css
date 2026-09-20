@@ -276,6 +276,11 @@
     border-color: var(--color-muted-foreground) !important;
 }
 
+.react-datepicker__close-icon {
+    right: 8px !important;
+    padding: 0 !important;
+}
+
 .react-datepicker__close-icon::after {
     background-color: var(--color-muted-foreground) !important;
     color: var(--color-card) !important;
@@ -287,6 +292,7 @@
     align-items: center !important;
     justify-content: center !important;
     padding: 0 !important;
+    line-height: 1 !important;
 }
 
 /* Ensure react-datepicker always stretches 100% full width */
@@ -298,6 +304,11 @@
 
 .react-datepicker__input-container input {
     width: 100% !important;
+}
+
+/* Ensure inputs with clearable 'x' icon have generous right padding so text never overlaps */
+.react-datepicker__input-container:has(.react-datepicker__close-icon) input {
+    padding-right: 2.25rem !important;
 }
 
 /* TimePicker styling unification */
