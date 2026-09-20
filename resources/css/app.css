@@ -280,10 +280,10 @@
     position: absolute !important;
     top: 0 !important;
     bottom: 0 !important;
-    right: 8px !important;
+    right: 4px !important;
     margin: auto 0 !important;
-    height: 16px !important;
-    width: 16px !important;
+    height: 14px !important;
+    width: 14px !important;
     padding: 0 !important;
     display: flex !important;
     align-items: center !important;
@@ -292,6 +292,7 @@
     border: none !important;
     outline: none !important;
     cursor: pointer !important;
+    box-sizing: border-box !important;
 }
 
 .react-datepicker__close-icon::after {
@@ -301,12 +302,14 @@
     height: 14px !important;
     width: 14px !important;
     min-width: 14px !important;
+    max-width: 14px !important;
+    box-sizing: border-box !important;
     border-radius: 50% !important;
     background-color: #94a3b8 !important;
     color: #ffffff !important;
     font-size: 10px !important;
     font-weight: 700 !important;
-    line-height: 1 !important;
+    line-height: 14px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -339,9 +342,9 @@
     width: 100% !important;
 }
 
-/* Ensure inputs with clearable 'x' icon have clean right padding */
+/* Ensure inputs with clearable 'x' icon have clean right padding without crowding */
 .react-datepicker__input-container:has(.react-datepicker__close-icon) input {
-    padding-right: 1.75rem !important;
+    padding-right: 1.5rem !important;
 }
 
 /* TimePicker styling unification */
