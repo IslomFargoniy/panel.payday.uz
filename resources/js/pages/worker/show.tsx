@@ -123,11 +123,11 @@ export default function WorkerShow() {
                         <div className="col-span-12 lg:col-span-8 space-y-6 min-w-0 max-w-full">
                             <HikvisionAccessEventTable worker={worker} hikvision_access_events={hikvision_access_events} searchData={data} />
                             <SalaryTable worker={worker} />
+                            <SalaryPaymentTable worker={worker} />
                         </div>
                         <div className="col-span-12 lg:col-span-4 space-y-6 min-w-0 max-w-full">
                             <WorkerDayTable worker={worker} days={days} />
                             <WorkerHolidayTable worker={worker} />
-                            <SalaryPaymentTable worker={worker} />
                         </div>
                     </div>
                 </div>
