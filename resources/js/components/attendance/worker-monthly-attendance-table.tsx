@@ -1,10 +1,5 @@
 import { SearchData, WorkerPaginate } from '@/types';
-import { Button } from '@/components/ui/button';
 import { Link } from '@inertiajs/react';
-import { format } from 'date-fns';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
-import { Download, FileSpreadsheet } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 type WorkerTableProps = {
@@ -46,90 +41,8 @@ const WorkerMonthlyAttendanceTable = ({ worker, searchData }: WorkerTableProps) 
         return minutesToHHMM(Math.round(diff));
     };
 
-    const exportToExcel = async () => {
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Attendance');
-
-        const headers = [
-            t('n', '№'),
-            t('name', 'F.I.SH'),
-            t('firm', 'Firma'),
-            t('phone', 'Telefon'),
-            t('late_hours', 'Kechikkan soat'),
-            t('break_hours', 'Tanaffus'),
-            t('worked_hours', 'Ishlagan soat'),
-            t('common_worked_hours', 'Sof ishlagan soat'),
-            t('late_days', 'Kechikkan kun'),
-            t('worked_days', 'Ishlagan kun'),
-            t('work_days', 'Ish kuni'),
-            t('work_hours', 'Grafik soati'),
-        ];
-
-        // Add header row
-        const headerRow = worksheet.addRow(headers);
-        headerRow.eachCell((cell, colNumber) => {
-            const headerText = headers[colNumber - 1];
-
-            if (headerText === t('late_hours') || headerText === t('late_days')) {
-                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-                cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFFF0000' },
-                };
-            } else {
-                cell.font = { bold: true };
-                cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'D9E1F2' },
-                };
-            }
-
-            cell.alignment = { vertical: 'middle', horizontal: 'center' };
-            worksheet.getColumn(colNumber).width = headerText.length + 4;
-        });
-
-        // Add data rows
-        worker.data.forEach((item, rowIndex) => {
-            const row = worksheet.addRow([
-                (worker.current_page - 1) * worker.per_page + rowIndex + 1,
-                item.name,
-                `${item.branch?.firm?.name || ''} ( ${item.branch?.name || ''} )`,
-                item.phone,
-                `${~~(item.late_minutes! / 60)}:${String(item.late_minutes! % 60).padStart(2, '0')}`,
-                `${~~(item.break_minutes! / 60)}:${String(item.break_minutes! % 60).padStart(2, '0')}`,
-                `${~~(item.worked_minutes! / 60)}:${String(item.worked_minutes! % 60).padStart(2, '0')}`,
-                `${~~((item.worked_minutes! - item.break_minutes!) / 60)}:${String((item.worked_minutes! - item.break_minutes!) % 60).padStart(2, '0')}`,
-                item.late_days,
-                item.worked_days,
-                item.work_days,
-
-                calculateWorkedTime(item.work_time, item.end_time, item.work_days ?? 0),
-            ]);
-
-            row.getCell(4).font = { color: { argb: 'FFFF0000' } };
-            row.getCell(8).font = { color: { argb: 'FFFF0000' } };
-        });
-
-        const buffer = await workbook.xlsx.writeBuffer();
-        saveAs(new Blob([buffer]), `${searchData.month}_${t('attendance')}_${format(new Date(), 'yyyy-MM-dd_HH:mm:ss')}.xlsx`);
-    };
-
     return (
         <div className="space-y-3">
-            <div className="flex items-center justify-between">
-                <Button
-                    onClick={exportToExcel}
-                    size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium h-8 px-3 rounded-lg shadow-xs flex items-center gap-1.5 text-xs"
-                >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    <span>{t('excel', 'Excel yuklab olish')}</span>
-                    <Download className="w-3.5 h-3.5 opacity-80" />
-                </Button>
-            </div>
-
             {/* Table Card */}
             <div className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
                 <div className="w-full overflow-x-auto">

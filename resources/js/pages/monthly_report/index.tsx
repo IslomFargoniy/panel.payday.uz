@@ -1,7 +1,9 @@
 import WorkerMonthlyAttendanceTable from '@/components/attendance/worker-monthly-attendance-table';
+import ExcelExportButton from '@/components/excel-export-button';
 import MobileSearchModal from '@/components/MobileSearchModal';
 import SearchForm from '@/components/search-form';
 import AppLayout from '@/layouts/app-layout';
+import { exportMonthlyAttendanceToExcel } from '@/lib/attendance-excel-export';
 import { Branch, type BreadcrumbItem, Firm, SearchData, WorkerPaginate } from '@/types';
 import { format, startOfMonth } from 'date-fns';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
@@ -70,11 +72,17 @@ export default function MonthlyAttendance() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('sidebar.report')} />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-3 sm:p-4 md:p-6 min-w-0 max-w-full">
-                {/* Search and Per-Page Selection */}
-                <div className="flex items-center justify-end w-full min-w-0">
-                    <MobileSearchModal data={data} setData={setData} handleSubmit={handleSubmit} firms={firms} branches={branches} />
-                    <div className="hidden lg:block w-full max-w-full">
-                        <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} firms={firms} branches={branches} />
+                {/* Search, Filter and Actions Bar */}
+                <div className="flex items-center justify-between gap-2 w-full min-w-0">
+                    <ExcelExportButton
+                        onClick={() => exportMonthlyAttendanceToExcel(worker, data, t)}
+                        disabled={!worker?.data || worker.data.length === 0}
+                    />
+                    <div className="flex items-center justify-end gap-1.5 min-w-0">
+                        <MobileSearchModal data={data} setData={setData} handleSubmit={handleSubmit} firms={firms} branches={branches} />
+                        <div className="hidden lg:block w-full max-w-full">
+                            <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} firms={firms} branches={branches} />
+                        </div>
                     </div>
                 </div>
 

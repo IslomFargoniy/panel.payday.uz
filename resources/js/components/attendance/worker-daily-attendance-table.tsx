@@ -1,12 +1,9 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
-import ExcelJS from 'exceljs';
 import { format, parseISO, differenceInSeconds } from 'date-fns';
 import { SearchData, WorkerPaginate } from '@/types';
-import { Download, FileSpreadsheet, Clock, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
-import { saveAs } from 'file-saver';
-import { Button } from '@/components/ui/button';
+import { Clock, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 
 type WorkerTableProps = {
     worker: WorkerPaginate;
@@ -17,109 +14,8 @@ type WorkerTableProps = {
 const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
     const { t } = useTranslation();
 
-    const exportToExcel = async () => {
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Attendance');
-
-        // Header row
-        worksheet.addRow([
-            t('n', '№'),
-            t('name', 'F.I.SH'),
-            t('phone', 'Telefon'),
-            t('date', 'Sana'),
-            t('checkIn', 'Kirdi'),
-            t('checkOut', 'Chiqdi'),
-            t('late', 'Kechikish'),
-            t('worked', 'Ishlagan vaqti'),
-        ]);
-
-        // Data rows
-        worker.data.forEach((item, rowIndex) => {
-            const globalIndex = (worker.current_page - 1) * worker.per_page + rowIndex + 1;
-
-            const checkIns = item.hikvision_access_events?.filter(e => e.attendanceStatus === 'checkIn') || [];
-            const checkOuts = item.hikvision_access_events?.filter(e => e.attendanceStatus === 'checkOut') || [];
-
-            const checkInTimes = checkIns.length
-                ? checkIns.map(ci => new Date(ci.created_at).toLocaleTimeString('en-US', { hour12: false })).join(', ')
-                : '-';
-
-            const checkOutTimes = checkOuts.length
-                ? checkOuts.map(co => new Date(co.created_at).toLocaleTimeString('en-US', { hour12: false })).join(', ')
-                : '-';
-
-            let lateTime = '-';
-            if (checkIns.length > 0) {
-                const ci = checkIns[0];
-                if (ci.work_time && ci.created_at) {
-                    const createdAt = parseISO(ci.created_at);
-                    const datePart = format(createdAt, 'yyyy-MM-dd');
-                    let workTimeStr = ci.work_time.trim();
-                    if (/^\d{2}:\d{2}$/.test(workTimeStr)) workTimeStr += ':00';
-                    if (/^\d{2}:\d{2}:\d{2}$/.test(workTimeStr)) {
-                        const workTime = new Date(`${datePart}T${workTimeStr}`);
-                        if (createdAt > workTime) {
-                            const totalSeconds = differenceInSeconds(createdAt, workTime);
-                            const hours = Math.floor(totalSeconds / 3600);
-                            const minutes = Math.floor((totalSeconds % 3600) / 60);
-                            const seconds = totalSeconds % 60;
-                            lateTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                        }
-                    }
-                }
-            }
-
-            let workedTimes = '-';
-            if (checkIns.length > 0 && checkOuts.length > 0) {
-                const times = checkIns.map((ci, i) => {
-                    const co = checkOuts[i];
-                    if (co?.created_at && ci?.created_at) {
-                        const inTime = new Date(ci.created_at).getTime();
-                        const outTime = new Date(co.created_at).getTime();
-                        const diffMs = outTime - inTime;
-                        const diffMinutes = Math.floor(diffMs / 60000);
-                        const hours = Math.floor(diffMinutes / 60);
-                        const minutes = diffMinutes % 60;
-                        return `${hours} : ${minutes}`;
-                    }
-                    return '-';
-                });
-                workedTimes = times.join(', ');
-            }
-
-            worksheet.addRow([
-                globalIndex,
-                item.name,
-                item.phone,
-                item.hikvision_access_events?.[0]?.created_at
-                    ? format(new Date(item.hikvision_access_events[0].created_at), 'yyyy-MM-dd')
-                    : '-',
-                checkInTimes,
-                checkOutTimes,
-                lateTime,
-                workedTimes,
-            ]);
-        });
-
-        const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        saveAs(blob, `Attendance_${searchData.date}.xlsx`);
-    };
-
     return (
         <div className="space-y-3">
-            <div className="flex items-center justify-between">
-                <Button
-                    onClick={exportToExcel}
-                    size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium h-8 px-3 rounded-lg shadow-xs flex items-center gap-1.5 text-xs"
-                >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    <span>{t('excel', 'Excel yuklab olish')}</span>
-                    <Download className="w-3.5 h-3.5 opacity-80" />
-                </Button>
-            </div>
-
             {/* Table Card */}
             <div className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
                 <div className="w-full overflow-x-auto">

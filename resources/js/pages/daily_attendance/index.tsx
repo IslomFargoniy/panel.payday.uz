@@ -1,3 +1,5 @@
+import ExcelExportButton from '@/components/excel-export-button';
+import { exportDailyAttendanceToExcel } from '@/lib/attendance-excel-export';
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -101,7 +103,11 @@ export default function Attendance() {
                             </BreadcrumbItem>
                         </BreadcrumbList>
                     </Breadcrumb>
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap justify-end">
+                        <ExcelExportButton
+                            onClick={() => exportDailyAttendanceToExcel(worker, data, t)}
+                            disabled={!worker?.data || worker.data.length === 0}
+                        />
                         <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} />
                     </div>
                 </div>

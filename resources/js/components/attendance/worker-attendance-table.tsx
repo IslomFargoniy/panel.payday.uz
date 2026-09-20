@@ -1,11 +1,7 @@
 import { SearchData, WorkerPaginate } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Check, Clock, Minus, MoonStar, Download, FileSpreadsheet } from 'lucide-react';
+import { Check, Clock, Minus, MoonStar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
 
 type WorkerTableProps = {
     worker: WorkerPaginate;
@@ -21,119 +17,10 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
     let allLateCount = 0;
     let allAbsentCount = 0;
 
-    const exportToExcel = async () => {
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet(t('attendance', 'Davomat'));
-
-        const daysInMonth = searchData.daysInMonth ?? 30;
-        // Header row
-        const headerRow = [t('n', '№'), t('name', 'F.I.SH'), t('firm', 'Firma')];
-        for (let i = 1; i <= daysInMonth; i++) {
-            headerRow.push(String(i));
-        }
-        headerRow.push(t('on_time', 'O‘z vaqtida'), t('late', 'Kechikkan'), t('absent', 'Kelmadi'));
-
-        worksheet.addRow(headerRow);
-
-        // Set header styling
-        worksheet.getRow(1).font = { bold: true };
-        worksheet.getRow(1).alignment = { horizontal: 'center' };
-
-        // Data rows
-        worker.data?.forEach((item, rowIndex) => {
-            let checkCount = 0;
-            let lateCount = 0;
-            let absentCount = 0;
-
-            const row = [];
-            const globalIndex = (worker.current_page - 1) * worker.per_page + rowIndex + 1;
-            row.push(globalIndex);
-            row.push(item.name);
-            row.push(`${item.branch?.firm?.name || ''} (${item.branch?.name || ''})`);
-
-            for (let dayIndex = 0; dayIndex < daysInMonth; dayIndex++) {
-                const day = String(dayIndex + 1).padStart(2, '0');
-                const dateToCompare = `${searchData.month}-${day}`;
-
-                const event = item.hikvision_access_events?.find((event) => event.created_at.startsWith(dateToCompare));
-                const isOffDay = item.holidays?.includes(Number(day));
-
-                if (event) {
-                    const eventTime = new Date(event.created_at).toLocaleTimeString('en-US', { hour12: false });
-                    const workTime = event.work_time;
-
-                    if (eventTime <= workTime) {
-                        checkCount++;
-                        row.push(t('on_time', 'Vaqtida'));
-                    } else {
-                        lateCount++;
-                        row.push(t('late', 'Kech'));
-                    }
-                } else {
-                    absentCount++;
-                    if (isOffDay) {
-                        row.push(t('off_day', 'Dam'));
-                    } else {
-                        row.push(t('absent', 'Kelmadi'));
-                    }
-                }
-            }
-
-            row.push(checkCount, lateCount, absentCount);
-            const addedRow = worksheet.addRow(row);
-
-            for (let colIndex = 3; colIndex < 3 + daysInMonth; colIndex++) {
-                const cell = addedRow.getCell(colIndex);
-                const cellValue = cell.value?.toString().toLowerCase();
-
-                if (cellValue === t('absent', 'Kelmadi').toLowerCase()) {
-                    cell.font = { color: { argb: 'FFFF0000' } };
-                } else if (cellValue === t('late', 'Kech').toLowerCase()) {
-                    cell.font = { color: { argb: '008000' } };
-                }
-            }
-
-            allCheckCount += checkCount;
-            allLateCount += lateCount;
-            allAbsentCount += absentCount;
-        });
-
-        // Totals row
-        const totalsRow = [t('n', '№'), t('all', 'Jami'), ''];
-        for (let i = 0; i < daysInMonth; i++) totalsRow.push('');
-        totalsRow.push(allCheckCount.toString(), allLateCount.toString(), allAbsentCount.toString());
-
-        const lastRow = worksheet.addRow(totalsRow.map((cell) => cell.toString()));
-        lastRow.font = { bold: true };
-
-        worksheet.columns?.forEach((column) => {
-            let maxLength = 10;
-            column.eachCell?.({ includeEmpty: true }, (cell) => {
-                const cellValue = cell.value ? cell.value.toString() : '';
-                if (cellValue.length > maxLength) maxLength = cellValue.length;
-            });
-            column.width = maxLength + 2;
-        });
-
-        const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], { type: 'application/octet-stream' });
-        saveAs(blob, `Attendance_${searchData.month}.xlsx`);
-    };
-
     return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-between">
-                <Button
-                    onClick={exportToExcel}
-                    size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium h-8 px-3 rounded-lg shadow-xs flex items-center gap-1.5 text-xs"
-                >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    <span>{t('excel', 'Excel yuklab olish')}</span>
-                    <Download className="w-3.5 h-3.5 opacity-80" />
-                </Button>
-
-                {/* Legend */}
+        <div className="space-y-2">
+            {/* Legend */}
+            <div className="flex items-center justify-end">
                 <div className="hidden sm:flex items-center gap-4 text-xs font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
                     <span className="flex items-center gap-1.5">
                         <span className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
