@@ -46,15 +46,4 @@ class StoreWorkerRequest extends FormRequest
             'avatar' => 'nullable|image|max:5120',
         ];
     }
-
-    public function messages(): array
-    {
-        return [
-            'branch_id.required' => 'The branch field is required.',
-            'work_time.required' => 'The work time field is required.',
-            'end_time.required' => 'The end time field is required.',
-            'name.required' => 'The name field is required.',
-            'phone.unique' => 'This phone number has already been taken.',
-        ];
-    }
 }

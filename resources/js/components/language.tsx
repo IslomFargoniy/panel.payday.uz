@@ -41,6 +41,8 @@ const LanguageBar = ({ className }: LanguageBarProps) => {
     const changeLanguage = (lang: string) => {
         i18n.changeLanguage(lang);
         localStorage.setItem('lang', lang);
+        document.cookie = `locale=${lang};path=/;max-age=31536000;SameSite=Lax`;
+        document.cookie = `lang=${lang};path=/;max-age=31536000;SameSite=Lax`;
     };
 
     return (

@@ -29,14 +29,4 @@ class StoreUserTopUpRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'user_id.required' => 'The user field is required.',
-            'client_id.required' => 'The client field is required.',
-            'amount.required' => 'The amount field is required.',
-            'transaction_id.required' => 'The transaction ID field is required.',
-        ];
-    }
-
 }

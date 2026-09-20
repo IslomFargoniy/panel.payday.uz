@@ -27,12 +27,5 @@ class StoreFirmSettingRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'firm_id.required' => 'The firm field is required.',
-        ];
-    }
-
 
 }

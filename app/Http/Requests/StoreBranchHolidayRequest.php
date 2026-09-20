@@ -36,14 +36,5 @@ class StoreBranchHolidayRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'branch_id.required' => 'The branch field is required.',
-            'name.required' => 'The name field is required.',
-            'date.required' => 'The date field is required.',
-        ];
-    }
-
 
 }

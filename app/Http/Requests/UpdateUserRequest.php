@@ -29,11 +29,4 @@ class UpdateUserRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'name.required' => 'The name field is required.',
-        ];
-    }
-
 }

@@ -48,14 +48,4 @@ class UpdateBranchRequest extends FormRequest
             'longitude' => 'nullable|string',
         ];
     }
-
-    public function messages(): array
-    {
-        return [
-            'name.required' => 'The name field is required.',
-            'work_time.required' => 'The work time field is required.',
-            'end_time.required' => 'The end time field is required.',
-            'status.required' => 'The status field is required.',
-        ];
-    }
 }

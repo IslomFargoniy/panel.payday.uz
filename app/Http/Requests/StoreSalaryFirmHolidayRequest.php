@@ -29,13 +29,4 @@ class StoreSalaryFirmHolidayRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'salary_id.required' => 'The salary field is required.',
-            'name.required' => 'The name field is required.',
-            'date.required' => 'The date field is required.',
-        ];
-    }
-
 }

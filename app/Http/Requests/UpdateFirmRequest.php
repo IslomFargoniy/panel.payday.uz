@@ -32,14 +32,4 @@ class UpdateFirmRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'name.required' => 'The name field is required.',
-            'branch_limit.required' => 'The branch limit field is required.',
-            'branch_price.required' => 'The branch price field is required.',
-            'valid_date.required' => 'The valid date field is required.',
-        ];
-    }
-
 }

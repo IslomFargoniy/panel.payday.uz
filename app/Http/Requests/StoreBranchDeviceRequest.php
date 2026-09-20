@@ -41,13 +41,6 @@ class StoreBranchDeviceRequest extends FormRequest
             'encryption_key' => 'nullable|string|max:255',
         ];
     }
-    public function messages(): array
-    {
-        return [
-            'branch_id.required' => 'The branch field is required.',
-            'mac_address.required' => 'The MAC address field is required.',
-        ];
-    }
 
 
 

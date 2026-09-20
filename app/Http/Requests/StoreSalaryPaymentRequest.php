@@ -34,12 +34,4 @@ class StoreSalaryPaymentRequest extends FormRequest
             'comment' => 'nullable|string|max:255',
         ];
     }
-
-    public function messages(): array
-    {
-        return [
-            'worker_id.required' => 'The worker field is required.',
-            'amount.required' => 'The amount field is required.',
-        ];
-    }
 }

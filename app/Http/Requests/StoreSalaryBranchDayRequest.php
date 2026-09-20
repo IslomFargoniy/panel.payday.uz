@@ -27,13 +27,5 @@ class StoreSalaryBranchDayRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'salary_id.required' => 'The salary field is required.',
-            'day_id.required' => 'The day field is required.',
-        ];
-    }
-
 
 }

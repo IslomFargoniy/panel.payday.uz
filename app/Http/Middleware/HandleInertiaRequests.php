@@ -50,6 +50,7 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            'locale' => app()->getLocale(),
             'sidebarOpen' => $request->cookie('sidebar_state') === 'true',
         ];
     }

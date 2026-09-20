@@ -27,12 +27,4 @@ class UpdateBranchDayRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'branch_id.required' => 'The branch field is required.',
-            'day_id.required' => 'The day field is required.',
-        ];
-    }
-
 }

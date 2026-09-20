@@ -48,14 +48,4 @@ class StoreBranchRequest extends FormRequest
             'longitude' => 'nullable|string',
         ];
     }
-
-    public function messages(): array
-    {
-        return [
-            'firm_id.required' => 'The firm field is required.',
-            'name.required' => 'The name field is required.',
-            'work_time.required' => 'The work time field is required.',
-            'end_time.required' => 'The end time field is required.',
-        ];
-    }
 }

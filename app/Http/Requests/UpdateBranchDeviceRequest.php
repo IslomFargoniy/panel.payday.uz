@@ -41,12 +41,4 @@ class UpdateBranchDeviceRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'branch_id.required' => 'The branch field is required.',
-            'mac_address.required' => 'The MAC address field is required.',
-        ];
-    }
-
 }

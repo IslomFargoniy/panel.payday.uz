@@ -29,13 +29,4 @@ class UpdateFirmHolidayRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'firm_id.required' => 'The firm field is required.',
-            'name.required' => 'The name field is required.',
-            'date.required' => 'The date field is required.',
-        ];
-    }
-
 }

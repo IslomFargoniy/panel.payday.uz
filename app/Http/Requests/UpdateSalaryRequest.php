@@ -41,18 +41,4 @@ class UpdateSalaryRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'user_id.required' => 'The user field is required.',
-            'worker_id.required' => 'The worker field is required.',
-            'amount.required' => 'The amount field is required.',
-            'minute.required' => 'The minute field is required.',
-            'hour_price.required' => 'The hour price field is required.',
-            'real_amount.required' => 'The real amount field is required.',
-            'from.required' => 'The from field is required.',
-            'to.required' => 'The to field is required.',
-        ];
-    }
-
 }

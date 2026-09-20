@@ -27,14 +27,4 @@ class StoreWorkerDayRequest extends FormRequest
             'day_ids.*' => 'integer|exists:days,id',
         ];
     }
-
-    public function messages(): array
-    {
-        return [
-            'worker_id.required' => 'The worker field is required.',
-            'day_ids.required' => 'The day(s) field is required.',
-            'day_ids.*.integer' => 'Each day ID must be an integer.',
-            'day_ids.*.exists' => 'One or more selected days are invalid.',
-        ];
-    }
 }

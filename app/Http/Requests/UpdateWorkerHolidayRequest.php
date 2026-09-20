@@ -30,14 +30,4 @@ class UpdateWorkerHolidayRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'user_id.required' => 'The user field is required.',
-            'worker_id.required' => 'The worker field is required.',
-            'from.required' => 'The from field is required.',
-            'to.required' => 'The to field is required.',
-        ];
-    }
-
 }

@@ -40,17 +40,4 @@ class StoreSalaryRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'worker_id.required' => 'The worker field is required.',
-            'amount.required' => 'The amount field is required.',
-            'worked_minute.required' => 'The worked_minute field is required.',
-            'break_minute.required' => 'The break_minute field is required.',
-            'hour_price.required' => 'The hour price field is required.',
-            'from.required' => 'The from field is required.',
-            'to.required' => 'The to field is required.',
-        ];
-    }
-
 }

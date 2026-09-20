@@ -31,15 +31,4 @@ class UpdateFirmPaymentRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'user_id.required' => 'The user field is required.',
-            'firm_id.required' => 'The firm field is required.',
-            'amount.required' => 'The amount field is required.',
-            'datetime.required' => 'The datetime field is required.',
-            'valid_date.required' => 'The valid date field is required.',
-        ];
-    }
-
 }

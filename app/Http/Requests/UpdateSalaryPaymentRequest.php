@@ -33,11 +33,4 @@ class UpdateSalaryPaymentRequest extends FormRequest
             'comment' => 'nullable|string|max:255',
         ];
     }
-
-    public function messages(): array
-    {
-        return [
-            'amount.required' => 'The amount field is required.',
-        ];
-    }
 }

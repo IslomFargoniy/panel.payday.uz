@@ -27,12 +27,4 @@ class StoreUserFirmRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'user_id.required' => 'The user field is required.',
-            'firm_id.required' => 'The firm field is required.',
-        ];
-    }
-
 }
