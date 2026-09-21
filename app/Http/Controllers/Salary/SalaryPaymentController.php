@@ -22,19 +22,16 @@ class SalaryPaymentController extends Controller
      */
     public function index(Request $request)
     {
-        if ($request->per_page) {
-            $per_page = $request->per_page;
-        } else {
-            $per_page = 15;
-        }
+        $per_page = $request->per_page ? (int)$request->per_page : 15;
 
-        $salary_payment = SalaryPayment::with([]);
+        $salary_payment = SalaryPayment::query()->with(['worker.branch.firm', 'user']);
 
         if ($request->search) {
             $salary_payment->whereHas('worker', function ($query) use ($request) {
-                $query->whereLike('name', "%$request->search%")
-                    ->orWhereLike('address', "%$request->search%")
-                    ->orWhereLike('comment', "%$request->search%");
+                $query->where('name', 'like', "%{$request->search}%")
+                    ->orWhere('phone', 'like', "%{$request->search}%")
+                    ->orWhere('address', 'like', "%{$request->search}%")
+                    ->orWhere('comment', 'like', "%{$request->search}%");
             });
         }
 
@@ -42,56 +39,33 @@ class SalaryPaymentController extends Controller
             $salary_payment->where('worker_id', '=', $request->worker_id);
         }
 
-
-        $firms = Firm::with([]);
-        $branches = Branch::with([]);
-        $workers = Worker::with([])
-            ->select(
-                'workers.*',
-                DB::raw("getBalance(workers.id) as balance")
-            );
-
         if (!Auth::user()->hasRole('Admin')) {
-            $firms->whereHas('user_firms', function ($query) {
-                $query->where('user_id', Auth::id());
-            });
-
-            $branches = $branches->whereHas('firm', function ($query) {
-                $query->whereHas('user_firms', function ($query) {
-                    $query->where('user_id', Auth::id());
-                });
-            });
-
-            $workers = $workers->whereHas('branch', function ($query) {
-                $query->whereHas('firm', function ($query) {
-                    $query->whereHas('user_firms', function ($query) {
-                        $query->where('user_id', Auth::id());
-                    });
-                });
-            });
-
-            $salary_payment = $salary_payment->whereHas('worker', function ($query) {
-                $query->whereHas('branch', function ($query) {
-                    $query->whereHas('firm', function ($query) {
-                        $query->whereHas('user_firms', function ($query) {
-                            $query->where('user_id', Auth::id());
-                        });
-                    });
-                });
+            $userFirms = Auth::user()->user_firms()->pluck('firm_id');
+            $salary_payment->whereHas('worker.branch', function ($query) use ($userFirms) {
+                $query->whereIn('firm_id', $userFirms);
             });
         }
 
-        $firms = $firms->get();
-        $branches = $branches->get();
-        $workers = $workers->get();
+        $firms = Firm::query()->without(['branches'])->select('id', 'name');
+        $branches = Branch::query()->without(['firm', 'workers'])->select('id', 'firm_id', 'name');
+        $workers = Worker::query()->without(['branch'])->select('id', 'branch_id', 'name');
 
-        $salary_payment = $salary_payment->paginate($per_page);
+        if (!Auth::user()->hasRole('Admin')) {
+            $userFirms = Auth::user()->user_firms()->pluck('firm_id');
+            $firms->whereIn('id', $userFirms);
+            $branches->whereIn('firm_id', $userFirms);
+            $workers->whereHas('branch', function ($query) use ($userFirms) {
+                $query->whereIn('firm_id', $userFirms);
+            });
+        }
+
+        $salary_payment = $salary_payment->latest('id')->paginate($per_page);
 
         return Inertia::render('salary_payment/index', [
             'salary_payment' => $salary_payment,
-            'workers' => $workers,
-            'firms' => $firms,
-            'branches' => $branches,
+            'workers' => $workers->get(),
+            'firms' => $firms->get(),
+            'branches' => $branches->get(),
         ]);
     }
 

@@ -75,23 +75,43 @@ class BranchController extends Controller
         $branch->load([
             'branch_days' => function ($query) {
                 $query->with('day')
-                ->orderBy('day_id', 'asc');
+                    ->orderBy('day_id', 'asc');
             },
-            'workers',
             'branch_holidays',
             'branch_devices'
         ]);
 
-        $worker = Worker::with([])
-            ->selectRaw('workers.*, getBalance(workers.id) as balance')
-            ->where('branch_id', $branch->id)
-            ->where(function ($query) use ($request) {
+        $workerQuery = Worker::query()
+            ->where('branch_id', $branch->id);
+
+        if ($request->search) {
+            $workerQuery->where(function ($query) use ($request) {
                 $query->where('name', 'like', "%{$request->search}%")
                     ->orWhere('phone', 'like', "%{$request->search}%")
                     ->orWhere('address', 'like', "%{$request->search}%")
                     ->orWhere('comment', 'like', "%{$request->search}%");
-            })
-            ->paginate($request->per_page ?? 15);
+            });
+        }
+
+        $worker = $workerQuery->paginate($request->per_page ?? 15);
+
+        // Batch calculate balances for paginated workers
+        $workerIds = $worker->pluck('id')->toArray();
+        if (!empty($workerIds)) {
+            $salaries = \App\Models\Salary\Salary::whereIn('worker_id', $workerIds)
+                ->groupBy('worker_id')
+                ->select('worker_id', DB::raw('SUM(amount) as total'))
+                ->pluck('total', 'worker_id');
+
+            $payments = \App\Models\Salary\SalaryPayment::whereIn('worker_id', $workerIds)
+                ->groupBy('worker_id')
+                ->select('worker_id', DB::raw('SUM(amount) as total'))
+                ->pluck('total', 'worker_id');
+
+            foreach ($worker as $wItem) {
+                $wItem->balance = (float)(($salaries[$wItem->id] ?? 0) - ($payments[$wItem->id] ?? 0));
+            }
+        }
 
         $days = Day::all();
 

@@ -24,17 +24,9 @@ class WorkerController extends Controller
      */
     public function index(Request $request)
     {
-        if ($request->per_page) {
-            $per_page = $request->per_page;
-        } else {
-            $per_page = 15;
-        }
+        $per_page = $request->per_page ? (int)$request->per_page : 15;
 
-        $workers = Worker::with([])
-            ->select(
-                'workers.*',
-                DB::raw("getBalance(workers.id) as balance")
-            );
+        $workers = Worker::query()->with(['branch.firm']);
 
         if ($request->search) {
             $workers->where(function ($query) use ($request) {
@@ -46,47 +38,56 @@ class WorkerController extends Controller
         }
 
         if ($request->firm_id) {
-            $workers = $workers->whereHas('branch', function ($query) use ($request) {
+            $workers->whereHas('branch', function ($query) use ($request) {
                 $query->where('firm_id', $request->firm_id);
             });
         }
 
         if ($request->branch_id) {
-            $workers = $workers->where('branch_id', $request->branch_id);
+            $workers->where('branch_id', $request->branch_id);
         }
-
-
-        $firms = Firm::with([]);
-        $branches = Branch::with([]);
 
         if (!Auth::user()->hasRole('Admin')) {
-            $firms->whereHas('user_firms', function ($query) {
-                $query->where('user_id', Auth::id());
-            });
-
-            $branches = $branches->whereHas('firm', function ($query) {
-                $query->whereHas('user_firms', function ($query) {
-                    $query->where('user_id', Auth::id());
-                });
-            });
-
-            $workers = $workers->whereHas('branch', function ($query) {
-                $query->whereHas('firm', function ($query) {
-                    $query->whereHas('user_firms', function ($query) {
-                        $query->where('user_id', Auth::id());
-                    });
-                });
+            $userFirms = Auth::user()->user_firms()->pluck('firm_id');
+            $workers->whereHas('branch', function ($query) use ($userFirms) {
+                $query->whereIn('firm_id', $userFirms);
             });
         }
 
-        $firms = $firms->get();
-        $branches = $branches->get();
-        $workers = $workers->paginate($per_page);
+        $paginatedWorkers = $workers->paginate($per_page);
+
+        // Batch calculate balances for only the paginated workers
+        $workerIds = $paginatedWorkers->pluck('id')->toArray();
+        if (!empty($workerIds)) {
+            $salaries = \App\Models\Salary\Salary::whereIn('worker_id', $workerIds)
+                ->groupBy('worker_id')
+                ->select('worker_id', DB::raw('SUM(amount) as total'))
+                ->pluck('total', 'worker_id');
+
+            $payments = \App\Models\Salary\SalaryPayment::whereIn('worker_id', $workerIds)
+                ->groupBy('worker_id')
+                ->select('worker_id', DB::raw('SUM(amount) as total'))
+                ->pluck('total', 'worker_id');
+
+            foreach ($paginatedWorkers as $workerItem) {
+                $workerItem->balance = (float)(($salaries[$workerItem->id] ?? 0) - ($payments[$workerItem->id] ?? 0));
+            }
+        }
+
+        // Lean dropdowns
+        $firms = Firm::query()->without(['branches'])->select('id', 'name');
+        $branches = Branch::query()->without(['firm', 'workers'])->select('id', 'firm_id', 'name');
+
+        if (!Auth::user()->hasRole('Admin')) {
+            $userFirms = Auth::user()->user_firms()->pluck('firm_id');
+            $firms->whereIn('id', $userFirms);
+            $branches->whereIn('firm_id', $userFirms);
+        }
 
         return Inertia::render('worker/index', [
-            'worker' => $workers,
-            'firms' => $firms,
-            'branches' => $branches,
+            'worker' => $paginatedWorkers,
+            'firms' => $firms->get(),
+            'branches' => $branches->get(),
         ]);
     }
 

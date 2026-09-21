@@ -25,11 +25,7 @@ class HikvisionController extends Controller
      */
     public function attendance(Request $request)
     {
-        if ($request->per_page) {
-            $per_page = $request->per_page;
-        } else {
-            $per_page = 15;
-        }
+        $per_page = $request->per_page ? (int)$request->per_page : 15;
 
         if ($request->month) {
             $month = $request->month;
@@ -37,12 +33,15 @@ class HikvisionController extends Controller
             $year = Carbon::parse($month)->year;
         } else {
             $month = date('Y-m'); // '2025-05'
-            $monthNumber = date('m'); // '05'
-            $year = date('Y'); // '2025'
+            $monthNumber = (int)date('m'); // '05'
+            $year = (int)date('Y'); // '2025'
         }
 
-        $currentMonth = Carbon::now()->format('Y-m'); // '2025-05'
-        $currentDay = Carbon::now()->day; // Get the current day of the month (e.g., 12 for May 12)
+        $monthStart = Carbon::create($year, $monthNumber, 1)->startOfMonth()->toDateTimeString();
+        $monthEnd = Carbon::create($year, $monthNumber, 1)->endOfMonth()->toDateTimeString();
+
+        $currentMonth = Carbon::now()->format('Y-m');
+        $currentDay = Carbon::now()->day;
 
         if ($month === $currentMonth || empty($month)) {
             $daysInMonth = $currentDay;
@@ -51,15 +50,11 @@ class HikvisionController extends Controller
         }
 
         $workers = Worker::with([
-            'HikvisionAccessEvents' => function ($query) use ($monthNumber, $year) {
-                $query->whereMonth('created_at', $monthNumber)
-                    ->whereYear('created_at', $year)
-                    ->where('attendanceStatus', "checkIn");
+            'HikvisionAccessEvents' => function ($query) use ($monthStart, $monthEnd) {
+                $query->whereBetween('created_at', [$monthStart, $monthEnd])
+                    ->whereIn('attendanceStatus', ["checkIn", "keldi", "CheckIn", "entered"]);
             }
-        ])
-            ->select(
-                'workers.*'
-            );
+        ]);
 
         if ($request->firm_id) {
             $workers = $workers->whereHas('branch', function ($query) use ($request) {
@@ -71,90 +66,152 @@ class HikvisionController extends Controller
             $workers = $workers->where('branch_id', $request->branch_id);
         }
 
-
-        $firms = Firm::with([]);
-        $branches = Branch::with([]);
-
         if (!Auth::user()->hasRole('Admin')) {
-            $firms->whereHas('user_firms', function ($query) {
-                $query->where('user_id', Auth::id());
-            });
-
-            $branches = $branches->whereHas('firm', function ($query) {
-                $query->whereHas('user_firms', function ($query) {
-                    $query->where('user_id', Auth::id());
-                });
-            });
-
-            $workers = $workers->whereHas('branch', function ($query) {
-                $query->whereHas('firm', function ($query) {
-                    $query->whereHas('user_firms', function ($query) {
-                        $query->where('user_id', Auth::id());
-                    });
-                });
+            $userFirms = Auth::user()->user_firms()->pluck('firm_id');
+            $workers = $workers->whereHas('branch', function ($query) use ($userFirms) {
+                $query->whereIn('firm_id', $userFirms);
             });
         }
 
-        $firms = $firms->get();
-        $branches = $branches->get();
         $workers = $workers->paginate($per_page);
 
-        $workers->getCollection()->transform(function ($worker) use ($month) {
-            $worker->holidays = $worker->getHoliday($month);
-            return $worker;
-        });
+        // Batch calculate holidays for paginated workers
+        $holidaysMap = $this->batchGetHolidays($workers->items(), $month);
+        foreach ($workers as $worker) {
+            $worker->holidays = $holidaysMap[$worker->id] ?? [];
+        }
+
+        // Lean dropdown filters
+        $firms = Firm::query()->without(['branches'])->select('id', 'name');
+        $branches = Branch::query()->without(['firm', 'workers'])->select('id', 'firm_id', 'name');
+
+        if (!Auth::user()->hasRole('Admin')) {
+            $userFirms = Auth::user()->user_firms()->pluck('firm_id');
+            $firms->whereIn('id', $userFirms);
+            $branches->whereIn('firm_id', $userFirms);
+        }
 
         return Inertia::render('attendance/index', [
             'worker' => $workers,
             'daysInMonth' => $daysInMonth,
-            'firms' => $firms,
-            'branches' => $branches,
+            'firms' => $firms->get(),
+            'branches' => $branches->get(),
         ]);
     }
 
     public function daily_attendance(Request $request, Branch $branch)
     {
-        if ($request->per_page) {
-            $per_page = $request->per_page;
-        } else {
-            $per_page = 15;
-        }
-
-        if ($request->date) {
-            $date = $request->date;
-        } else {
-            $date = date('Y-m-d'); // '2025-05-12'
-        }
+        $per_page = $request->per_page ? (int)$request->per_page : 15;
+        $date = $request->date ?: date('Y-m-d');
 
         $workers = Worker::with([
             'HikvisionAccessEvents' => function ($query) use ($date) {
-                $query->whereDate('created_at', $date)
-                    ->whereIn('attendanceStatus', ["checkIn", "checkOut"]);
+                $query->whereBetween('created_at', ["{$date} 00:00:00", "{$date} 23:59:59"])
+                    ->whereIn('attendanceStatus', ["checkIn", "checkOut", "keldi", "ketdi", "entered", "exited"]);
             }
         ])
-            ->where('branch_id', '=', $branch->id)
-            ->select(
-                'workers.*'
-            );
+            ->where('branch_id', '=', $branch->id);
 
         if (!Auth::user()->hasRole('Admin')) {
-            $workers = $workers->whereHas('branch', function ($query) {
-                $query->whereHas('firm', function ($query) {
-                    $query->whereHas('user_firms', function ($query) {
-                        $query->where('user_id', Auth::id());
-                    });
-                });
+            $userFirms = Auth::user()->user_firms()->pluck('firm_id');
+            $workers = $workers->whereHas('branch', function ($query) use ($userFirms) {
+                $query->whereIn('firm_id', $userFirms);
             });
         }
 
         $workers = $workers->paginate($per_page);
 
-//        dd($workers,$request->all());
-
         return Inertia::render('daily_attendance/index', [
             'worker' => $workers,
             'branch' => $branch,
         ]);
+    }
+
+    private function batchGetHolidays(array $workers, string $month): array
+    {
+        if (empty($workers)) {
+            return [];
+        }
+
+        $from = Carbon::parse($month)->startOfMonth();
+        $to = Carbon::parse($month)->endOfMonth();
+        $fromStr = $from->toDateString();
+        $toStr = $to->toDateString();
+
+        $workerIds = array_map(fn($w) => $w->id, $workers);
+        $branchIds = array_values(array_filter(array_unique(array_map(fn($w) => $w->branch_id, $workers))));
+        $firmIds = array_values(array_filter(array_unique(array_map(fn($w) => $w->branch?->firm_id, $workers))));
+
+        // 1. Worker days & Branch days
+        $workerDaysMap = \App\Models\Worker\WorkerDay::whereIn('worker_id', $workerIds)
+            ->with('day')
+            ->get()
+            ->groupBy('worker_id')
+            ->map(fn($days) => $days->pluck('day.index')->filter()->toArray());
+
+        $branchDaysMap = \App\Models\Branch\BranchDay::whereIn('branch_id', $branchIds)
+            ->with('day')
+            ->get()
+            ->groupBy('branch_id')
+            ->map(fn($days) => $days->pluck('day.index')->filter()->toArray());
+
+        // 2. Holidays
+        $workerHolidaysMap = \App\Models\Worker\WorkerHoliday::whereIn('worker_id', $workerIds)
+            ->whereDate('from', '<=', $toStr)
+            ->whereDate('to', '>=', $fromStr)
+            ->get(['worker_id', 'from', 'to'])
+            ->groupBy('worker_id');
+
+        $branchHolidaysMap = \App\Models\Branch\BranchHoliday::whereIn('branch_id', $branchIds)
+            ->whereBetween('date', [$fromStr, $toStr])
+            ->get(['branch_id', 'date'])
+            ->groupBy('branch_id')
+            ->map(fn($items) => $items->pluck('date')->map(fn($d) => Carbon::parse($d)->toDateString())->flip()->toArray());
+
+        $firmHolidaysMap = \App\Models\Firm\FirmHoliday::whereIn('firm_id', $firmIds)
+            ->whereBetween('date', [$fromStr, $toStr])
+            ->get(['firm_id', 'date'])
+            ->groupBy('firm_id')
+            ->map(fn($items) => $items->pluck('date')->map(fn($d) => Carbon::parse($d)->toDateString())->flip()->toArray());
+
+        $dates = iterator_to_array(\Carbon\CarbonPeriod::create($from, $to));
+        $result = [];
+
+        foreach ($workers as $worker) {
+            $workingDayIndexes = $workerDaysMap->get($worker->id)
+                ?? $branchDaysMap->get($worker->branch_id)
+                ?? range(1, 7);
+
+            $weekendIndexes = array_diff(range(1, 7), $workingDayIndexes);
+            $wHolidays = $workerHolidaysMap->get($worker->id) ?? collect();
+            $bHolidays = $branchHolidaysMap->get($worker->branch_id) ?? [];
+            $fHolidays = $firmHolidaysMap->get($worker->branch?->firm_id) ?? [];
+
+            $offDayIndexes = [];
+            foreach ($dates as $date) {
+                $currentDayIndex = $date->dayOfWeek + 1;
+                $dateStr = $date->toDateString();
+
+                $isWeekend = in_array($currentDayIndex, $weekendIndexes);
+                $isBranchHoliday = isset($bHolidays[$dateStr]);
+                $isFirmHoliday = isset($fHolidays[$dateStr]);
+
+                $isWorkerHoliday = false;
+                foreach ($wHolidays as $wh) {
+                    if ($dateStr >= $wh->from && $dateStr <= $wh->to) {
+                        $isWorkerHoliday = true;
+                        break;
+                    }
+                }
+
+                if ($isWeekend || $isWorkerHoliday || $isBranchHoliday || $isFirmHoliday) {
+                    $offDayIndexes[] = (int)$date->format('j');
+                }
+            }
+            $result[$worker->id] = $offDayIndexes;
+        }
+
+        return $result;
     }
 
     /**
