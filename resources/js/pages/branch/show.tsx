@@ -115,7 +115,7 @@ export default function Branch() {
                 <div className="pt-1 w-full min-w-0 max-w-full">
                     <div className="grid grid-cols-12 gap-6 min-w-0 max-w-full">
                         <div className="col-span-12 lg:col-span-8 space-y-6 min-w-0 max-w-full">
-                            {branch.workers && <WorkerTable worker={worker} branch={branch} searchData={data} />}
+                            {worker && <WorkerTable worker={worker} branch={branch} searchData={data} />}
                         </div>
                         <div className="col-span-12 lg:col-span-4 space-y-6 min-w-0 max-w-full">
                             <BranchDayTable branch={branch} days={days} />
