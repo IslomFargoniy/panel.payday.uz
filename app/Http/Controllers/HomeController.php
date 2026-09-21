@@ -15,197 +15,100 @@ class HomeController extends Controller
 {
     public function index(Request $request)
     {
-
         if ($request->month) {
             $month = $request->month;
             $monthNumber = Carbon::parse($month)->month;
             $year = Carbon::parse($month)->year;
         } else {
-            $month = date('Y-m'); // '2025-05'
-            $monthNumber = date('m'); // '05'
-            $year = date('Y'); // '2025'
+            $month = date('Y-m');
+            $monthNumber = (int)date('m');
+            $year = (int)date('Y');
         }
 
-        $allWorker = Worker::with([]);
+        $todayStart = Carbon::today()->startOfDay()->toDateTimeString();
+        $todayEnd = Carbon::today()->endOfDay()->toDateTimeString();
+        $todayDate = Carbon::today()->toDateString();
 
-        if (!Auth::user()->hasRole('Admin')) {
-            $allWorker = $allWorker->whereHas('branch', function ($query) {
-                $query->whereHas('firm', function ($query) {
-                    $query->whereHas('user_firms', function ($query) {
-                        $query->where('user_id', Auth::id());
-                    });
-                });
-            });
-        }
+        // 1. All Workers base query
+        $workersQuery = Worker::query()->without(['branch']);
 
         if ($request->branch_id) {
-            $allWorker = $allWorker->where('branch_id', $request->branch_id);
+            $workersQuery->where('branch_id', $request->branch_id);
         }
 
         if ($request->firm_id) {
-            $allWorker = $allWorker->whereHas('branch', function ($query) use ($request) {
+            $workersQuery->whereHas('branch', function ($query) use ($request) {
                 $query->where('firm_id', $request->firm_id);
             });
         }
 
-        $allWorker = $allWorker->count('workers.id');
+        if (!Auth::user()->hasRole('Admin')) {
+            $userFirmIds = Auth::user()->user_firms()->pluck('firm_id');
+            $workersQuery->whereHas('branch', function ($query) use ($userFirmIds) {
+                $query->whereIn('firm_id', $userFirmIds);
+            });
+        }
 
+        $allWorker = (clone $workersQuery)->count('workers.id');
 
-        $notCome = Worker::with([])
-            ->leftJoin('hikvision_access_events as hae', function ($join) {
+        // 2. Absent (Not come today) - Uses index seek on created_at range
+        $notCome = (clone $workersQuery)
+            ->leftJoin('hikvision_access_events as hae', function ($join) use ($todayStart, $todayEnd) {
                 $join->on('hae.employeeNoString', '=', 'workers.employeeNoString')
-                    ->whereRaw('CURDATE() = DATE(hae.created_at)');
+                    ->whereBetween('hae.created_at', [$todayStart, $todayEnd]);
             })
-            ->whereNull('hae.id');
+            ->whereNull('hae.id')
+            ->count('workers.id');
 
-        if (!Auth::user()->hasRole('Admin')) {
-            $notCome = $notCome->whereHas('branch', function ($query) {
-                $query->whereHas('firm', function ($query) {
-                    $query->whereHas('user_firms', function ($query) {
-                        $query->where('user_id', Auth::id());
-                    });
-                });
-            });
-        }
-
-        if ($request->branch_id) {
-            $notCome = $notCome->where('branch_id', $request->branch_id);
-        }
-
-        if ($request->firm_id) {
-            $notCome = $notCome->whereHas('branch', function ($query) use ($request) {
-                $query->where('firm_id', $request->firm_id);
-            });
-        }
-
-        $notCome = $notCome->count('workers.id');
-
-
-        $onHoliday = Worker::with([])
-            ->whereHas('worker_holidays' , function ($query) {
-                $query->whereDate(DB::raw('CURDATE()'), '>=', DB::raw('`from`'))
-                    ->whereDate(DB::raw('CURDATE()'), '<=', DB::raw('`to`'));
+        // 3. On holiday today - Uses index on worker_holidays (worker_id, from, to)
+        $onHoliday = (clone $workersQuery)
+            ->whereHas('worker_holidays', function ($query) use ($todayDate) {
+                $query->where('from', '<=', $todayDate)
+                    ->where('to', '>=', $todayDate);
             })
-            ->groupBy('workers.id')
-            ->distinct('workers.id');
+            ->distinct('workers.id')
+            ->count('workers.id');
 
-        if (!Auth::user()->hasRole('Admin')) {
-            $onHoliday = $onHoliday->whereHas('branch', function ($query) {
-                $query->whereHas('firm', function ($query) {
-                    $query->whereHas('user_firms', function ($query) {
-                        $query->where('user_id', Auth::id());
-                    });
-                });
-            });
-        }
+        // 4. Today's First Event (On Time vs Late) - Fast MIN() with GROUP BY
+        $todayFirstEvents = DB::table('hikvision_access_events')
+            ->select('employeeNoString', 'work_time', DB::raw('MIN(created_at) as first_created_at'))
+            ->whereBetween('created_at', [$todayStart, $todayEnd])
+            ->whereIn('attendanceStatus', ['keldi', 'CheckIn', 'entered'])
+            ->groupBy('employeeNoString', 'work_time');
 
-        if ($request->branch_id) {
-            $onHoliday = $onHoliday->where('branch_id', $request->branch_id);
-        }
-
-        if ($request->firm_id) {
-            $onHoliday = $onHoliday->whereHas('branch', function ($query) use ($request) {
-                $query->where('firm_id', $request->firm_id);
-            });
-        }
-
-        $onHoliday = $onHoliday->count('workers.id');
-
-
-        $result = Worker::with([])
-            ->join(DB::raw('(
-        SELECT hae.*
-        FROM hikvision_access_events hae
-        WHERE DATE(hae.created_at) = CURDATE()
-        AND hae.attendanceStatus IN ("CheckIn", "entered")
-        AND hae.created_at = (
-            SELECT MIN(created_at)
-            FROM hikvision_access_events
-            WHERE DATE(created_at) = CURDATE()
-            AND employeeNoString = hae.employeeNoString
-            AND attendanceStatus IN ("CheckIn", "entered")
-        )
-        GROUP BY DATE(hae.created_at), hae.employeeNoString
-    ) AS first_event'), 'workers.employeeNoString', '=', 'first_event.employeeNoString')
+        $result = (clone $workersQuery)
+            ->joinSub($todayFirstEvents, 'first_event', function ($join) {
+                $join->on('workers.employeeNoString', '=', 'first_event.employeeNoString');
+            })
             ->selectRaw('
-        SUM(CASE WHEN TIME(first_event.created_at) <= TIME(first_event.work_time) THEN 1 ELSE 0 END) AS on_time,
-        SUM(CASE WHEN TIME(first_event.created_at) > TIME(first_event.work_time) THEN 1 ELSE 0 END) AS late
-    ');
+                COALESCE(SUM(CASE WHEN TIME(first_event.first_created_at) <= TIME(first_event.work_time) THEN 1 ELSE 0 END), 0) AS on_time,
+                COALESCE(SUM(CASE WHEN TIME(first_event.first_created_at) > TIME(first_event.work_time) THEN 1 ELSE 0 END), 0) AS late
+            ')
+            ->first();
 
-        if (!Auth::user()->hasRole('Admin')) {
-            $result = $result->whereHas('branch', function ($query) {
-                $query->whereHas('firm', function ($query) {
-                    $query->whereHas('user_firms', function ($query) {
-                        $query->where('user_id', Auth::id());
-                    });
-                });
-            });
-        }
+        // 5. Gone today (Checked out) - Fast distinct check
+        $todayCheckouts = DB::table('hikvision_access_events')
+            ->select('employeeNoString')
+            ->whereBetween('created_at', [$todayStart, $todayEnd])
+            ->whereIn('attendanceStatus', ['ketdi', 'checkOut', 'exited'])
+            ->distinct();
 
-        if ($request->branch_id) {
-            $result = $result->where('branch_id', $request->branch_id);
-        }
-
-        if ($request->firm_id) {
-            $result = $result->whereHas('branch', function ($query) use ($request) {
-                $query->where('firm_id', $request->firm_id);
-            });
-        }
-
-        $result = $result->first();
-
-        $gone = Worker::with([])
-            ->join(DB::raw('(
-            SELECT hae.*
-            FROM hikvision_access_events hae
-            WHERE DATE(hae.created_at) = CURDATE()
-              AND hae.attendanceStatus IN ("checkOut")
-              AND hae.created_at = (
-                  SELECT MAX(created_at)
-                  FROM hikvision_access_events
-                  WHERE DATE(created_at) = CURDATE()
-                    AND employeeNoString = hae.employeeNoString
-              )
-            GROUP BY DATE(hae.created_at), hae.employeeNoString
-        ) AS first_event'), 'workers.employeeNoString', '=', 'first_event.employeeNoString');
-
-
-        if (!Auth::user()->hasRole('Admin')) {
-            $gone = $gone->whereHas('branch', function ($query) {
-                $query->whereHas('firm', function ($query) {
-                    $query->whereHas('user_firms', function ($query) {
-                        $query->where('user_id', Auth::id());
-                    });
-                });
-            });
-        }
-
-        if ($request->branch_id) {
-            $gone = $gone->where('branch_id', $request->branch_id);
-        }
-
-        if ($request->firm_id) {
-            $gone = $gone->whereHas('branch', function ($query) use ($request) {
-                $query->where('firm_id', $request->firm_id);
-            });
-        }
-
-        $gone = $gone->count();
-
-
-        $onTime = $result->on_time ?? 0;
-        $late = $result->late ?? 0;
+        $gone = (clone $workersQuery)
+            ->joinSub($todayCheckouts, 'last_event', function ($join) {
+                $join->on('workers.employeeNoString', '=', 'last_event.employeeNoString');
+            })
+            ->count('workers.id');
 
         $stats = [
-            'all_worker' => $allWorker ?? 0,
-            'absent' => $notCome ?? 0,
-            'on_holiday' => $onHoliday ?? 0,
-            'on_time' => (int) $onTime,
-            'late' => (int) $late,
-            'gone' => $gone ?? 0,
+            'all_worker' => (int) $allWorker,
+            'absent' => (int) $notCome,
+            'on_holiday' => (int) $onHoliday,
+            'on_time' => (int) ($result->on_time ?? 0),
+            'late' => (int) ($result->late ?? 0),
+            'gone' => (int) $gone,
         ];
 
-
+        // 6. Monthly/Range chart stats via single-pass window function query
         $eventsWithLead = DB::table('hikvision_access_events as hae')
             ->select(
                 'hae.id',
@@ -281,45 +184,33 @@ class HomeController extends Controller
                     ELSE 0 END as break_minutes")
             );
 
-        // Final select Hisobot
         $resultsForHisobot = DB::table(DB::raw("({$pairedEvents->toSql()}) as paired_events"))
             ->mergeBindings($pairedEvents)
             ->select(
-                DB::raw('date(from_time) as worked_date'),
-                DB::raw('sum(worked_minutes) / 60 as worked_hours'),
-                DB::raw('sum(break_minutes) / 60 as break_hours'),
-                DB::raw('sum(IF(late_minutes > 0, late_minutes, 0)) / 60 as late_hours')
+                DB::raw('DATE(from_time) as worked_date'),
+                DB::raw('COALESCE(SUM(worked_minutes), 0) / 60 as worked_hours'),
+                DB::raw('COALESCE(SUM(break_minutes), 0) / 60 as break_hours'),
+                DB::raw('COALESCE(SUM(IF(late_minutes > 0, late_minutes, 0)), 0) / 60 as late_hours')
             )
-            ->groupBy(DB::raw('date(from_time)'))
+            ->groupBy(DB::raw('DATE(from_time)'))
             ->orderBy('from_time')
             ->get();
 
-
-        $firms = Firm::with([]);
-        $branches = Branch::with([]);
+        // 7. Dropdown filters (lean payload)
+        $firms = Firm::query()->without(['branches'])->select('id', 'name');
+        $branches = Branch::query()->without(['firm', 'workers'])->select('id', 'firm_id', 'name');
 
         if (!Auth::user()->hasRole('Admin')) {
-            $firms->whereHas('user_firms', function ($query) {
-                $query->where('user_id', Auth::id());
-            });
-
-            $branches = $branches->whereHas('firm', function ($query) {
-                $query->whereHas('user_firms', function ($query) {
-                    $query->where('user_id', Auth::id());
-                });
-            });
+            $userFirms = Auth::user()->user_firms()->pluck('firm_id');
+            $firms->whereIn('id', $userFirms);
+            $branches->whereIn('firm_id', $userFirms);
         }
-
-        $firms = $firms->get();
-        $branches = $branches->get();
 
         return Inertia::render('dashboard', [
             'stats' => $stats,
             'daily_stats' => $resultsForHisobot,
-            'firms' => $firms,
-            'branches' => $branches,
+            'firms' => $firms->get(),
+            'branches' => $branches->get(),
         ]);
-
-
     }
 }
