@@ -139,7 +139,6 @@ export default function UpdateBranchModal({ branch, open, setOpen }: UpdateBranc
                                             value={data.work_time}
                                             onChange={(time) => setData('work_time', time ?? '')}
                                             format="HH:mm"
-                                            locale="sv-sv"
                                             disableClock={true}
                                             className="block w-full h-9.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-xs focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-800 dark:text-white"
                                         />
@@ -155,7 +154,6 @@ export default function UpdateBranchModal({ branch, open, setOpen }: UpdateBranc
                                             value={data.end_time}
                                             onChange={(time) => setData('end_time', time ?? '')}
                                             format="HH:mm"
-                                            locale="sv-sv"
                                             disableClock={true}
                                             className="block w-full h-9.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-xs focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-800 dark:text-white"
                                         />

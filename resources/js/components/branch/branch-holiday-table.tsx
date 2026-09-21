@@ -53,7 +53,7 @@ const BranchHolidayTable = ({ branch }: BranchHolidayTableProps) => {
                         <h3 className="font-semibold text-xs text-slate-900 dark:text-slate-100 flex items-center gap-1.5 truncate">
                             <span>{t('branch_holiday', 'Filial bayram kuni')}</span>
                             <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                {holidays.length} ta
+                                {holidays.length} {t('items_count', 'ta')}
                             </span>
                         </h3>
                     </div>

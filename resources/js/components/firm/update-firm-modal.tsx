@@ -175,7 +175,6 @@ export default function UpdateFirmModal({ firm, open, setOpen }: UpdateFirmModal
                                 setData('valid_date', date ? format(date, 'yyyy-MM-dd') : '');
                             }}
                             dateFormat="yyyy-MM-dd"
-                            locale="sv-sv"
                             wrapperClassName="w-full"
                             customInput={
                                 <MaskedDateInput

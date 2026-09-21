@@ -94,7 +94,6 @@ export default function CreateWorkerHolidayModal({ worker }: createWorker) {
                                     setData('from', from ? format(from, 'yyyy-MM-dd') : '');
                                 }}
                                 dateFormat="yyyy-MM-dd"
-                                locale="sv-sv"
                                 wrapperClassName="w-full"
                                 customInput={
                                     <MaskedDateInput
@@ -116,7 +115,6 @@ export default function CreateWorkerHolidayModal({ worker }: createWorker) {
                                     setData('to', to ? format(to, 'yyyy-MM-dd') : '');
                                 }}
                                 dateFormat="yyyy-MM-dd"
-                                locale="sv-sv"
                                 wrapperClassName="w-full"
                                 customInput={
                                     <MaskedDateInput

@@ -82,7 +82,7 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                         <span>{t('modal.create_device_title', 'Yangi Qurilma Qo‘shish')}</span>
                     </DialogTitle>
                     <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-                        Filial: <strong className="font-semibold text-slate-700 dark:text-slate-300">{branch.name}</strong>
+                        {t('branch', 'Filial')}: <strong className="font-semibold text-slate-700 dark:text-slate-300">{branch.name}</strong>
                     </DialogDescription>
                 </DialogHeader>
 
@@ -93,7 +93,7 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                         </Label>
                         <Input
                             id="name"
-                            placeholder="Masalan: Kassa 1 terminali"
+                            placeholder={t('device_name_placeholder', 'Masalan: Kassa 1 terminali')}
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
                             className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
@@ -125,8 +125,8 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                             value={data.connection_type}
                             onChange={(e) => setData('connection_type', e.target.value as 'isup' | 'http_listening')}
                         >
-                            <option value="isup">ISUP 5.0 (2 tomonlama avtomatik sinxronizatsiya)</option>
-                            <option value="http_listening">HTTP Listening (1 tomonlama klassik)</option>
+                            <option value="isup">{t('isup_option', 'ISUP 5.0 (2 tomonlama avtomatik sinxronizatsiya)')}</option>
+                            <option value="http_listening">{t('http_listening_option', 'HTTP Listening (1 tomonlama klassik)')}</option>
                         </select>
                         <InputError message={errors.connection_type} />
                     </div>

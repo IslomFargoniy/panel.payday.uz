@@ -90,7 +90,7 @@ export default function CreateFirmHolidayModal({ firm }: CreateFirmHolidayProps)
                             ref={nameInput}
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
-                            placeholder="Masalan: Yangi yil"
+                            placeholder={t('holiday_name_placeholder', 'Masalan: Yangi yil')}
                             className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                         />
                         <InputError message={errors.name} />
@@ -107,7 +107,6 @@ export default function CreateFirmHolidayModal({ firm }: CreateFirmHolidayProps)
                                 setData('date', date ? format(date, 'yyyy-MM-dd') : '');
                             }}
                             dateFormat="yyyy-MM-dd"
-                            locale="sv-sv"
                             wrapperClassName="w-full"
                             customInput={
                                 <MaskedDateInput
@@ -127,7 +126,7 @@ export default function CreateFirmHolidayModal({ firm }: CreateFirmHolidayProps)
                             id="holiday_comment"
                             value={data.comment}
                             onChange={(e) => setData('comment', e.target.value)}
-                            placeholder="Qo‘shimcha ma‘lumot (ixtiyoriy)"
+                            placeholder={t('comment_placeholder', 'Qo‘shimcha ma‘lumot (ixtiyoriy)')}
                             className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                         />
                         <InputError message={errors.comment} />

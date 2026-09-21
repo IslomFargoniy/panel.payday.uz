@@ -103,7 +103,7 @@ export default function CreateBranchModal({ firm }: createBranch) {
                                         ref={nameInput}
                                         value={data.name}
                                         onChange={(e) => setData('name', e.target.value)}
-                                        placeholder="Masalan: Markaziy filial"
+                                        placeholder={t('branch_name_placeholder', 'Masalan: Markaziy filial')}
                                         className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                                     />
                                     <InputError message={errors.name} />
@@ -117,7 +117,7 @@ export default function CreateBranchModal({ firm }: createBranch) {
                                         id="branch_address"
                                         value={data.address}
                                         onChange={(e) => setData('address', e.target.value)}
-                                        placeholder="Toshkent sh., Amir Temur ko‘chasi..."
+                                        placeholder={t('address_placeholder', 'Toshkent sh., Amir Temur ko‘chasi...')}
                                         className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                                     />
                                     <InputError message={errors.address} />
@@ -133,7 +133,6 @@ export default function CreateBranchModal({ firm }: createBranch) {
                                             value={data.work_time}
                                             onChange={(time) => setData('work_time', time ?? '')}
                                             format="HH:mm"
-                                            locale="sv-sv"
                                             disableClock={true}
                                             className="block w-full h-9.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-xs focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-800 dark:text-white"
                                         />
@@ -149,7 +148,6 @@ export default function CreateBranchModal({ firm }: createBranch) {
                                             value={data.end_time}
                                             onChange={(time) => setData('end_time', time ?? '')}
                                             format="HH:mm"
-                                            locale="sv-sv"
                                             disableClock={true}
                                             className="block w-full h-9.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-xs focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-800 dark:text-white"
                                         />
@@ -208,7 +206,7 @@ export default function CreateBranchModal({ firm }: createBranch) {
                                             id="branch_comment"
                                             value={data.comment}
                                             onChange={(e) => setData('comment', e.target.value)}
-                                            placeholder="Qo‘shimcha izoh (ixtiyoriy)"
+                                            placeholder={t('comment_placeholder', 'Qo‘shimcha izoh (ixtiyoriy)')}
                                             className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                                         />
                                         <InputError message={errors.comment} />

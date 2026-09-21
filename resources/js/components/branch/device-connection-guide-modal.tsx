@@ -51,10 +51,10 @@ export default function DeviceConnectionGuideModal({ branch }: DeviceConnectionG
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white">
                         <HelpCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        Hikvision Qurilmasini Serverga Ulash Yo‘riqnomasi
+                        {t('device_guide_modal.title', 'Hikvision Qurilmasini Serverga Ulash Yo‘riqnomasi')}
                     </DialogTitle>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Filial: <strong className="text-gray-800 dark:text-gray-200">{branch.name}</strong> (ID: {branch.id})
+                        {t('branch', 'Filial')}: <strong className="text-gray-800 dark:text-gray-200">{branch.name}</strong> (ID: {branch.id})
                     </p>
                 </DialogHeader>
 
@@ -70,9 +70,9 @@ export default function DeviceConnectionGuideModal({ branch }: DeviceConnectionG
                         }`}
                     >
                         <Zap className="w-4 h-4 text-amber-500" />
-                        <span>1-Usul: ISUP 5.0 (2 tomonlama avtomatik)</span>
+                        <span>{t('device_guide_modal.tab1', '1-Usul: ISUP 5.0 (2 tomonlama avtomatik)')}</span>
                         <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-1.5 py-0.5 rounded font-bold">
-                            Tavsiya
+                            {t('device_guide_modal.recommended', 'Tavsiya')}
                         </span>
                     </button>
 
@@ -86,7 +86,7 @@ export default function DeviceConnectionGuideModal({ branch }: DeviceConnectionG
                         }`}
                     >
                         <Network className="w-4 h-4 text-blue-500" />
-                        <span>2-Usul: HTTP Listening (Klassik)</span>
+                        <span>{t('device_guide_modal.tab2', '2-Usul: HTTP Listening (Klassik)')}</span>
                     </button>
                 </div>
 
@@ -94,18 +94,18 @@ export default function DeviceConnectionGuideModal({ branch }: DeviceConnectionG
                 {activeTab === 'isup' && (
                     <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
                         <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg text-xs leading-relaxed text-blue-800 dark:text-blue-300">
-                            <strong>✨ ISUP 5.0 (2-tomonlama to‘liq integratsiya):</strong>
+                            <strong>✨ {t('device_guide_modal.isup_intro_title', 'ISUP 5.0 (2-tomonlama to‘liq integratsiya):')}</strong>
                             <ul className="list-disc list-inside mt-1 space-y-0.5">
-                                <li><strong>Statik IP kerak emas</strong> (oddiy Wi-Fi yoki 4G orqali ishlaydi).</li>
-                                <li><strong>Xodimlar + Yuz rasmlari:</strong> Panelda yangi xodim qo‘shilganda terminalga avtomatik yuklanadi.</li>
-                                <li><strong>Keldi-Ketdi (Davomat):</strong> Xodim yuzini skaner qilganda davomat real vaqtda ISUP orqali serverga yoziladi.</li>
+                                <li><strong>{t('device_guide_modal.isup_no_ip', 'Statik IP kerak emas')}</strong> {t('device_guide_modal.isup_no_ip_desc', '(oddiy Wi-Fi yoki 4G orqali ishlaydi).')}</li>
+                                <li><strong>{t('device_guide_modal.isup_face_sync', 'Xodimlar + Yuz rasmlari:')}</strong> {t('device_guide_modal.isup_face_sync_desc', 'Panelda yangi xodim qo‘shilganda terminalga avtomatik yuklanadi.')}</li>
+                                <li><strong>{t('device_guide_modal.isup_attendance', 'Keldi-Ketdi (Davomat):')}</strong> {t('device_guide_modal.isup_attendance_desc', 'Xodim yuzini skaner qilganda davomat real vaqtda ISUP orqali serverga yoziladi.')}</li>
                             </ul>
                         </div>
 
                         <div className="space-y-3">
                             <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 text-xs">
                                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px]">1</span>
-                                Hikvision Web paneliga kiring va menyuni oching:
+                                {t('device_guide_modal.step1_title', 'Hikvision Web paneliga kiring va menyuni oching:')}
                             </h4>
                             <div className="p-2.5 bg-gray-50 dark:bg-gray-800/80 rounded border border-gray-200 dark:border-gray-700 font-mono text-xs text-gray-800 dark:text-gray-200">
                                 Configuration ➔ Network ➔ Device Access ➔ <strong className="text-blue-600 dark:text-blue-400">ISUP</strong>
@@ -113,14 +113,14 @@ export default function DeviceConnectionGuideModal({ branch }: DeviceConnectionG
 
                             <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 text-xs">
                                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px]">2</span>
-                                Quyidagi parametrlarni kiriting:
+                                {t('device_guide_modal.step2_title', 'Quyidagi parametrlarni kiriting:')}
                             </h4>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                                 <div className="p-2.5 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 flex justify-between items-center">
                                     <div>
                                         <div className="text-gray-500 dark:text-gray-400 text-[11px]">Enable:</div>
-                                        <div className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">ON (Yoqilgan)</div>
+                                        <div className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">{t('device_guide_modal.on_enabled', 'ON (Yoqilgan)')}</div>
                                     </div>
                                 </div>
 
@@ -194,10 +194,10 @@ export default function DeviceConnectionGuideModal({ branch }: DeviceConnectionG
 
                             <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 text-xs">
                                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px]">3</span>
-                                Saqlash:
+                                {t('device_guide_modal.step3_title', 'Saqlash:')}
                             </h4>
                             <p className="text-xs text-gray-600 dark:text-gray-400 pl-6">
-                                <strong>Save</strong> tugmasini bosing. 5-10 soniya ichida Register Status: <strong className="text-emerald-600">🟢 Online</strong> bo‘ladi.
+                                <strong>Save</strong> {t('device_guide_modal.step3_desc', 'tugmasini bosing. 5-10 soniya ichida Register Status: ')}<strong className="text-emerald-600">🟢 Online</strong> {t('device_guide_modal.step3_desc_end', 'bo‘ladi.')}
                             </p>
                         </div>
                     </div>
@@ -207,13 +207,13 @@ export default function DeviceConnectionGuideModal({ branch }: DeviceConnectionG
                 {activeTab === 'http' && (
                     <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
                         <div className="p-3 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-xs leading-relaxed">
-                            <strong>ℹ️ HTTP Listening haqida:</strong> Bu usulda terminal har safar xodim kelganda serverga HTTP webhook yuboradi.
+                            <strong>ℹ️ {t('device_guide_modal.http_intro_title', 'HTTP Listening haqida:')}</strong> {t('device_guide_modal.http_intro_desc', 'Bu usulda terminal har safar xodim kelganda serverga HTTP webhook yuboradi.')}
                         </div>
 
                         <div className="space-y-3">
                             <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 text-xs">
                                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px]">1</span>
-                                Hikvision Web paneliga kiring va menyuni oching:
+                                {t('device_guide_modal.step1_title', 'Hikvision Web paneliga kiring va menyuni oching:')}
                             </h4>
                             <div className="p-2.5 bg-gray-50 dark:bg-gray-800/80 rounded border border-gray-200 dark:border-gray-700 font-mono text-xs text-gray-800 dark:text-gray-200">
                                 Configuration ➔ Network ➔ Network Service (yoki Advanced) ➔ <strong className="text-blue-600 dark:text-blue-400">HTTP Listening</strong>
@@ -221,7 +221,7 @@ export default function DeviceConnectionGuideModal({ branch }: DeviceConnectionG
 
                             <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 text-xs">
                                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px]">2</span>
-                                Quyidagi parametrlarni kiriting:
+                                {t('device_guide_modal.step2_title', 'Quyidagi parametrlarni kiriting:')}
                             </h4>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
@@ -272,10 +272,10 @@ export default function DeviceConnectionGuideModal({ branch }: DeviceConnectionG
 
                             <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 text-xs">
                                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px]">3</span>
-                                Saqlash:
+                                {t('device_guide_modal.step3_title', 'Saqlash:')}
                             </h4>
                             <p className="text-xs text-gray-600 dark:text-gray-400 pl-6">
-                                <strong>Save</strong> tugmasini bosing. So‘ng terminalga yuzingizni ko‘rsatsangiz, keldi-ketdilar to‘g‘ridan-to‘g‘ri serverga uzatiladi.
+                                <strong>Save</strong> {t('device_guide_modal.http_step3_desc', 'tugmasini bosing. So‘ng terminalga yuzingizni ko‘rsatsangiz, keldi-ketdilar to‘g‘ridan-to‘g‘ri serverga uzatiladi.')}
                             </p>
                         </div>
                     </div>

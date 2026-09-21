@@ -116,7 +116,7 @@ export default function CreateFirmModal() {
                             id="comment"
                             value={data.comment}
                             onChange={(e) => setData('comment', e.target.value)}
-                            placeholder="Qo‘shimcha izoh (ixtiyoriy)"
+                            placeholder={t('comment_placeholder', 'Qo‘shimcha izoh (ixtiyoriy)')}
                             className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                         />
                         <InputError message={errors.comment} />
@@ -165,7 +165,6 @@ export default function CreateFirmModal() {
                                 setData('valid_date', date ? format(date, 'yyyy-MM-dd') : '');
                             }}
                             dateFormat="yyyy-MM-dd"
-                            locale="sv-sv"
                             wrapperClassName="w-full"
                             customInput={
                                 <MaskedDateInput

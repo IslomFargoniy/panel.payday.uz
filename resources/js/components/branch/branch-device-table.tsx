@@ -58,7 +58,7 @@ const BranchDeviceTable = ({ branch }: BranchDeviceTableProps) => {
                     <Radio className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                     <span>{t('branch_device', 'Filial Qurilmalari')}</span>
                     <span className="text-[11px] font-normal px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                        {devices.length} ta
+                        {devices.length} {t('items_count', 'ta')}
                     </span>
                 </h3>
 
@@ -169,7 +169,7 @@ const BranchDeviceTable = ({ branch }: BranchDeviceTableProps) => {
                                                     type="button"
                                                     onClick={() => copyToClipboard(item.mac_address, item.id)}
                                                     className="text-slate-400 hover:text-indigo-300 p-0.5 rounded"
-                                                    title="MAC manzilni nusxalash"
+                                                    title={t('copy_mac', 'MAC manzilni nusxalash')}
                                                 >
                                                     {copiedId === item.id ? (
                                                         <Check className="w-3 h-3 text-emerald-400" />
@@ -196,9 +196,9 @@ const BranchDeviceTable = ({ branch }: BranchDeviceTableProps) => {
                                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                                             </span>
-                                            <span className="text-emerald-400 font-medium font-sans">Online • Faol</span>
+                                            <span className="text-emerald-400 font-medium font-sans">{t('online_active', 'Online • Faol')}</span>
                                         </div>
-                                        <span className="text-[10px] text-slate-400 font-mono">Biometric Sync</span>
+                                        <span className="text-[10px] text-slate-400 font-mono">{t('biometric_sync', 'Biometric Sync')}</span>
                                     </div>
                                 </div>
                             </div>
