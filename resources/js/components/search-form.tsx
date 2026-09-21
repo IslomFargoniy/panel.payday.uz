@@ -29,6 +29,8 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, cla
     const { t } = useTranslation(); // Hook to access translations
 
     const [filteredBranches, setBranches] = React.useState<Branch[] | undefined>(branches);
+    const formRef = React.useRef<HTMLFormElement>(null);
+    const shouldAutoSubmitRef = React.useRef(false);
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setData('search', e.target.value);
@@ -40,10 +42,12 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, cla
 
     const handlePerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setData('per_page', parseInt(e.target.value, 10)); // parse as number
+        shouldAutoSubmitRef.current = true;
     };
 
     const handleWorkerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setData('worker_id', parseInt(e.target.value, 10)); // parse as number
+        shouldAutoSubmitRef.current = true;
     };
 
     const handleFirmChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -55,10 +59,16 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, cla
         } else {
             setBranches(branches);
         }
+
+        if (data.branch_id) {
+            setData('branch_id', 0);
+        }
+        shouldAutoSubmitRef.current = true;
     };
 
     const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setData('branch_id', parseInt(e.target.value, 10)); // parse as number
+        shouldAutoSubmitRef.current = true;
     };
 
     useEffect(() => {
@@ -67,11 +77,24 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, cla
         } else {
             setBranches(branches);
         }
-    }, [data, setBranches, branches]);
+    }, [data.firm_id, branches]);
+
+    useEffect(() => {
+        if (shouldAutoSubmitRef.current) {
+            shouldAutoSubmitRef.current = false;
+            if (formRef.current) {
+                if (typeof formRef.current.requestSubmit === 'function') {
+                    formRef.current.requestSubmit();
+                } else {
+                    formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            }
+        }
+    }, [data]);
 
     if (isModal) {
         return (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 w-full">
+            <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-3.5 w-full">
                 {/* Search Bar */}
                 <div className="space-y-1">
                     <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t('search')}</label>
@@ -233,7 +256,7 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, cla
     }
 
     return (
-        <form onSubmit={handleSubmit} className={className || 'w-auto'}>
+        <form ref={formRef} onSubmit={handleSubmit} className={className || 'w-auto'}>
             <div className="flex flex-wrap items-center justify-end gap-1.5 w-full max-w-full" role="group">
                 {/* Search Bar */}
                 <input

@@ -14,20 +14,41 @@ interface SearchFormProps {
 
 const DashboardFilterForm = ({ handleSubmit, setData, data, firms, branches }: SearchFormProps) => {
     const { t } = useTranslation();
+    const formRef = React.useRef<HTMLFormElement>(null);
+    const shouldAutoSubmitRef = React.useRef(false);
 
     const handleFirmChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setData('firm_id', parseInt(e.target.value, 10));
+        if (data.branch_id) {
+            setData('branch_id', 0);
+        }
+        shouldAutoSubmitRef.current = true;
     };
 
     const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setData('branch_id', parseInt(e.target.value, 10));
+        shouldAutoSubmitRef.current = true;
     };
 
     const handleReset = () => {
         setData('firm_id', 0);
         setData('branch_id', 0);
         setData('search', '');
+        shouldAutoSubmitRef.current = true;
     };
+
+    React.useEffect(() => {
+        if (shouldAutoSubmitRef.current) {
+            shouldAutoSubmitRef.current = false;
+            if (formRef.current) {
+                if (typeof formRef.current.requestSubmit === 'function') {
+                    formRef.current.requestSubmit();
+                } else {
+                    formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            }
+        }
+    }, [data]);
 
     const filteredBranches = React.useMemo(() => {
         if (!branches) return [];
@@ -38,7 +59,7 @@ const DashboardFilterForm = ({ handleSubmit, setData, data, firms, branches }: S
     const hasActiveFilters = Boolean(data.firm_id || data.branch_id || data.search);
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-wrap items-center gap-2">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex flex-wrap items-center gap-2">
             {firms && firms.length > 0 && (
                 <div className="relative">
                     <Building2 className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />

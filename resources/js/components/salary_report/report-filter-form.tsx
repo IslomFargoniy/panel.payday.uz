@@ -31,6 +31,8 @@ const ReportFilterForm = ({
     workers
 }: ReportFilterFormProps) => {
     const { t } = useTranslation();
+    const formRef = React.useRef<HTMLFormElement>(null);
+    const shouldAutoSubmitRef = React.useRef(false);
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setData('search', e.target.value);
@@ -38,22 +40,42 @@ const ReportFilterForm = ({
 
     const handlePerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setData('per_page', parseInt(e.target.value, 10));
+        shouldAutoSubmitRef.current = true;
     };
 
     const handleFirmChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setData('firm_id', e.target.value ? parseInt(e.target.value, 10) : undefined);
+        if (data.branch_id) {
+            setData('branch_id', undefined);
+        }
+        shouldAutoSubmitRef.current = true;
     };
 
     const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setData('branch_id', e.target.value ? parseInt(e.target.value, 10) : undefined);
+        shouldAutoSubmitRef.current = true;
     };
 
     const handleWorkerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setData('worker_id', e.target.value ? parseInt(e.target.value, 10) : undefined);
+        shouldAutoSubmitRef.current = true;
     };
 
+    React.useEffect(() => {
+        if (shouldAutoSubmitRef.current) {
+            shouldAutoSubmitRef.current = false;
+            if (formRef.current) {
+                if (typeof formRef.current.requestSubmit === 'function') {
+                    formRef.current.requestSubmit();
+                } else {
+                    formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            }
+        }
+    }, [data]);
+
     return (
-        <form onSubmit={handleSubmit} className="w-full">
+        <form ref={formRef} onSubmit={handleSubmit} className="w-full">
             <div className="flex flex-wrap items-center justify-start sm:justify-end gap-1.5 w-full max-w-full" role="group">
                 {/* Search Bar */}
                 <input
