@@ -206,7 +206,7 @@ class HomeController extends Controller
         ];
 
 
-        $baseQuery = DB::table('hikvision_access_events as hae')
+        $eventsWithLead = DB::table('hikvision_access_events as hae')
             ->select(
                 'hae.id',
                 'w.name as worker',
@@ -215,91 +215,80 @@ class HomeController extends Controller
                 'b.firm_id',
                 'hae.work_time',
                 'f.name as firm',
-                'hae.attendanceStatus',
-                'hae.label',
-                'hae.created_at',
-                DB::raw("ROW_NUMBER() OVER (PARTITION BY w.name ORDER BY hae.created_at) AS rn")
+                'hae.attendanceStatus as status_from',
+                'hae.label as label_from',
+                'hae.created_at as from_time',
+                DB::raw("LEAD(hae.created_at) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS to_time"),
+                DB::raw("LEAD(hae.attendanceStatus) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS status_to"),
+                DB::raw("LEAD(hae.label) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS label_to")
             )
             ->join('workers as w', 'w.employeeNoString', '=', 'hae.employeeNoString')
             ->join('branches as b', 'w.branch_id', '=', 'b.id')
             ->join('firms as f', 'b.firm_id', '=', 'f.id');
 
-        $baseQuery->whereMonth('hae.created_at', $monthNumber)
-            ->whereYear('hae.created_at', $year);
-
         if ($request->from && $request->to) {
-            $baseQuery->whereBetween('hae.created_at', [$request->from, $request->to . " 23:59:59"]);
+            $eventsWithLead->whereBetween('hae.created_at', [$request->from, $request->to . " 23:59:59"]);
+        } else {
+            $eventsWithLead->whereMonth('hae.created_at', $monthNumber)
+                ->whereYear('hae.created_at', $year);
         }
 
         if ($request->branch_id) {
-            $baseQuery->where('b.id', $request->branch_id);
+            $eventsWithLead->where('b.id', $request->branch_id);
         }
         if ($request->firm_id) {
-            $baseQuery->where('f.id', $request->firm_id);
+            $eventsWithLead->where('f.id', $request->firm_id);
         }
 
         if (!Auth::user()->hasRole('Admin')) {
             $skladIds = Auth::user()->user_firms()->pluck('firm_id');
-
-            $baseQuery->whereIn('f.id', $skladIds);
+            $eventsWithLead->whereIn('f.id', $skladIds);
         }
 
-// Create derived tables with aliases e1 and e2
-        $e1 = DB::raw("({$baseQuery->toSql()}) as e1");
-        $e2 = DB::raw("({$baseQuery->toSql()}) as e2");
-
-// Build paired events
-        $pairedEvents = DB::table($e1)
-            ->mergeBindings($baseQuery)
-            ->join($e2, function ($join) {
-                $join->on('e1.worker', '=', 'e2.worker')
-                    ->whereRaw('e2.rn = e1.rn + 1');
-            })
-            ->mergeBindings($baseQuery)
+        $pairedEvents = DB::table(DB::raw("({$eventsWithLead->toSql()}) as pe"))
+            ->mergeBindings($eventsWithLead)
             ->where(function ($query) {
                 $query->where(function ($q) {
-                    $q->whereIn('e1.attendanceStatus', ['keldi', 'CheckIn', 'entered'])
-                        ->whereIn('e2.attendanceStatus', ['ketdi', 'CheckOut', 'exited']);
+                    $q->whereIn('pe.status_from', ['keldi', 'CheckIn', 'entered'])
+                        ->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'exited']);
                 })->orWhere(function ($q) {
-                    $q->whereIn('e1.attendanceStatus', ['Obetga ketdi', 'BreakOut'])
-                        ->whereIn('e2.attendanceStatus', ['Obetdan keldi', 'BreakIn']);
+                    $q->whereIn('pe.status_from', ['Obetga ketdi', 'BreakOut'])
+                        ->whereIn('pe.status_to', ['Obetdan keldi', 'BreakIn']);
                 });
             })
             ->select(
-                'e1.worker',
-                'e1.branch',
-                'e1.branch_id',
-                'e1.firm_id',
-                'e1.work_time',
-                'e1.firm',
-                DB::raw('e1.created_at as from_time'),
-                DB::raw('e2.created_at as to_time'),
-                DB::raw('e1.attendanceStatus as status_from'),
-                DB::raw("CONCAT(e1.label, '/', e2.label) as status"),
+                'pe.worker',
+                'pe.branch',
+                'pe.branch_id',
+                'pe.firm_id',
+                'pe.work_time',
+                'pe.firm',
+                'pe.from_time',
+                'pe.to_time',
+                'pe.status_from',
+                DB::raw("CONCAT(pe.label_from, '/', pe.label_to) as status"),
                 DB::raw("CASE
-                    WHEN e1.attendanceStatus IN ('keldi', 'CheckIn', 'entered')
-                    THEN TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(e1.created_at), e1.work_time), e1.created_at)
+                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'entered')
+                    THEN TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(pe.from_time), pe.work_time), pe.from_time)
                     ELSE 0 END as late_minutes"),
                 DB::raw("CASE
-                    WHEN e1.attendanceStatus IN ('keldi', 'CheckIn', 'entered')
-                    THEN TIMESTAMPDIFF(MINUTE, e1.created_at, e2.created_at)
+                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'entered')
+                    THEN TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time)
                     ELSE 0 END as worked_minutes"),
                 DB::raw("CASE
-                    WHEN e1.attendanceStatus IN ('Obetga ketdi', 'BreakOut')
-                    THEN TIMESTAMPDIFF(MINUTE, e1.created_at, e2.created_at)
+                    WHEN pe.status_from IN ('Obetga ketdi', 'BreakOut')
+                    THEN TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time)
                     ELSE 0 END as break_minutes")
             );
 
-
-// Final select Hisobot
+        // Final select Hisobot
         $resultsForHisobot = DB::table(DB::raw("({$pairedEvents->toSql()}) as paired_events"))
             ->mergeBindings($pairedEvents)
             ->select(
                 DB::raw('date(from_time) as worked_date'),
-
                 DB::raw('sum(worked_minutes) / 60 as worked_hours'),
                 DB::raw('sum(break_minutes) / 60 as break_hours'),
-                DB::raw('sum(IF(late_minutes > 0, late_minutes, 0)) / 60 as late_hours'),
+                DB::raw('sum(IF(late_minutes > 0, late_minutes, 0)) / 60 as late_hours')
             )
             ->groupBy(DB::raw('date(from_time)'))
             ->orderBy('from_time')

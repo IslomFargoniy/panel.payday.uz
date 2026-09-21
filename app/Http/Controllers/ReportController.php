@@ -11,376 +11,22 @@ use App\Models\Worker\Worker;
 use App\Models\Worker\WorkerDay;
 use App\Models\Worker\WorkerHoliday;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Carbon\CarbonPeriod;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use function Pest\Laravel\from;
 
 class ReportController extends Controller
 {
-    public function salary_report(Request $request)
+    /**
+     * Build the paired events query using window functions (LEAD, ROW_NUMBER).
+     * Replaces expensive derived-table self-joins and correlated subqueries.
+     */
+    private function buildPairedEventsQuery(Request $request, string $from, string $to)
     {
-        try {
-
-            $request->validate([
-                'from' => 'nullable',
-                'to' => 'nullable',
-                'worker_id' => 'nullable',
-                'branch_id' => 'nullable',
-                'firm_id' => 'nullable',
-            ]);
-
-
-            if ($request->per_page) {
-                $per_page = $request->per_page;
-            } else {
-                $per_page = 15;
-            }
-
-            $from = $request->from ?: Carbon::now()->startOfMonth()->toDateString();
-            $to = $request->to ?: Carbon::now()->toDateString();
-            $request->merge(['from' => $from, 'to' => $to]);
-
-            $days = $this->countWorkingDays($request);
-
-
-            $baseQuery = DB::table('hikvision_access_events as hae')
-                ->select(
-                    'hae.id',
-                    'hae.employeeNoString',
-                    'w.id as worker_id',
-                    'w.name as worker',
-                    'w.phone',
-                    'b.name as branch',
-                    'hae.work_time',
-                    'hae.end_time',
-                    'f.name as firm',
-                    'hae.attendanceStatus',
-                    'hae.label',
-                    'hae.created_at',
-                    DB::raw("ROW_NUMBER() OVER (PARTITION BY w.name ORDER BY hae.created_at) AS rn")
-                )
-                ->join('workers as w', 'w.employeeNoString', '=', 'hae.employeeNoString')
-                ->join('branches as b', 'w.branch_id', '=', 'b.id')
-                ->join('firms as f', 'b.firm_id', '=', 'f.id');
-
-            $baseQuery->whereBetween('hae.created_at', [$from, $to . " 23:59:59"]);
-            if ($request->worker_id) {
-                $baseQuery->where('w.id', $request->worker_id);
-            }
-            if ($request->search) {
-                $baseQuery->where(function ($query) use ($request) {
-                    $query->where('w.name', 'like', '%' . $request->search . '%')
-                        ->orWhere('b.name', 'like', '%' . $request->search . '%')
-                        ->orWhere('f.name', 'like', '%' . $request->search . '%')
-                        ->orWhere('hae.label', 'like', '%' . $request->search . '%');
-                });
-            }
-            if ($request->branch_id) {
-                $baseQuery->where('b.id', $request->branch_id);
-            }
-            if ($request->firm_id) {
-                $baseQuery->where('f.id', $request->firm_id);
-            }
-
-// Non-admin users must be part of the firm
-            if (!Auth::user()->hasRole('Admin')) {
-                $firmIds = Auth::user()->user_firms()->pluck('firm_id');
-                $baseQuery->whereIn('f.id', $firmIds);
-            }
-
-// Create derived tables with aliases e1 and e2
-            $e1 = DB::raw("({$baseQuery->toSql()}) as e1");
-            $e2 = DB::raw("({$baseQuery->toSql()}) as e2");
-
-// Build paired events
-            $pairedEvents = DB::table($e1)
-                ->mergeBindings($baseQuery)
-                ->join($e2, function ($join) {
-                    $join->on('e1.worker', '=', 'e2.worker')
-                        ->whereRaw('e2.rn = e1.rn + 1');
-                })
-                ->mergeBindings($baseQuery)
-                ->where(function ($query) {
-                    $query->where(function ($q) {
-                        $q->whereIn('e1.attendanceStatus', ['keldi', 'CheckIn', 'entered'])
-                            ->whereIn('e2.attendanceStatus', ['ketdi', 'CheckOut', 'exited']);
-                    })->orWhere(function ($q) {
-                        $q->whereIn('e1.attendanceStatus', ['Obetga ketdi', 'BreakOut'])
-                            ->whereIn('e2.attendanceStatus', ['Obetdan keldi', 'BreakIn']);
-                    });
-                })
-                ->select(
-                    'e1.employeeNoString',
-                    'e1.worker_id',
-                    'e1.worker',
-                    'e1.phone',
-                    'e1.branch',
-                    'e1.work_time',
-                    'e1.end_time',
-                    'e1.firm',
-                    DB::raw('e1.created_at as from_time'),
-                    DB::raw('e2.created_at as to_time'),
-                    DB::raw('e1.attendanceStatus as status_from'),
-                    DB::raw("CONCAT(e1.label, '/', e2.label) as status"),
-                    DB::raw("CASE
-                                WHEN e1.attendanceStatus IN ('keldi', 'CheckIn', 'entered')
-                                     AND NOT EXISTS (
-                                         SELECT 1 FROM hikvision_access_events sub
-                                         WHERE sub.employeeNoString = e1.employeeNoString
-                                           AND DATE(sub.created_at) = DATE(e1.created_at)
-                                           AND sub.created_at < e1.created_at
-                                     )
-                                THEN TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(e1.created_at), e1.work_time), e1.created_at)
-                                ELSE 0
-                            END as late_minutes"),
-                    DB::raw("CASE
-                    WHEN e1.attendanceStatus IN ('keldi', 'CheckIn', 'entered')
-                    THEN TIMESTAMPDIFF(MINUTE, e1.created_at, e2.created_at)
-                    ELSE 0 END as worked_minutes"),
-                    DB::raw("CASE
-                    WHEN e1.attendanceStatus IN ('Obetga ketdi', 'BreakOut')
-                    THEN TIMESTAMPDIFF(MINUTE, e1.created_at, e2.created_at)
-                    ELSE 0 END as break_minutes")
-                );
-
-// Final select
-            $results = DB::table(DB::raw("({$pairedEvents->toSql()}) as paired_events"))
-                ->mergeBindings($pairedEvents)
-                ->select(
-                    'worker_id',
-                    'worker',
-                    'phone',
-                    'branch',
-                    'work_time',
-                    'end_time',
-                    'firm',
-                    DB::raw('from_time as `from`'),
-                    DB::raw('to_time as `to`'),
-                    'worked_minutes',
-                    'break_minutes',
-                    DB::raw('IF(late_minutes > 0, late_minutes, 0) as late_minutes'),
-                    'status'
-                )
-                ->orderBy('worker')
-                ->orderBy('from', 'desc')
-                ->paginate($per_page);
-
-
-// Final select Report
-            $resultsForReport = DB::table(DB::raw("({$pairedEvents->toSql()}) as paired_events"))
-                ->mergeBindings($pairedEvents)
-                ->select(
-                    'worker_id',
-                    'worker',
-                    'phone',
-                    'branch',
-                    'work_time',
-                    'end_time',
-                    'firm',
-                    DB::raw('from_time as `from`'),
-                    DB::raw('to_time as `to`'),
-                    'worked_minutes',
-                    'break_minutes',
-                    DB::raw('IF(late_minutes > 0, late_minutes, 0) as late_minutes'),
-                    'status'
-                )
-                ->orderBy('worker')
-                ->orderBy('from')
-                ->get();
-
-//            dd($resultsForReport);
-
-            $groupedByDate = $resultsForReport->groupBy(function ($item) {
-                return $item->worker . '|' . \Carbon\Carbon::parse($item->from)->format('Y-m-d');
-            });
-
-            $report = new \stdClass();
-            $report->working_days = $days;
-            $report->worked_days = $groupedByDate->count(); // count of unique worked days
-            $report->worked_minutes = $resultsForReport->sum('worked_minutes');
-            $report->break_minutes = $resultsForReport->sum('break_minutes');
-            $report->late_minutes = $resultsForReport->sum('late_minutes');
-            $report->late_days = $groupedByDate->filter(function ($items) {
-                return $items->sum('late_minutes') > 0;
-            })->count();
-            if ($request->worker_id) {
-                $worker = Worker::find($request->worker_id);
-                $report->last_salary_date = $worker->salaries->max('to');
-                $report->hour_price = $worker->hour_price;
-                $report->fine_price = $worker->fine_price;
-                $report->work_time = $worker->work_time;
-                $report->end_time = $worker->end_time;
-            }
-            $report->from = $request->from;
-            $report->to = $request->to;
-
-
-            $firms = Firm::with([]);
-            $branches = Branch::with([]);
-            $workers = Worker::with([]);
-
-            if (!Auth::user()->hasRole('Admin')) {
-                $firms->whereHas('user_firms', function ($query) {
-                    $query->where('user_id', Auth::id());
-                });
-
-                $branches = $branches->whereHas('firm', function ($query) {
-                    $query->whereHas('user_firms', function ($query) {
-                        $query->where('user_id', Auth::id());
-                    });
-                });
-
-                $workers = $workers->whereHas('branch', function ($query) {
-                    $query->whereHas('firm', function ($query) {
-                        $query->whereHas('user_firms', function ($query) {
-                            $query->where('user_id', Auth::id());
-                        });
-                    });
-                });
-            }
-
-            $firms = $firms->get();
-            $branches = $branches->get();
-            $workers = $workers->get();
-
-            return Inertia::render('salary_report/index', [
-                'report' => $report,
-                'attendance' => $results,
-                'firms' => $firms,
-                'branches' => $branches,
-                'workers' => $workers,
-            ]);
-
-        } catch (\Exception $e) {
-            throw ValidationException::withMessages([
-                'error' => [$e->getMessage()],
-            ]);
-        }
-    }
-
-
-    public function countWorkingDays(Request $request): int
-    {
-        $workerId = $request->worker_id > 0 ? $request->worker_id : null;
-        $branchId = $request->branch_id > 0 ? $request->branch_id : null;
-        $firmId = $request->firm_id > 0 ? $request->firm_id : null;
-        $from = Carbon::parse($request->from);
-        $to = Carbon::parse($request->to);
-
-        // Generate date range using CarbonPeriod
-        $dates = collect(CarbonPeriod::create($from, $to))->map(fn($d) => $d->copy()->startOfDay());
-
-        $worker = Worker::find($workerId);
-
-        $effectiveBranchId = $branchId ?? $worker?->branch_id;
-
-        $branch = WorkerDay::where('worker_id', $workerId)->get();
-
-        if (count($branch) == 0) {
-            $branch = BranchDay::where('branch_id', $effectiveBranchId)->get();
-        }
-
-        // Load branch working days
-        $workingDayIndexes = $branch
-            ? $branch->pluck('day.index')->toArray()
-            : range(1, 7); // Default: all days are working days if branch not given
-
-        return $dates->filter(function ($date) use ($workerId, $branchId, $firmId, $workingDayIndexes) {
-            $dayOfWeek = $date->dayOfWeekIso;
-
-            if (!in_array($dayOfWeek, $workingDayIndexes)) {
-                return false;
-            }
-
-            $isWorkerOnHoliday = $workerId && WorkerHoliday::where('worker_id', $workerId)
-                    ->whereDate('from', '<=', $date)
-                    ->whereDate('to', '>=', $date)
-                    ->exists();
-
-            $isBranchHolidayWorker = $workerId && BranchHoliday::whereHas('branch', function ($q) use ($workerId) {
-                    $q->whereHas('workers', function ($q) use ($workerId) {
-                        $q->where('workers.id', $workerId);
-                    });
-                })
-                    ->whereDate('date', $date)
-                    ->exists();
-
-            $isFirmHolidayWorker = $workerId && FirmHoliday::whereHas('firm', function ($q) use ($workerId) {
-                    $q->whereHas('branches', function ($q) use ($workerId) {
-                        $q->whereHas('workers', function ($q) use ($workerId) {
-                            $q->where('workers.id', $workerId);
-                        });
-                    });
-                })
-                    ->whereDate('date', $date)
-                    ->exists();
-
-
-            $isBranchHoliday = $branchId && BranchHoliday::where('branch_id', $branchId)
-                    ->whereDate('date', $date)
-                    ->exists();
-
-            $isFirmHolidayBranch = $branchId && FirmHoliday::whereHas('firm', function ($q) use ($branchId) {
-                    $q->whereHas('branches', function ($q) use ($branchId) {
-                        $q->where('branches.id', $branchId);
-                    });
-                })
-                    ->whereDate('date', $date)
-                    ->exists();
-
-
-            $isFirmHoliday = $firmId && FirmHoliday::where('firm_id', $firmId)
-                    ->whereDate('date', $date)
-                    ->exists();
-
-            return !$isWorkerOnHoliday && !$isBranchHoliday && !$isFirmHoliday && !$isBranchHolidayWorker && !$isFirmHolidayWorker && !$isFirmHolidayBranch;
-        })->count();
-    }
-
-
-    public function monthly_attendance(Request $request)
-    {
-        if ($request->per_page) {
-            $per_page = $request->per_page;
-        } else {
-            $per_page = 15;
-        }
-
-        if ($request->from && $request->to) {
-            $from = $request->from;
-            $to = $request->to;
-        } else {
-            $from = Carbon::now()->startOfMonth()->toDateString();
-            $to = Carbon::now()->toDateString();
-        }
-
-//        $workers = Worker::with([
-//            'HikvisionAccessEvents' => function ($query) use ($monthNumber, $year) {
-//                $query->whereMonth('created_at', $monthNumber)
-//                    ->whereYear('created_at', $year)
-//                    ->where('attendanceStatus', "checkIn");
-//            }
-//        ])
-//            ->select(
-//                'workers.*'
-//            );
-//
-//        if ($request->firm_id) {
-//            $workers = $workers->whereHas('branch', function ($query) use ($request) {
-//                $query->where('firm_id', $request->firm_id);
-//            });
-//        }
-//
-//        if ($request->branch_id) {
-//            $workers = $workers->where('branch_id', $request->branch_id);
-//        }
-
-
-        $baseQuery = DB::table('hikvision_access_events as hae')
+        $eventsWithLead = DB::table('hikvision_access_events as hae')
             ->select(
                 'hae.id',
                 'hae.employeeNoString',
@@ -391,107 +37,328 @@ class ReportController extends Controller
                 'hae.work_time',
                 'hae.end_time',
                 'f.name as firm',
-                'hae.attendanceStatus',
-                'hae.label',
-                'hae.created_at',
-                DB::raw("ROW_NUMBER() OVER (PARTITION BY w.name ORDER BY hae.created_at) AS rn")
+                'hae.attendanceStatus as status_from',
+                'hae.label as label_from',
+                'hae.created_at as from_time',
+                DB::raw("LEAD(hae.created_at) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS to_time"),
+                DB::raw("LEAD(hae.attendanceStatus) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS status_to"),
+                DB::raw("LEAD(hae.label) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS label_to"),
+                DB::raw("ROW_NUMBER() OVER (PARTITION BY hae.employeeNoString, CAST(hae.created_at AS DATE) ORDER BY hae.created_at) AS day_rn")
             )
             ->join('workers as w', 'w.employeeNoString', '=', 'hae.employeeNoString')
             ->join('branches as b', 'w.branch_id', '=', 'b.id')
-            ->join('firms as f', 'b.firm_id', '=', 'f.id');
+            ->join('firms as f', 'b.firm_id', '=', 'f.id')
+            ->whereBetween('hae.created_at', [$from, $to . " 23:59:59"]);
 
-        $baseQuery->whereBetween('hae.created_at', [$from, $to . " 23:59:59"]);
-
+        if ($request->worker_id) {
+            $eventsWithLead->where('w.id', $request->worker_id);
+        }
         if ($request->search) {
-            $baseQuery->where(function ($query) use ($request) {
+            $eventsWithLead->where(function ($query) use ($request) {
                 $query->where('w.name', 'like', '%' . $request->search . '%')
+                    ->orWhere('b.name', 'like', '%' . $request->search . '%')
+                    ->orWhere('f.name', 'like', '%' . $request->search . '%')
+                    ->orWhere('hae.label', 'like', '%' . $request->search . '%')
                     ->orWhere('w.phone', 'like', '%' . $request->search . '%')
                     ->orWhere('w.address', 'like', '%' . $request->search . '%')
                     ->orWhere('w.comment', 'like', '%' . $request->search . '%');
             });
         }
         if ($request->branch_id) {
-            $baseQuery->where('b.id', $request->branch_id);
+            $eventsWithLead->where('b.id', $request->branch_id);
         }
         if ($request->firm_id) {
-            $baseQuery->where('f.id', $request->firm_id);
+            $eventsWithLead->where('f.id', $request->firm_id);
         }
 
-// Non-admin users must be part of the firm
         if (!Auth::user()->hasRole('Admin')) {
             $firmIds = Auth::user()->user_firms()->pluck('firm_id');
-            $baseQuery->whereIn('f.id', $firmIds);
+            $eventsWithLead->whereIn('f.id', $firmIds);
         }
 
-// Create derived tables with aliases e1 and e2
-        $e1 = DB::raw("({$baseQuery->toSql()}) as e1");
-        $e2 = DB::raw("({$baseQuery->toSql()}) as e2");
-
-// Build paired events
-        $pairedEvents = DB::table($e1)
-            ->mergeBindings($baseQuery)
-            ->join($e2, function ($join) {
-                $join->on('e1.worker', '=', 'e2.worker')
-                    ->whereRaw('e2.rn = e1.rn + 1');
-            })
-            ->mergeBindings($baseQuery)
+        $pairedQuery = DB::table(DB::raw("({$eventsWithLead->toSql()}) as pe"))
+            ->mergeBindings($eventsWithLead)
             ->where(function ($query) {
                 $query->where(function ($q) {
-                    $q->whereIn('e1.attendanceStatus', ['keldi', 'CheckIn', 'entered'])
-                        ->whereIn('e2.attendanceStatus', ['ketdi', 'CheckOut', 'exited']);
+                    $q->whereIn('pe.status_from', ['keldi', 'CheckIn', 'entered'])
+                      ->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'exited']);
                 })->orWhere(function ($q) {
-                    $q->whereIn('e1.attendanceStatus', ['Obetga ketdi', 'BreakOut'])
-                        ->whereIn('e2.attendanceStatus', ['Obetdan keldi', 'BreakIn']);
+                    $q->whereIn('pe.status_from', ['Obetga ketdi', 'BreakOut'])
+                      ->whereIn('pe.status_to', ['Obetdan keldi', 'BreakIn']);
                 });
             })
             ->select(
-                'e1.employeeNoString',
-                'e1.worker_id',
-                'e1.worker',
-                'e1.phone',
-                'e1.branch',
-                'e1.work_time',
-                'e1.end_time',
-                'e1.firm',
-                DB::raw('e1.created_at as from_time'),
-                DB::raw('e2.created_at as to_time'),
-                DB::raw('e1.attendanceStatus as status_from'),
-                DB::raw("CONCAT(e1.label, '/', e2.label) as status"),
+                'pe.id',
+                'pe.employeeNoString',
+                'pe.worker_id',
+                'pe.worker',
+                'pe.phone',
+                'pe.branch',
+                'pe.work_time',
+                'pe.end_time',
+                'pe.firm',
+                'pe.from_time',
+                'pe.to_time',
+                'pe.status_from',
+                DB::raw("CONCAT(pe.label_from, '/', pe.label_to) as status"),
                 DB::raw("CASE
-                                WHEN e1.attendanceStatus IN ('keldi', 'CheckIn', 'entered')
-                                     AND NOT EXISTS (
-                                         SELECT 1 FROM hikvision_access_events sub
-                                         WHERE sub.employeeNoString = e1.employeeNoString
-                                           AND DATE(sub.created_at) = DATE(e1.created_at)
-                                           AND sub.created_at < e1.created_at
-                                     )
-                                THEN TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(e1.created_at), e1.work_time), e1.created_at)
-                                ELSE 0
-                            END as late_minutes"),
+                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'entered') AND pe.day_rn = 1
+                    THEN TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(pe.from_time), pe.work_time), pe.from_time)
+                    ELSE 0
+                END as late_minutes"),
                 DB::raw("CASE
-                    WHEN e1.attendanceStatus IN ('keldi', 'CheckIn', 'entered')
-                    THEN TIMESTAMPDIFF(MINUTE, e1.created_at, e2.created_at)
-                    ELSE 0 END as worked_minutes"),
+                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'entered')
+                    THEN TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time)
+                    ELSE 0
+                END as worked_minutes"),
                 DB::raw("CASE
-                    WHEN e1.attendanceStatus IN ('Obetga ketdi', 'BreakOut')
-                    THEN TIMESTAMPDIFF(MINUTE, e1.created_at, e2.created_at)
-                    ELSE 0 END as break_minutes")
+                    WHEN pe.status_from IN ('Obetga ketdi', 'BreakOut')
+                    THEN TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time)
+                    ELSE 0
+                END as break_minutes")
             );
 
-// Final select Report
-        $resultsForReport = Worker::with([])
-            ->leftJoin(DB::raw("({$pairedEvents->toSql()}) as paired_events"), 'workers.id', '=', 'paired_events.worker_id')
+        return $pairedQuery;
+    }
+
+    public function salary_report(Request $request)
+    {
+        try {
+            $request->validate([
+                'from' => 'nullable',
+                'to' => 'nullable',
+                'worker_id' => 'nullable',
+                'branch_id' => 'nullable',
+                'firm_id' => 'nullable',
+            ]);
+
+            $per_page = $request->per_page ? (int)$request->per_page : 15;
+            $from = $request->from ?: Carbon::now()->startOfMonth()->toDateString();
+            $to = $request->to ?: Carbon::now()->toDateString();
+            $request->merge(['from' => $from, 'to' => $to]);
+
+            $days = $this->countWorkingDays($request);
+
+            $pairedEvents = $this->buildPairedEventsQuery($request, $from, $to);
+
+            // 1. Paginated records
+            $results = DB::table(DB::raw("({$pairedEvents->toSql()}) as paired_events"))
+                ->mergeBindings($pairedEvents)
+                ->select(
+                    'id',
+                    'worker_id',
+                    'worker',
+                    'phone',
+                    'branch',
+                    'work_time',
+                    'end_time',
+                    'firm',
+                    DB::raw('from_time as `from`'),
+                    DB::raw('to_time as `to`'),
+                    'worked_minutes',
+                    'break_minutes',
+                    DB::raw('IF(late_minutes > 0, late_minutes, 0) as late_minutes'),
+                    'status'
+                )
+                ->orderBy('worker')
+                ->orderBy('from_time', 'desc')
+                ->paginate($per_page);
+
+            // 2. Summary totals calculated directly in SQL (zero heavy in-memory hydration)
+            $summary = DB::table(DB::raw("({$pairedEvents->toSql()}) as paired_events"))
+                ->mergeBindings($pairedEvents)
+                ->selectRaw("
+                    COALESCE(SUM(worked_minutes), 0) as worked_minutes,
+                    COALESCE(SUM(break_minutes), 0) as break_minutes,
+                    COALESCE(SUM(IF(late_minutes > 0, late_minutes, 0)), 0) as late_minutes,
+                    COALESCE(COUNT(DISTINCT CONCAT(worker_id, '_', DATE(from_time))), 0) as worked_days,
+                    COALESCE(COUNT(DISTINCT CASE WHEN late_minutes > 0 THEN CONCAT(worker_id, '_', DATE(from_time)) END), 0) as late_days
+                ")
+                ->first();
+
+            $report = new \stdClass();
+            $report->working_days = $days;
+            $report->worked_days = (int) ($summary->worked_days ?? 0);
+            $report->worked_minutes = (int) ($summary->worked_minutes ?? 0);
+            $report->break_minutes = (int) ($summary->break_minutes ?? 0);
+            $report->late_minutes = (int) ($summary->late_minutes ?? 0);
+            $report->late_days = (int) ($summary->late_days ?? 0);
+
+            if ($request->worker_id) {
+                $worker = Worker::without(['branch'])->find($request->worker_id);
+                if ($worker) {
+                    $report->last_salary_date = $worker->salaries()->max('to');
+                    $report->hour_price = $worker->hour_price;
+                    $report->fine_price = $worker->fine_price;
+                    $report->work_time = $worker->work_time;
+                    $report->end_time = $worker->end_time;
+                }
+            }
+            $report->from = $request->from;
+            $report->to = $request->to;
+
+            // 3. Optimized dropdown lists (lean columns, without unnecessary relations)
+            $firms = Firm::query()->without(['branches'])->select('id', 'name');
+            $branches = Branch::query()->without(['firm', 'workers'])->select('id', 'firm_id', 'name');
+            $workers = Worker::query()->without(['branch'])->select('id', 'branch_id', 'name');
+
+            if (!Auth::user()->hasRole('Admin')) {
+                $userFirms = Auth::user()->user_firms()->pluck('firm_id');
+                $firms->whereIn('id', $userFirms);
+                $branches->whereIn('firm_id', $userFirms);
+                $workers->whereHas('branch', function ($q) use ($userFirms) {
+                    $q->whereIn('firm_id', $userFirms);
+                });
+            }
+
+            return Inertia::render('salary_report/index', [
+                'report' => $report,
+                'attendance' => $results,
+                'firms' => $firms->get(),
+                'branches' => $branches->get(),
+                'workers' => $workers->get(),
+            ]);
+
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages([
+                'error' => [$e->getMessage()],
+            ]);
+        }
+    }
+
+    public function countWorkingDays(Request $request): int
+    {
+        $workerId = $request->worker_id > 0 ? (int)$request->worker_id : null;
+        $branchId = $request->branch_id > 0 ? (int)$request->branch_id : null;
+        $firmId = $request->firm_id > 0 ? (int)$request->firm_id : null;
+        $from = Carbon::parse($request->from)->startOfDay();
+        $to = Carbon::parse($request->to)->startOfDay();
+
+        $worker = $workerId ? Worker::without(['branch'])->find($workerId) : null;
+        $effectiveBranchId = $branchId ?? $worker?->branch_id;
+        $effectiveFirmId = $firmId;
+        if (!$effectiveFirmId && $effectiveBranchId) {
+            $effectiveFirmId = Branch::without(['firm'])->where('id', $effectiveBranchId)->value('firm_id');
+        }
+
+        // 1. Fetch working day indexes (prioritize worker_days then branch_days)
+        $workingDayIndexes = range(1, 7);
+        if ($workerId) {
+            $workerDays = WorkerDay::where('worker_id', $workerId)->with('day')->get();
+            if ($workerDays->isNotEmpty()) {
+                $workingDayIndexes = $workerDays->pluck('day.index')->filter()->toArray();
+            } elseif ($effectiveBranchId) {
+                $branchDays = BranchDay::where('branch_id', $effectiveBranchId)->with('day')->get();
+                if ($branchDays->isNotEmpty()) {
+                    $workingDayIndexes = $branchDays->pluck('day.index')->filter()->toArray();
+                }
+            }
+        } elseif ($effectiveBranchId) {
+            $branchDays = BranchDay::where('branch_id', $effectiveBranchId)->with('day')->get();
+            if ($branchDays->isNotEmpty()) {
+                $workingDayIndexes = $branchDays->pluck('day.index')->filter()->toArray();
+            }
+        }
+
+        // 2. Pre-fetch holidays once in batch (3 fast queries max)
+        $workerHolidays = [];
+        if ($workerId) {
+            $workerHolidays = WorkerHoliday::where('worker_id', $workerId)
+                ->where('from', '<=', $to->toDateString())
+                ->where('to', '>=', $from->toDateString())
+                ->get(['from', 'to']);
+        }
+
+        $branchHolidayDates = [];
+        if ($effectiveBranchId) {
+            $branchHolidayDates = BranchHoliday::where('branch_id', $effectiveBranchId)
+                ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+                ->pluck('date')
+                ->map(fn($d) => Carbon::parse($d)->toDateString())
+                ->flip()
+                ->toArray();
+        }
+
+        $firmHolidayDates = [];
+        if ($effectiveFirmId) {
+            $firmHolidayDates = FirmHoliday::where('firm_id', $effectiveFirmId)
+                ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+                ->pluck('date')
+                ->map(fn($d) => Carbon::parse($d)->toDateString())
+                ->flip()
+                ->toArray();
+        }
+
+        // 3. Count in pure memory
+        $count = 0;
+        foreach (CarbonPeriod::create($from, $to) as $date) {
+            $dayOfWeek = $date->dayOfWeekIso;
+            if (!in_array($dayOfWeek, $workingDayIndexes)) {
+                continue;
+            }
+
+            $dateStr = $date->toDateString();
+
+            if (isset($branchHolidayDates[$dateStr]) || isset($firmHolidayDates[$dateStr])) {
+                continue;
+            }
+
+            $isWorkerHoliday = false;
+            foreach ($workerHolidays as $wh) {
+                if ($dateStr >= $wh->from && $dateStr <= $wh->to) {
+                    $isWorkerHoliday = true;
+                    break;
+                }
+            }
+            if ($isWorkerHoliday) {
+                continue;
+            }
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    public function monthly_attendance(Request $request)
+    {
+        $per_page = $request->per_page ? (int)$request->per_page : 15;
+
+        if ($request->from && $request->to) {
+            $from = $request->from;
+            $to = $request->to;
+        } else {
+            $from = Carbon::now()->startOfMonth()->toDateString();
+            $to = Carbon::now()->toDateString();
+        }
+
+        $pairedEvents = $this->buildPairedEventsQuery($request, $from, $to);
+
+        // Pre-aggregate paired events by worker in a subquery
+        $summarySubquery = DB::table(DB::raw("({$pairedEvents->toSql()}) as pe"))
             ->mergeBindings($pairedEvents)
             ->select(
-                'workers.*',
-                DB::raw('COALESCE(SUM(paired_events.worked_minutes), 0) AS worked_minutes'),
-                DB::raw('COALESCE(SUM(paired_events.break_minutes), 0) AS break_minutes'),
-                DB::raw('COALESCE(SUM(IF(paired_events.late_minutes > 0, paired_events.late_minutes, 0)), 0) AS late_minutes'),
-                DB::raw('COALESCE(COUNT(DISTINCT DATE(paired_events.from_time)), 0) AS worked_days'),
-                DB::raw('COALESCE(SUM(IF(paired_events.late_minutes > 0, 1, 0)), 0) AS late_days'),
-                DB::raw("count_working_days(workers.id,'$from','$to') as work_days")
+                'pe.worker_id',
+                DB::raw('COALESCE(SUM(pe.worked_minutes), 0) AS worked_minutes'),
+                DB::raw('COALESCE(SUM(pe.break_minutes), 0) AS break_minutes'),
+                DB::raw('COALESCE(SUM(IF(pe.late_minutes > 0, pe.late_minutes, 0)), 0) AS late_minutes'),
+                DB::raw('COALESCE(COUNT(DISTINCT DATE(pe.from_time)), 0) AS worked_days'),
+                DB::raw('COALESCE(COUNT(DISTINCT CASE WHEN pe.late_minutes > 0 THEN DATE(pe.from_time) END), 0) AS late_days')
             )
-            ->groupBy('workers.id')
+            ->groupBy('pe.worker_id');
+
+        $resultsForReport = Worker::query()
+            ->with(['branch.firm'])
+            ->leftJoin(DB::raw("({$summarySubquery->toSql()}) as s"), 'workers.id', '=', 's.worker_id')
+            ->mergeBindings($summarySubquery)
+            ->select(
+                'workers.*',
+                DB::raw('COALESCE(s.worked_minutes, 0) AS worked_minutes'),
+                DB::raw('COALESCE(s.break_minutes, 0) AS break_minutes'),
+                DB::raw('COALESCE(s.late_minutes, 0) AS late_minutes'),
+                DB::raw('COALESCE(s.worked_days, 0) AS worked_days'),
+                DB::raw('COALESCE(s.late_days, 0) AS late_days')
+            )
             ->orderByDesc('worked_minutes');
 
         if ($request->search) {
@@ -513,43 +380,124 @@ class ReportController extends Controller
             });
         }
 
-
-        $firms = Firm::with([]);
-        $branches = Branch::with([]);
-
         if (!Auth::user()->hasRole('Admin')) {
-            $firms->whereHas('user_firms', function ($query) {
-                $query->where('user_id', Auth::id());
+            $firmIds = Auth::user()->user_firms()->pluck('firm_id');
+            $resultsForReport->whereHas('branch', function ($query) use ($firmIds) {
+                $query->whereIn('firm_id', $firmIds);
             });
-
-            $branches = $branches->whereHas('firm', function ($query) {
-                $query->whereHas('user_firms', function ($query) {
-                    $query->where('user_id', Auth::id());
-                });
-            });
-
-            $resultsForReport = $resultsForReport
-                ->whereHas('branch', function ($query) {
-                    $query->whereHas('firm', function ($query) {
-                        $query->whereHas('user_firms', function ($query) {
-                            $query->where('user_id', Auth::id());
-                        });
-                    });
-                });
         }
 
-        $firms = $firms->get();
-        $branches = $branches->get();
+        // 1. Paginate workers
+        $paginatedWorkers = $resultsForReport->paginate($per_page);
 
-        $resultsForReport = $resultsForReport
-            ->paginate($per_page);
+        // 2. Batch calculate work_days only for the paginated workers on the current page
+        $workingDaysMap = $this->batchCalculateWorkingDays($paginatedWorkers->items(), $from, $to);
+
+        foreach ($paginatedWorkers as $workerItem) {
+            $workerItem->work_days = $workingDaysMap[$workerItem->id] ?? 0;
+        }
+
+        // 3. Dropdown filters (lean payload)
+        $firms = Firm::query()->without(['branches'])->select('id', 'name');
+        $branches = Branch::query()->without(['firm', 'workers'])->select('id', 'firm_id', 'name');
+
+        if (!Auth::user()->hasRole('Admin')) {
+            $userFirms = Auth::user()->user_firms()->pluck('firm_id');
+            $firms->whereIn('id', $userFirms);
+            $branches->whereIn('firm_id', $userFirms);
+        }
 
         return Inertia::render('monthly_report/index', [
-            'worker' => $resultsForReport,
-            'firms' => $firms,
-            'branches' => $branches,
+            'worker' => $paginatedWorkers,
+            'firms' => $firms->get(),
+            'branches' => $branches->get(),
         ]);
     }
 
+    private function batchCalculateWorkingDays(array $workers, string $fromStr, string $toStr): array
+    {
+        if (empty($workers)) {
+            return [];
+        }
 
+        $from = Carbon::parse($fromStr)->startOfDay();
+        $to = Carbon::parse($toStr)->startOfDay();
+        $workerIds = array_map(fn($w) => $w->id, $workers);
+        $branchIds = array_values(array_filter(array_unique(array_map(fn($w) => $w->branch_id, $workers))));
+        $firmIds = array_values(array_filter(array_unique(array_map(fn($w) => $w->branch?->firm_id, $workers))));
+
+        // 1. Worker days & Branch days
+        $workerDaysMap = WorkerDay::whereIn('worker_id', $workerIds)
+            ->with('day')
+            ->get()
+            ->groupBy('worker_id')
+            ->map(fn($days) => $days->pluck('day.index')->filter()->toArray());
+
+        $branchDaysMap = BranchDay::whereIn('branch_id', $branchIds)
+            ->with('day')
+            ->get()
+            ->groupBy('branch_id')
+            ->map(fn($days) => $days->pluck('day.index')->filter()->toArray());
+
+        // 2. Holidays
+        $workerHolidaysMap = WorkerHoliday::whereIn('worker_id', $workerIds)
+            ->where('from', '<=', $to->toDateString())
+            ->where('to', '>=', $from->toDateString())
+            ->get(['worker_id', 'from', 'to'])
+            ->groupBy('worker_id');
+
+        $branchHolidaysMap = BranchHoliday::whereIn('branch_id', $branchIds)
+            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+            ->get(['branch_id', 'date'])
+            ->groupBy('branch_id')
+            ->map(fn($items) => $items->pluck('date')->map(fn($d) => Carbon::parse($d)->toDateString())->flip()->toArray());
+
+        $firmHolidaysMap = FirmHoliday::whereIn('firm_id', $firmIds)
+            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+            ->get(['firm_id', 'date'])
+            ->groupBy('firm_id')
+            ->map(fn($items) => $items->pluck('date')->map(fn($d) => Carbon::parse($d)->toDateString())->flip()->toArray());
+
+        // 3. Calculate for each worker
+        $result = [];
+        $dates = iterator_to_array(CarbonPeriod::create($from, $to));
+
+        foreach ($workers as $worker) {
+            $workingDayIndexes = $workerDaysMap->get($worker->id)
+                ?? $branchDaysMap->get($worker->branch_id)
+                ?? range(1, 7);
+
+            $wHolidays = $workerHolidaysMap->get($worker->id) ?? collect();
+            $bHolidays = $branchHolidaysMap->get($worker->branch_id) ?? [];
+            $fHolidays = $firmHolidaysMap->get($worker->branch?->firm_id) ?? [];
+
+            $count = 0;
+            foreach ($dates as $date) {
+                if (!in_array($date->dayOfWeekIso, $workingDayIndexes)) {
+                    continue;
+                }
+
+                $dateStr = $date->toDateString();
+                if (isset($bHolidays[$dateStr]) || isset($fHolidays[$dateStr])) {
+                    continue;
+                }
+
+                $isWHoliday = false;
+                foreach ($wHolidays as $wh) {
+                    if ($dateStr >= $wh->from && $dateStr <= $wh->to) {
+                        $isWHoliday = true;
+                        break;
+                    }
+                }
+                if ($isWHoliday) {
+                    continue;
+                }
+
+                $count++;
+            }
+            $result[$worker->id] = $count;
+        }
+
+        return $result;
+    }
 }
