@@ -327,10 +327,11 @@ class HikvisionSyncService
                     $eventDateStr = $eventDateTime->format('Y-m-d H:i:s');
                     $serialNo = (string)($event['serialNo'] ?? '');
 
-                    // Check for duplicate specifically by employeeNo and exact access dateTime
-                    $existing = \App\Models\Hikvision\HikvisionAccessEvent::where('employeeNoString', $employeeNo)
+                    // Check for duplicate specifically by employeeNo and exact access dateTime (including soft-deleted records)
+                    $existing = \App\Models\Hikvision\HikvisionAccessEvent::withTrashed()
+                        ->where('employeeNoString', $employeeNo)
                         ->whereHas('hikvisionAccess', function ($q) use ($eventDateStr) {
-                            $q->where('dateTime', $eventDateStr);
+                            $q->withTrashed()->where('dateTime', $eventDateStr);
                         })
                         ->exists();
 

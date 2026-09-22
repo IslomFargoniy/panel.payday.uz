@@ -55,7 +55,8 @@ class HomeController extends Controller
         $notCome = (clone $workersQuery)
             ->leftJoin('hikvision_access_events as hae', function ($join) use ($todayStart, $todayEnd) {
                 $join->on('hae.employeeNoString', '=', 'workers.employeeNoString')
-                    ->whereBetween('hae.created_at', [$todayStart, $todayEnd]);
+                    ->whereBetween('hae.created_at', [$todayStart, $todayEnd])
+                    ->whereNull('hae.deleted_at');
             })
             ->whereNull('hae.id')
             ->count('workers.id');
@@ -72,8 +73,9 @@ class HomeController extends Controller
         // 4. Today's First Event (On Time vs Late) - Fast MIN() with GROUP BY
         $todayFirstEvents = DB::table('hikvision_access_events')
             ->select('employeeNoString', 'work_time', DB::raw('MIN(created_at) as first_created_at'))
+            ->whereNull('deleted_at')
             ->whereBetween('created_at', [$todayStart, $todayEnd])
-            ->whereIn('attendanceStatus', ['keldi', 'CheckIn', 'entered'])
+            ->whereIn('attendanceStatus', ['keldi', 'CheckIn', 'checkIn', 'entered'])
             ->groupBy('employeeNoString', 'work_time');
 
         $result = (clone $workersQuery)
@@ -89,8 +91,9 @@ class HomeController extends Controller
         // 5. Gone today (Checked out) - Fast distinct check
         $todayCheckouts = DB::table('hikvision_access_events')
             ->select('employeeNoString')
+            ->whereNull('deleted_at')
             ->whereBetween('created_at', [$todayStart, $todayEnd])
-            ->whereIn('attendanceStatus', ['ketdi', 'checkOut', 'exited'])
+            ->whereIn('attendanceStatus', ['ketdi', 'checkOut', 'CheckOut', 'exited'])
             ->distinct();
 
         $gone = (clone $workersQuery)
@@ -127,7 +130,8 @@ class HomeController extends Controller
             )
             ->join('workers as w', 'w.employeeNoString', '=', 'hae.employeeNoString')
             ->join('branches as b', 'w.branch_id', '=', 'b.id')
-            ->join('firms as f', 'b.firm_id', '=', 'f.id');
+            ->join('firms as f', 'b.firm_id', '=', 'f.id')
+            ->whereNull('hae.deleted_at');
 
         if ($request->from && $request->to) {
             $eventsWithLead->whereBetween('hae.created_at', [$request->from, $request->to . " 23:59:59"]);

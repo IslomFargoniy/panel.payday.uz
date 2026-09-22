@@ -49,6 +49,7 @@ class DashboardController extends Controller
                 $join->on('hae.employeeNoString', '=', 'workers.employeeNoString')
                     ->whereRaw('CURDATE() = DATE(hae.created_at)')
                     ->where('hae.attendanceStatus', 'checkIn')
+                    ->whereNull('hae.deleted_at')
                     ->whereRaw('TIME(hae.created_at) <= TIME(workers.work_time)');
             })
             ->distinct('workers.id')
@@ -59,6 +60,7 @@ class DashboardController extends Controller
                 $join->on('hae.employeeNoString', '=', 'workers.employeeNoString')
                     ->whereRaw('CURDATE() = DATE(hae.created_at)')
                     ->where('hae.attendanceStatus', 'checkIn')
+                    ->whereNull('hae.deleted_at')
                     ->whereRaw('TIME(hae.created_at) > TIME(workers.work_time)');
             })
             ->distinct('workers.id')
@@ -68,7 +70,8 @@ class DashboardController extends Controller
             ->join('hikvision_access_events as hae', function ($join) {
                 $join->on('hae.employeeNoString', '=', 'workers.employeeNoString')
                     ->whereRaw('CURDATE() = DATE(hae.created_at)')
-                    ->where('hae.attendanceStatus', 'checkIn');
+                    ->where('hae.attendanceStatus', 'checkIn')
+                    ->whereNull('hae.deleted_at');
             })
             ->distinct('workers.id')
             ->count('workers.id');

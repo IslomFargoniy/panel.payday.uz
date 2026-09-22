@@ -359,16 +359,17 @@ class HikvisionController extends Controller
                         $label = ($status === 'checkIn') ? 'Keldi' : (($status === 'checkOut') ? 'Ketdi' : null);
                     }
 
-                    // Check if an event already exists at this exact second (e.g. from ISUP sync)
-                    $existingEvent = HikvisionAccessEvent::where('employeeNoString', '=', $accessEventData->employeeNoString)
+                    // Check if an event already exists at this exact second (e.g. from ISUP sync or soft-deleted)
+                    $existingEvent = HikvisionAccessEvent::withTrashed()
+                        ->where('employeeNoString', '=', $accessEventData->employeeNoString)
                         ->whereHas('hikvisionAccess', function ($query) use ($dateTimeStr) {
-                            $query->where('dateTime', $dateTimeStr);
+                            $query->withTrashed()->where('dateTime', $dateTimeStr);
                         })
                         ->first();
 
                     if ($existingEvent) {
-                        // If existing event has no picture, attach the picture now!
-                        if (!empty($filename) && empty($existingEvent->picture)) {
+                        // If existing event is not soft-deleted and has no picture, attach the picture now!
+                        if (!$existingEvent->trashed() && !empty($filename) && empty($existingEvent->picture)) {
                             $existingEvent->picture = $filename;
                             $existingEvent->save();
                             if ($existingEvent->hikvisionAccess && !empty($shortSerial)) {
