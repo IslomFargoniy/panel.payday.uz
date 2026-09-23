@@ -81,11 +81,11 @@ class ReportController extends Controller
             ->mergeBindings($eventsWithLead)
             ->where(function ($query) {
                 $query->where(function ($q) {
-                    $q->whereIn('pe.status_from', ['keldi', 'CheckIn', 'entered'])
-                      ->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'exited']);
+                    $q->whereIn('pe.status_from', ['keldi', 'CheckIn', 'checkIn', 'entered'])
+                      ->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'checkOut', 'exited']);
                 })->orWhere(function ($q) {
-                    $q->whereIn('pe.status_from', ['Obetga ketdi', 'BreakOut'])
-                      ->whereIn('pe.status_to', ['Obetdan keldi', 'BreakIn']);
+                    $q->whereIn('pe.status_from', ['Obetga ketdi', 'BreakOut', 'breakOut'])
+                      ->whereIn('pe.status_to', ['Obetdan keldi', 'BreakIn', 'breakIn']);
                 });
             })
             ->select(
@@ -103,17 +103,17 @@ class ReportController extends Controller
                 'pe.status_from',
                 DB::raw("CONCAT(pe.label_from, '/', pe.label_to) as status"),
                 DB::raw("CASE
-                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'entered') AND pe.day_rn = 1
+                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'checkIn', 'entered') AND pe.day_rn = 1
                     THEN TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(pe.from_time), pe.work_time), pe.from_time)
                     ELSE 0
                 END as late_minutes"),
                 DB::raw("CASE
-                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'entered')
+                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'checkIn', 'entered')
                     THEN TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time)
                     ELSE 0
                 END as worked_minutes"),
                 DB::raw("CASE
-                    WHEN pe.status_from IN ('Obetga ketdi', 'BreakOut')
+                    WHEN pe.status_from IN ('Obetga ketdi', 'BreakOut', 'breakOut')
                     THEN TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time)
                     ELSE 0
                 END as break_minutes")
