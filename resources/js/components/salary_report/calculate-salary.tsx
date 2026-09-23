@@ -19,13 +19,13 @@ const CalculateSalary = ({ report, search_data }: CalculateSalaryProps) => {
     const nameInput = useRef<HTMLInputElement>(null);
 
     // Summani hisoblash va yaxlitlash (round)
-    const initialAmount = Math.round(((report.worked_minutes - report.break_minutes) * (report?.hour_price ?? 0)) / 60);
+    const initialAmount = Math.round((report.worked_minutes * (report?.hour_price ?? 0)) / 60);
 
     const { data, setData, post, processing, reset, errors, clearErrors } = useForm({
         worker_id: search_data.worker_id,
         amount: initialAmount,
         worked_minute: report.worked_minutes,
-        break_minute: report.break_minutes,
+        break_minute: 0,
         hour_price: report.hour_price,
         from: report.from,
         to: report.to,

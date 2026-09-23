@@ -135,8 +135,8 @@ class TelegramBotController extends Controller
                     }
                     break;
                 case 'checkOut':
-                    if ($lastStatus !== 'checkIn' && $lastStatus !== 'breakIn') {
-                        return response()->json(['success' => false, 'message' => 'Siz hali ishga kelmagansiz yoki abetdasiz.'], 400);
+                    if ($lastStatus !== 'checkIn') {
+                        return response()->json(['success' => false, 'message' => 'Siz hali ishga kelmagansiz.'], 400);
                     }
                     break;
                 default:

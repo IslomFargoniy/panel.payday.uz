@@ -65,28 +65,14 @@ const RightBar = ({ ...report }: Report) => {
                                     {~~(report.worked_minutes / 60)} {t('hour')} {report.worked_minutes % 60} {t('minute')}
                                 </td>
                             </tr>
-                            <tr className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                                <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{t('break_hours')}</td>
-                                <td className="px-4 py-3 text-right font-medium text-slate-900 dark:text-slate-100">
-                                    {~~(report.break_minutes / 60)} {t('hour')} {report.break_minutes % 60} {t('minute')}
-                                </td>
-                            </tr>
-                            <tr className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                                <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{t('real_hours')}</td>
-                                <td className="px-4 py-3 text-right font-medium text-slate-900 dark:text-slate-100">
-                                    {~~((report.worked_minutes - report.break_minutes) / 60)} {t('hour')}{' '}
-                                    {(report.worked_minutes - report.break_minutes) % 60} {t('minute')}
-                                </td>
-                            </tr>
 
                             {(() => {
                                 const hourPrice = report.hour_price ?? 0;
                                 const workedMinutes = report.worked_minutes ?? 0;
-                                const breakMinutes = report.break_minutes ?? 0;
 
                                 if (hourPrice <= 0) return null;
 
-                                const calculated = ((workedMinutes - breakMinutes) * hourPrice) / 60;
+                                const calculated = (workedMinutes * hourPrice) / 60;
 
                                 return (
                                     <>

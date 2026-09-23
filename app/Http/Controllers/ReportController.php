@@ -79,14 +79,9 @@ class ReportController extends Controller
 
         $pairedQuery = DB::table(DB::raw("({$eventsWithLead->toSql()}) as pe"))
             ->mergeBindings($eventsWithLead)
-            ->where(function ($query) {
-                $query->where(function ($q) {
-                    $q->whereIn('pe.status_from', ['keldi', 'CheckIn', 'checkIn', 'entered'])
-                      ->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'checkOut', 'exited']);
-                })->orWhere(function ($q) {
-                    $q->whereIn('pe.status_from', ['Obetga ketdi', 'BreakOut', 'breakOut'])
-                      ->whereIn('pe.status_to', ['Obetdan keldi', 'BreakIn', 'breakIn']);
-                });
+            ->where(function ($q) {
+                $q->whereIn('pe.status_from', ['keldi', 'CheckIn', 'checkIn', 'entered'])
+                  ->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'checkOut', 'exited']);
             })
             ->select(
                 'pe.id',
@@ -112,11 +107,7 @@ class ReportController extends Controller
                     THEN TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time)
                     ELSE 0
                 END as worked_minutes"),
-                DB::raw("CASE
-                    WHEN pe.status_from IN ('Obetga ketdi', 'BreakOut', 'breakOut')
-                    THEN TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time)
-                    ELSE 0
-                END as break_minutes")
+                DB::raw("0 as break_minutes")
             );
 
         return $pairedQuery;

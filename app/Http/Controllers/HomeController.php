@@ -167,14 +167,9 @@ class HomeController extends Controller
 
         $pairedEvents = DB::table(DB::raw("({$eventsWithLead->toSql()}) as pe"))
             ->mergeBindings($eventsWithLead)
-            ->where(function ($query) {
-                $query->where(function ($q) {
-                    $q->whereIn('pe.status_from', ['keldi', 'CheckIn', 'entered'])
-                        ->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'exited']);
-                })->orWhere(function ($q) {
-                    $q->whereIn('pe.status_from', ['Obetga ketdi', 'BreakOut'])
-                        ->whereIn('pe.status_to', ['Obetdan keldi', 'BreakIn']);
-                });
+            ->where(function ($q) {
+                $q->whereIn('pe.status_from', ['keldi', 'CheckIn', 'checkIn', 'entered'])
+                    ->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'checkOut', 'exited']);
             })
             ->select(
                 'pe.worker',
@@ -188,17 +183,13 @@ class HomeController extends Controller
                 'pe.status_from',
                 DB::raw("CONCAT(pe.label_from, '/', pe.label_to) as status"),
                 DB::raw("CASE
-                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'entered')
+                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'checkIn', 'entered')
                     THEN TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(pe.from_time), pe.work_time), pe.from_time)
                     ELSE 0 END as late_minutes"),
                 DB::raw("CASE
-                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'entered')
+                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'checkIn', 'entered')
                     THEN TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time)
-                    ELSE 0 END as worked_minutes"),
-                DB::raw("CASE
-                    WHEN pe.status_from IN ('Obetga ketdi', 'BreakOut')
-                    THEN TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time)
-                    ELSE 0 END as break_minutes")
+                    ELSE 0 END as worked_minutes")
             );
 
         $resultsForHisobot = DB::table(DB::raw("({$pairedEvents->toSql()}) as paired_events"))
@@ -206,7 +197,7 @@ class HomeController extends Controller
             ->select(
                 DB::raw('DATE(from_time) as worked_date'),
                 DB::raw('COALESCE(SUM(worked_minutes), 0) / 60 as worked_hours'),
-                DB::raw('COALESCE(SUM(break_minutes), 0) / 60 as break_hours'),
+                DB::raw('0 as break_hours'),
                 DB::raw('COALESCE(SUM(IF(late_minutes > 0, late_minutes, 0)), 0) / 60 as late_hours')
             )
             ->groupBy(DB::raw('DATE(from_time)'))

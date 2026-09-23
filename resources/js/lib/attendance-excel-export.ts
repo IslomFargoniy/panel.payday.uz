@@ -48,9 +48,7 @@ export const exportMonthlyAttendanceToExcel = async (
         t('firm', 'Firma'),
         t('phone', 'Telefon'),
         t('late_hours', 'Kechikkan soat'),
-        t('break_hours', 'Tanaffus'),
         t('worked_hours', 'Ishlagan soat'),
-        t('common_worked_hours', 'Sof ishlagan soat'),
         t('late_days', 'Kechikkan kun'),
         t('worked_days', 'Ishlagan kun'),
         t('work_days', 'Ish kuni'),
@@ -90,9 +88,7 @@ export const exportMonthlyAttendanceToExcel = async (
             `${item.branch?.firm?.name || ''} ( ${item.branch?.name || ''} )`,
             item.phone,
             `${~~(item.late_minutes! / 60)}:${String(item.late_minutes! % 60).padStart(2, '0')}`,
-            `${~~(item.break_minutes! / 60)}:${String(item.break_minutes! % 60).padStart(2, '0')}`,
             `${~~(item.worked_minutes! / 60)}:${String(item.worked_minutes! % 60).padStart(2, '0')}`,
-            `${~~((item.worked_minutes! - item.break_minutes!) / 60)}:${String((item.worked_minutes! - item.break_minutes!) % 60).padStart(2, '0')}`,
             item.late_days,
             item.worked_days,
             item.work_days,
@@ -100,7 +96,7 @@ export const exportMonthlyAttendanceToExcel = async (
         ]);
 
         row.getCell(4).font = { color: { argb: 'FFFF0000' } };
-        row.getCell(8).font = { color: { argb: 'FFFF0000' } };
+        row.getCell(6).font = { color: { argb: 'FF10B981' } };
     });
 
     const buffer = await workbook.xlsx.writeBuffer();

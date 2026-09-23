@@ -29,7 +29,6 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
                                 <th className="px-4 py-3">{t('from')}</th>
                                 <th className="px-4 py-3">{t('to')}</th>
                                 <th className="px-4 py-3">{t('worked_minutes')}</th>
-                                <th className="px-4 py-3">{t('break_minutes')}</th>
                                 <th className="px-4 py-3 text-rose-600 dark:text-rose-400">{t('late_minutes')}</th>
                                 <th className="px-4 py-3">{t('status')}</th>
                             </tr>
@@ -37,7 +36,7 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900">
                             {(!attendance.data || attendance.data.length === 0) ? (
                                 <tr>
-                                    <td colSpan={10} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+                                    <td colSpan={9} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
                                         {t('no_data', 'Ma’lumot mavjud emas')}
                                     </td>
                                 </tr>
@@ -55,7 +54,6 @@ const AttendanceTable = ({ searchData, ...attendance }: AttendanceTableProps) =>
                                             <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{item.from?.slice(0, 16)}</td>
                                             <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{item.to?.slice(0, 16)}</td>
                                             <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{item.worked_minutes}</td>
-                                            <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{item.break_minutes}</td>
                                             <td className="px-4 py-3 font-semibold text-rose-600 dark:text-rose-400">
                                                 {item.late_minutes > 0 ? item.late_minutes : 0}
                                             </td>

@@ -54,9 +54,7 @@ const WorkerMonthlyAttendanceTable = ({ worker, searchData }: WorkerTableProps) 
                                 <th className="px-3.5 py-3 min-w-[120px]">{t('firm', 'Filial')}</th>
                                 <th className="px-3.5 py-3">{t('phone', 'Telefon')}</th>
                                 <th className="px-3.5 py-3 text-rose-600 dark:text-rose-400">{t('late_hours', 'Kechikish (soat)')}</th>
-                                <th className="px-3.5 py-3">{t('break_hours', 'Tanaffus')}</th>
-                                <th className="px-3.5 py-3">{t('worked_hours', 'Ishlagan soat')}</th>
-                                <th className="px-3.5 py-3 text-indigo-600 dark:text-indigo-400">{t('common_worked_hours', 'Sof soat')}</th>
+                                <th className="px-3.5 py-3 text-emerald-600 dark:text-emerald-400">{t('worked_hours', 'Ishlagan soat')}</th>
                                 <th className="px-3.5 py-3 text-rose-600 dark:text-rose-400">{t('late_days', 'Kechikkan kun')}</th>
                                 <th className="px-3.5 py-3 text-emerald-600 dark:text-emerald-400">{t('worked_days', 'Ishlagan kun')}</th>
                                 <th className="px-3.5 py-3">{t('work_days', 'Ish kuni')}</th>
@@ -67,7 +65,7 @@ const WorkerMonthlyAttendanceTable = ({ worker, searchData }: WorkerTableProps) 
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900">
                             {(!worker.data || worker.data.length === 0) ? (
                                 <tr>
-                                    <td colSpan={12} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+                                    <td colSpan={10} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
                                         {t('no_data', 'Ma’lumot mavjud emas')}
                                     </td>
                                 </tr>
@@ -90,14 +88,8 @@ const WorkerMonthlyAttendanceTable = ({ worker, searchData }: WorkerTableProps) 
                                             <td className="px-3.5 py-2.5 font-mono font-semibold text-rose-600 dark:text-rose-400">
                                                 {~~(item.late_minutes! / 60)}:{String(item.late_minutes! % 60).padStart(2, '0')}
                                             </td>
-                                            <td className="px-3.5 py-2.5 font-mono text-slate-600 dark:text-slate-300">
-                                                {~~(item.break_minutes! / 60)}:{String(item.break_minutes! % 60).padStart(2, '0')}
-                                            </td>
-                                            <td className="px-3.5 py-2.5 font-mono text-slate-700 dark:text-slate-200">
+                                            <td className="px-3.5 py-2.5 font-mono font-semibold text-emerald-600 dark:text-emerald-400">
                                                 {~~(item.worked_minutes! / 60)}:{String(item.worked_minutes! % 60).padStart(2, '0')}
-                                            </td>
-                                            <td className="px-3.5 py-2.5 font-mono font-semibold text-indigo-600 dark:text-indigo-400">
-                                                {~~((item.worked_minutes! - item.break_minutes!) / 60)}:{String((item.worked_minutes! - item.break_minutes!) % 60).padStart(2, '0')}
                                             </td>
                                             <td className="px-3.5 py-2.5 font-mono font-semibold text-rose-600 dark:text-rose-400">{item.late_days}</td>
                                             <td className="px-3.5 py-2.5 font-mono font-semibold text-emerald-600 dark:text-emerald-400">{item.worked_days}</td>

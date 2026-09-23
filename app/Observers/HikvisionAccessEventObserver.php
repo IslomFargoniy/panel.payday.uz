@@ -102,14 +102,6 @@ class HikvisionAccessEventObserver
 
                 break;
 
-            case 'breakIn':
-                $statusText = "☕ Tanaffus boshlandi";
-                break;
-
-            case 'breakOut':
-                $statusText = "☕ Tanaffus tugadi";
-                break;
-
             default:
                 $statusText = "ℹ️ Holat: {$hikvisionAccessEvent->attendanceStatus}";
                 break;
