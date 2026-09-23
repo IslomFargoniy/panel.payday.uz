@@ -492,6 +492,7 @@ export interface Stats {
     on_holiday: number;
     on_time: number;
     late: number;
+    in_building: number;
     gone: number;
 }
 

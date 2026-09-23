@@ -155,7 +155,7 @@ export default function Dashboard() {
                                 {stats.on_time}
                             </span>
                             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                ({stats.on_time + stats.late - stats.gone} {t('in_building')})
+                                ({stats.in_building ?? (stats.on_time + stats.late - stats.gone)} {t('in_building')})
                             </span>
                         </div>
                         <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 pt-3 dark:border-slate-800/80">

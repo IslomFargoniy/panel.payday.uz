@@ -51,26 +51,7 @@ class HomeController extends Controller
 
         $allWorker = (clone $workersQuery)->count('workers.id');
 
-        // 2. Absent (Not come today) - Uses index seek on created_at range
-        $notCome = (clone $workersQuery)
-            ->leftJoin('hikvision_access_events as hae', function ($join) use ($todayStart, $todayEnd) {
-                $join->on('hae.employeeNoString', '=', 'workers.employeeNoString')
-                    ->whereBetween('hae.created_at', [$todayStart, $todayEnd])
-                    ->whereNull('hae.deleted_at');
-            })
-            ->whereNull('hae.id')
-            ->count('workers.id');
-
-        // 3. On holiday today - Uses index on worker_holidays (worker_id, from, to)
-        $onHoliday = (clone $workersQuery)
-            ->whereHas('worker_holidays', function ($query) use ($todayDate) {
-                $query->where('from', '<=', $todayDate)
-                    ->where('to', '>=', $todayDate);
-            })
-            ->distinct('workers.id')
-            ->count('workers.id');
-
-        // 4. Today's First Event (On Time vs Late) - Fast MIN() with GROUP BY
+        // 2. Today's First Event (On Time vs Late) - Fast MIN() with GROUP BY
         $todayFirstEvents = DB::table('hikvision_access_events')
             ->select('employeeNoString', 'work_time', DB::raw('MIN(created_at) as first_created_at'))
             ->whereNull('deleted_at')
@@ -88,26 +69,58 @@ class HomeController extends Controller
             ')
             ->first();
 
-        // 5. Gone today (Checked out) - Fast distinct check
-        $todayCheckouts = DB::table('hikvision_access_events')
-            ->select('employeeNoString')
+        $onTime = (int) ($result->on_time ?? 0);
+        $late = (int) ($result->late ?? 0);
+        $cameCount = $onTime + $late;
+
+        // 3. On holiday today - Uses index on worker_holidays (worker_id, from, to)
+        $onHoliday = (clone $workersQuery)
+            ->whereHas('worker_holidays', function ($query) use ($todayDate) {
+                $query->where('from', '<=', $todayDate)
+                    ->where('to', '>=', $todayDate);
+            })
+            ->distinct('workers.id')
+            ->count('workers.id');
+
+        // 4. Absent (Not checked in today and not on holiday)
+        $notCome = max(0, $allWorker - $cameCount - $onHoliday);
+
+        // 5. Currently in building vs Gone (determined by latest event today per worker)
+        $latestSub = DB::table('hikvision_access_events')
+            ->select('employeeNoString', DB::raw('MAX(created_at) as max_created_at'))
             ->whereNull('deleted_at')
             ->whereBetween('created_at', [$todayStart, $todayEnd])
-            ->whereIn('attendanceStatus', ['ketdi', 'checkOut', 'CheckOut', 'exited'])
-            ->distinct();
+            ->groupBy('employeeNoString');
 
-        $gone = (clone $workersQuery)
-            ->joinSub($todayCheckouts, 'last_event', function ($join) {
-                $join->on('workers.employeeNoString', '=', 'last_event.employeeNoString');
+        $todayLatestEvents = DB::table('hikvision_access_events as hae')
+            ->joinSub($latestSub, 'latest', function ($join) {
+                $join->on('hae.employeeNoString', '=', 'latest.employeeNoString')
+                    ->on('hae.created_at', '=', 'latest.max_created_at');
             })
-            ->count('workers.id');
+            ->whereNull('hae.deleted_at')
+            ->whereBetween('hae.created_at', [$todayStart, $todayEnd])
+            ->select('hae.employeeNoString', 'hae.attendanceStatus');
+
+        $latestStatusResult = (clone $workersQuery)
+            ->joinSub($todayLatestEvents, 'le', function ($join) {
+                $join->on('workers.employeeNoString', '=', 'le.employeeNoString');
+            })
+            ->selectRaw('
+                COALESCE(SUM(CASE WHEN le.attendanceStatus IN (\'keldi\', \'CheckIn\', \'checkIn\', \'entered\') THEN 1 ELSE 0 END), 0) AS in_building,
+                COALESCE(SUM(CASE WHEN le.attendanceStatus IN (\'ketdi\', \'checkOut\', \'CheckOut\', \'exited\') THEN 1 ELSE 0 END), 0) AS gone
+            ')
+            ->first();
+
+        $inBuilding = (int) ($latestStatusResult->in_building ?? 0);
+        $gone = (int) ($latestStatusResult->gone ?? 0);
 
         $stats = [
             'all_worker' => (int) $allWorker,
             'absent' => (int) $notCome,
             'on_holiday' => (int) $onHoliday,
-            'on_time' => (int) ($result->on_time ?? 0),
-            'late' => (int) ($result->late ?? 0),
+            'on_time' => (int) $onTime,
+            'late' => (int) $late,
+            'in_building' => (int) $inBuilding,
             'gone' => (int) $gone,
         ];
 

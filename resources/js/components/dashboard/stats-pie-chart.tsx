@@ -25,7 +25,6 @@ const StatsPieChart = ({ stats }: Props) => {
         { value: stats.late, name: t('late'), itemStyle: { color: '#F59E0B' } },
         { value: stats.absent, name: t('absent'), itemStyle: { color: '#EF4444' } },
         { value: stats.on_holiday, name: t('on_holiday'), itemStyle: { color: '#8B5CF6' } },
-        { value: stats.gone, name: t('gone'), itemStyle: { color: '#3B82F6' } }
     ].filter(item => item.value > 0), [stats, t]);
 
     const totalTracked = (stats.on_time || 0) + (stats.late || 0) + (stats.absent || 0) + (stats.on_holiday || 0);
@@ -111,7 +110,7 @@ const StatsPieChart = ({ stats }: Props) => {
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-xs font-medium text-slate-400">{t('at_work')}</span>
                     <span className="text-xl font-extrabold text-slate-900 dark:text-white">
-                        {stats.on_time + stats.late - stats.gone}
+                        {stats.in_building ?? Math.max(0, stats.on_time + stats.late - stats.gone)}
                     </span>
                 </div>
             </div>
