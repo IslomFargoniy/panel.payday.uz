@@ -280,6 +280,8 @@
     "welcome_back": "Добро пожаловать",
     "today_attendance_rate": "Показатель посещаемости сегодня",
     "total_workers": "Всего сотрудников",
+    "attended_today": "Присутствовали",
+    "in_building_and_left": "В здании / Ушли",
     "present_at_work": "Прибыли вовремя",
     "late_arrivals": "Опоздавшие",
     "absent_on_leave": "Отсутствуют / В отпуске",

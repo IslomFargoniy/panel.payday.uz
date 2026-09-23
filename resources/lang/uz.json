@@ -280,6 +280,8 @@
     "welcome_back": "Xush kelibsiz",
     "today_attendance_rate": "Bugungi davomat ko‘rsatkichi",
     "total_workers": "Jami xodimlar",
+    "attended_today": "Kelganlar",
+    "in_building_and_left": "Bino ichida / Ketganlar",
     "present_at_work": "O‘z vaqtida kelganlar",
     "late_arrivals": "Kechikkanlar",
     "absent_on_leave": "Kelmadi / Ta’tilda",

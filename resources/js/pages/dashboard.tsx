@@ -140,11 +140,11 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* Card 2: O'z Vaqtida Kelganlar */}
+                    {/* Card 2: Kelganlar (O'z vaqtida va Kechikkanlar) */}
                     <div className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                                {t('present_at_work')}
+                                {t('attended_today')}
                             </span>
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xs shadow-emerald-500/20">
                                 <UserCheck className="h-5 w-5" />
@@ -152,42 +152,42 @@ export default function Dashboard() {
                         </div>
                         <div className="mt-4 flex items-baseline gap-2">
                             <span className="text-2xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">
-                                {stats.on_time}
+                                {stats.on_time + stats.late}
                             </span>
                             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                ({stats.in_building ?? (stats.on_time + stats.late - stats.gone)} {t('in_building')})
+                                ({stats.on_time} {t('on_time')}, {stats.late} {t('late')})
                             </span>
                         </div>
                         <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 pt-3 dark:border-slate-800/80">
-                            <span>{t('on_time')} ulushi</span>
+                            <span>{t('attendance')} darajasi</span>
                             <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                                {stats.all_worker > 0 ? Math.round((stats.on_time / stats.all_worker) * 100) : 0}%
+                                {stats.all_worker > 0 ? Math.round(((stats.on_time + stats.late) / stats.all_worker) * 100) : 0}%
                             </span>
                         </div>
                     </div>
 
-                    {/* Card 3: Kechikkanlar */}
+                    {/* Card 3: Bino ichida / Ketganlar */}
                     <div className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                                {t('late_arrivals')}
+                                {t('in_building_and_left')}
                             </span>
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-xs shadow-amber-500/20">
-                                <ClockAlert className="h-5 w-5" />
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-xs shadow-cyan-500/20">
+                                <Building2 className="h-5 w-5" />
                             </div>
                         </div>
                         <div className="mt-4 flex items-baseline gap-2">
-                            <span className="text-2xl font-extrabold tracking-tight text-amber-600 dark:text-amber-400">
-                                {stats.late}
+                            <span className="text-2xl font-extrabold tracking-tight text-cyan-600 dark:text-cyan-400">
+                                {stats.in_building ?? 0}
                             </span>
                             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                {t('workers_count')}
+                                ({stats.in_building ?? 0} {t('in_building')}, {stats.gone} {t('gone')})
                             </span>
                         </div>
                         <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 pt-3 dark:border-slate-800/80">
-                            <span>{t('late')} darajasi</span>
-                            <span className="font-semibold text-amber-600 dark:text-amber-400">
-                                {stats.all_worker > 0 ? Math.round((stats.late / stats.all_worker) * 100) : 0}%
+                            <span>Hozirgi bino faolligi</span>
+                            <span className="font-semibold text-cyan-600 dark:text-cyan-400">
+                                {stats.all_worker > 0 ? Math.round(((stats.in_building ?? 0) / stats.all_worker) * 100) : 0}%
                             </span>
                         </div>
                     </div>
