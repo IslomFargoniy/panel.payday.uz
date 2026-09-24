@@ -335,6 +335,7 @@ class ReportController extends Controller
             ->select(
                 'pe.worker_id',
                 DB::raw('COALESCE(SUM(pe.worked_minutes), 0) AS worked_minutes'),
+                DB::raw('COALESCE(SUM(pe.break_minutes), 0) AS break_minutes'),
                 DB::raw('COALESCE(SUM(pe.late_minutes), 0) AS late_minutes'),
                 DB::raw('COALESCE(COUNT(DISTINCT DATE(pe.from_time)), 0) AS worked_days'),
                 DB::raw('COALESCE(COUNT(DISTINCT CASE WHEN pe.late_minutes > 0 THEN DATE(pe.from_time) END), 0) AS late_days')
