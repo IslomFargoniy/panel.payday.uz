@@ -13,7 +13,20 @@ class HikvisionAccessEventObserver
 {
     public function created(HikvisionAccessEvent $hikvisionAccessEvent): void
     {
-        if (!$hikvisionAccessEvent->picture) {
+        $this->handleNotification($hikvisionAccessEvent, 'created');
+    }
+
+    public function updated(HikvisionAccessEvent $hikvisionAccessEvent): void
+    {
+        if ($hikvisionAccessEvent->wasChanged('picture') && !empty($hikvisionAccessEvent->picture)) {
+            $this->handleNotification($hikvisionAccessEvent, 'updated');
+        }
+    }
+
+    protected function handleNotification(HikvisionAccessEvent $hikvisionAccessEvent, string $trigger = 'created'): void
+    {
+        if (empty($hikvisionAccessEvent->picture)) {
+            \Illuminate\Support\Facades\Log::info("HikvisionAccessEventObserver [{$trigger}]: Event #{$hikvisionAccessEvent->id} has no picture, skipping notification.");
             return;
         }
 
@@ -23,83 +36,74 @@ class HikvisionAccessEventObserver
             ->first();
 
         if (!$worker || !$worker->branch) {
+            \Illuminate\Support\Facades\Log::info("HikvisionAccessEventObserver [{$trigger}]: Worker or branch not found for employeeNoString {$hikvisionAccessEvent->employeeNoString}, skipping.");
             return;
         }
 
-        $users = User::query()
-            ->whereNotNull('telegram_id')
-            ->whereHas('user_firms', function ($q) use ($worker) {
-            $q->where('firm_id', $worker->branch->firm_id);
-        })
-            ->get();
+        $hikvisionAccess = $hikvisionAccessEvent->hikvisionAccess;
+        $shortSerial = $hikvisionAccess->shortSerialNumber ?? null;
+        if (empty($shortSerial)) {
+            \Illuminate\Support\Facades\Log::warning("HikvisionAccessEventObserver [{$trigger}]: shortSerialNumber is missing for event #{$hikvisionAccessEvent->id}.");
+            return;
+        }
 
         $photoPath = Storage::disk('public')->path(
-            'hikvision/' . $hikvisionAccessEvent->hikvisionAccess->shortSerialNumber . '/' . $hikvisionAccessEvent->picture
+            'hikvision/' . $shortSerial . '/' . $hikvisionAccessEvent->picture
         );
 
         if (!file_exists($photoPath)) {
+            \Illuminate\Support\Facades\Log::warning("HikvisionAccessEventObserver [{$trigger}]: Photo file not found at {$photoPath}");
             return;
         }
 
-        $hikvisionTime = Carbon::parse($hikvisionAccessEvent->hikvisionAccess->dateTime);
+        $dateTimeStr = $hikvisionAccess->dateTime ?? $hikvisionAccessEvent->created_at;
+        $hikvisionTime = Carbon::parse($dateTimeStr);
 
         // TIME larni shu kun bilan birlashtiramiz
         $workStart = $hikvisionAccessEvent->work_time
-            ?Carbon::parse($hikvisionTime->format('Y-m-d') . ' ' . $hikvisionAccessEvent->work_time)
+            ? Carbon::parse($hikvisionTime->format('Y-m-d') . ' ' . $hikvisionAccessEvent->work_time)
             : null;
 
         $workEnd = $hikvisionAccessEvent->end_time
-            ?Carbon::parse($hikvisionTime->format('Y-m-d') . ' ' . $hikvisionAccessEvent->end_time)
+            ? Carbon::parse($hikvisionTime->format('Y-m-d') . ' ' . $hikvisionAccessEvent->end_time)
             : null;
 
         $statusText = '';
 
         switch ($hikvisionAccessEvent->attendanceStatus) {
-
             case 'checkIn':
-
                 if ($workStart) {
-
-                    $diffMinutes = $workStart->diffInMinutes($hikvisionTime, false);
-
+                    $diffMinutes = (int) round($workStart->diffInMinutes($hikvisionTime, false));
                     if ($diffMinutes <= 0) {
                         $statusText = "🚶 KELDI: 🟢 O‘z vaqtida";
-                    }
-                    else {
-                        $hours = floor($diffMinutes / 60);
-                        $minutes = round($diffMinutes % 60);
+                    } else {
+                        $hours = intdiv(abs($diffMinutes), 60);
+                        $minutes = abs($diffMinutes) % 60;
                         $statusText = "🚶 KELDI: 🔴 Kechikdi\n⏱️ {$hours} soat {$minutes} minut";
                     }
+                } else {
+                    $statusText = "🚶 KELDI: 🟢 Keldi";
                 }
-
                 break;
 
             case 'checkOut':
-
                 if ($workEnd) {
-
-                    $diffMinutes = $workEnd->diffInMinutes($hikvisionTime, false);
-
+                    $diffMinutes = (int) round($workEnd->diffInMinutes($hikvisionTime, false));
                     if ($diffMinutes < 0) {
-                        // Erta ketdi
                         $early = abs($diffMinutes);
-                        $hours = floor($early / 60);
-                        $minutes = round($early % 60);
+                        $hours = intdiv($early, 60);
+                        $minutes = $early % 60;
                         $statusText = "🚶 KETDI: 🔴 Erta ketdi\n⏱️ {$hours} soat {$minutes} minut";
-
-                    }
-                    elseif ($diffMinutes > 0) {
-                        // Ortiqcha ish
-                        $hours = floor($diffMinutes / 60);
-                        $minutes = round($diffMinutes % 60);
+                    } elseif ($diffMinutes > 0) {
+                        $hours = intdiv($diffMinutes, 60);
+                        $minutes = $diffMinutes % 60;
                         $statusText = "🚶 KETDI: 🟡 Ortiqcha ish\n⏱️ {$hours} soat {$minutes} minut";
-
-                    }
-                    else {
+                    } else {
                         $statusText = "🚶 KETDI: 🟢 O‘z vaqtida";
                     }
+                } else {
+                    $statusText = "🚶 KETDI: 🟢 Ketdi";
                 }
-
                 break;
 
             default:
@@ -107,14 +111,25 @@ class HikvisionAccessEventObserver
                 break;
         }
 
-        $caption = "👤 Xodim: {$hikvisionAccessEvent->name}
---------------------------
-{$statusText}
----------------------------
-Filial: {$worker->branch->name}
-Sana: " . $hikvisionTime->format('Y-m-d H:i:s');
+        $workerName = $hikvisionAccessEvent->name ?: ($worker->name ?: 'Noma\'lum');
+        $branchName = $worker->branch->name ?? 'Noma\'lum';
+        $formattedTime = $hikvisionTime->format('Y-m-d H:i:s');
+
+        $caption = "👤 Xodim: {$workerName}\n"
+            . "--------------------------\n"
+            . "{$statusText}\n"
+            . "---------------------------\n"
+            . "Filial: {$branchName}\n"
+            . "Sana: {$formattedTime}";
 
         $chatIds = [];
+
+        $users = User::query()
+            ->whereNotNull('telegram_id')
+            ->whereHas('user_firms', function ($q) use ($worker) {
+                $q->where('firm_id', $worker->branch->firm_id);
+            })
+            ->get();
 
         foreach ($users as $user) {
             if ($user->telegram_id) {
@@ -126,22 +141,25 @@ Sana: " . $hikvisionTime->format('Y-m-d H:i:s');
             $chatIds[] = $worker->telegram_id;
         }
 
-        if ($worker->branch && $worker->branch->telegram_group_id) {
+        if ($worker->branch && !empty($worker->branch->telegram_group_id)) {
             $chatIds[] = $worker->branch->telegram_group_id;
         }
 
+        $chatIds = array_values(array_unique(array_filter($chatIds)));
+
         if (!empty($chatIds)) {
+            \Illuminate\Support\Facades\Log::info("HikvisionAccessEventObserver [{$trigger}]: Dispatching notification for event #{$hikvisionAccessEvent->id} to chatIds: " . implode(', ', $chatIds));
+            // Dispatch directly to database queue
             \App\Jobs\SendAttendanceTelegramNotificationJob::dispatch(
                 $photoPath,
                 $caption,
                 $chatIds
-            )->afterResponse();
+            );
+        } else {
+            \Illuminate\Support\Facades\Log::warning("HikvisionAccessEventObserver [{$trigger}]: No chat IDs found for event #{$hikvisionAccessEvent->id}.");
         }
     }
 
-    public function updated(HikvisionAccessEvent $hikvisionAccessEvent): void
-    {
-    }
     public function deleting(HikvisionAccessEvent $hikvisionAccessEvent): void
     {
     }

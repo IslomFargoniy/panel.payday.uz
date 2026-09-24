@@ -52,7 +52,13 @@ class SendAttendanceTelegramNotificationJob implements ShouldQueue
      */
     public function handle(): void
     {
-        if (empty($this->chatIds) || !file_exists($this->photoPath)) {
+        if (empty($this->chatIds)) {
+            Log::warning("SendAttendanceTelegramNotificationJob: No chatIds provided.");
+            return;
+        }
+
+        if (!file_exists($this->photoPath)) {
+            Log::warning("SendAttendanceTelegramNotificationJob: Photo file not found: {$this->photoPath}");
             return;
         }
 
@@ -66,12 +72,13 @@ class SendAttendanceTelegramNotificationJob implements ShouldQueue
 
         foreach ($this->chatIds as $chatId) {
             try {
-                $telegram->sendPhoto([
+                $response = $telegram->sendPhoto([
                     'chat_id'    => $chatId,
                     'photo'      => InputFile::create($this->photoPath),
                     'caption'    => $this->caption,
-                    'parse_mode' => 'HTML',
                 ]);
+                $msgId = is_object($response) && method_exists($response, 'getMessageId') ? $response->getMessageId() : 'ok';
+                Log::info("SendAttendanceTelegramNotificationJob: Sent successfully to chat_id {$chatId}, msg_id: {$msgId}");
             } catch (\Exception $e) {
                 Log::error("SendAttendanceTelegramNotificationJob failed for chat_id {$chatId}: " . $e->getMessage());
             }
