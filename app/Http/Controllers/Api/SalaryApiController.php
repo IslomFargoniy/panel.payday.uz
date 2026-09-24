@@ -12,11 +12,22 @@ use Illuminate\Support\Facades\Auth;
 
 class SalaryApiController extends Controller
 {
+    private function extractInertiaProps($response, Request $request): array
+    {
+        if ($response instanceof \Inertia\Response) {
+            $req = clone $request;
+            $req->headers->set('X-Inertia', 'true');
+            $json = json_decode($response->toResponse($req)->getContent(), true);
+            return $json['props'] ?? [];
+        }
+        return is_array($response) ? $response : [];
+    }
+
     public function salaryReport(Request $request): JsonResponse
     {
         $reportController = new ReportController();
         $response = $reportController->salary_report($request);
-        $data = method_exists($response, 'toResponse') ? $response->getData() : (is_array($response) ? $response : []);
+        $data = $this->extractInertiaProps($response, $request);
 
         return response()->json([
             'success' => true,

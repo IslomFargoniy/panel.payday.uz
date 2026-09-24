@@ -13,12 +13,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Laravel\Sanctum\HasApiTokens;
 
 class Worker extends Model
 {
     /** @use HasFactory<\Database\Factories\Worker\WorkerFactory> */
-    use HasFactory;
-
+    use HasApiTokens, HasFactory;
 
     protected $fillable = [
         'branch_id',
@@ -28,12 +28,17 @@ class Worker extends Model
         'fine_price',
         'name',
         'phone',
+        'password',
         'address',
         'comment',
         'employeeNoString',
         'status',
         'telegram_id',
         'avatar'
+    ];
+
+    protected $hidden = [
+        'password',
     ];
 
     protected $with = [

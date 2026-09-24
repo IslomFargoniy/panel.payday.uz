@@ -33,7 +33,7 @@ class TokenManager @Inject constructor(
         private val KEY_PIN_CODE = stringPreferencesKey("pin_code")
         private val KEY_BASE_URL = stringPreferencesKey("base_url")
         
-        const val DEFAULT_BASE_URL = "http://10.0.2.2:8000/api/"
+        const val DEFAULT_BASE_URL = "https://panel.payday.uz/api/"
     }
 
     val tokenFlow: Flow<String?> = context.dataStore.data.map { it[KEY_TOKEN] }

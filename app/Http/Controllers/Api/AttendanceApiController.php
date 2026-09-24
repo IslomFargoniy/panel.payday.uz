@@ -11,6 +11,17 @@ use Illuminate\Http\Request;
 
 class AttendanceApiController extends Controller
 {
+    private function extractInertiaProps($response, Request $request): array
+    {
+        if ($response instanceof \Inertia\Response) {
+            $req = clone $request;
+            $req->headers->set('X-Inertia', 'true');
+            $json = json_decode($response->toResponse($req)->getContent(), true);
+            return $json['props'] ?? [];
+        }
+        return is_array($response) ? $response : [];
+    }
+
     /**
      * Daily attendance for a specific branch (or all branches)
      */
@@ -22,10 +33,8 @@ class AttendanceApiController extends Controller
         }
 
         $hikvisionController = new HikvisionController();
-        $response = $hikvisionController->daily_attendance($branch, $request);
-
-        // Get props from Inertia response if it's an InertiaResponse, or pass raw data
-        $data = method_exists($response, 'toResponse') ? $response->getData() : (is_array($response) ? $response : []);
+        $response = $hikvisionController->daily_attendance($request, $branch);
+        $data = $this->extractInertiaProps($response, $request);
 
         return response()->json([
             'success' => true,
@@ -40,7 +49,7 @@ class AttendanceApiController extends Controller
     {
         $reportController = new ReportController();
         $response = $reportController->monthly_attendance($request);
-        $data = method_exists($response, 'toResponse') ? $response->getData() : (is_array($response) ? $response : []);
+        $data = $this->extractInertiaProps($response, $request);
 
         return response()->json([
             'success' => true,
@@ -55,7 +64,7 @@ class AttendanceApiController extends Controller
     {
         $hikvisionController = new HikvisionController();
         $response = $hikvisionController->attendance($request);
-        $data = method_exists($response, 'toResponse') ? $response->getData() : (is_array($response) ? $response : []);
+        $data = $this->extractInertiaProps($response, $request);
 
         return response()->json([
             'success' => true,

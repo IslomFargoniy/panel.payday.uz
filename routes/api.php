@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AttendanceApiController;
 use App\Http\Controllers\Api\SalaryApiController;
 use App\Http\Controllers\Api\FirmApiController;
 use App\Http\Controllers\Api\TelegramBotController;
+use App\Http\Controllers\Api\WorkerPortalApiController;
 use App\Http\Controllers\Hikvision\HikvisionController;
 use App\Http\Controllers\Worker\WorkerController;
 use Illuminate\Http\Request;
@@ -50,6 +51,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/firms', [FirmApiController::class, 'firms']);
     Route::get('/branches', [FirmApiController::class, 'branches']);
     Route::get('/devices', [FirmApiController::class, 'devices']);
+
+    // Worker Personal Portal (Mobile App)
+    Route::get('/worker/portal/today', [WorkerPortalApiController::class, 'todayStatus']);
+    Route::get('/worker/portal/attendance', [WorkerPortalApiController::class, 'myAttendance']);
+    Route::get('/worker/portal/salary', [WorkerPortalApiController::class, 'mySalary']);
+    Route::post('/worker/portal/requests', [WorkerPortalApiController::class, 'submitRequest']);
 });
 
 // Legacy and External Device Callbacks
