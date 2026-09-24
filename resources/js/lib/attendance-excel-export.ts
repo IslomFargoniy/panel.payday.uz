@@ -153,9 +153,9 @@ export const exportAttendanceToExcel = async (
 
             if (event) {
                 const eventTime = format(new Date(event.created_at), 'HH:mm:ss');
-                const workTime = event.work_time;
+                const workTime = event.work_time || item.work_time;
 
-                if (eventTime <= workTime) {
+                if (!workTime || eventTime <= workTime) {
                     checkCount++;
                     row.push(t('on_time', 'Vaqtida'));
                 } else {

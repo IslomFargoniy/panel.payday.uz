@@ -94,12 +94,16 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
 
                                     if (event) {
                                         const eventTime = format(new Date(event.created_at), 'HH:mm:ss');
-                                        const workTime = event.work_time;
+                                        const workTime = event.work_time || item.work_time;
 
-                                        if (eventTime <= workTime) {
-                                            checkCount++;
+                                        if (workTime) {
+                                            if (eventTime <= workTime) {
+                                                checkCount++;
+                                            } else {
+                                                lateCount++;
+                                            }
                                         } else {
-                                            lateCount++;
+                                            checkCount++;
                                         }
                                     } else {
                                         absentCount++;
@@ -112,9 +116,9 @@ const WorkerAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
                                             {event ? (
                                                 (() => {
                                                     const eventTimeStr = format(new Date(event.created_at), 'HH:mm:ss');
-                                                    const workTimeStr = event.work_time;
+                                                    const workTimeStr = event.work_time || item.work_time;
 
-                                                    return eventTimeStr <= workTimeStr ? (
+                                                    return !workTimeStr || eventTimeStr <= workTimeStr ? (
                                                         <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
                                                             <Check className="w-3 h-3 stroke-[3]" />
                                                         </span>

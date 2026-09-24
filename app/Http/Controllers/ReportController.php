@@ -34,8 +34,8 @@ class ReportController extends Controller
                 'w.name as worker',
                 'w.phone',
                 'b.name as branch',
-                'hae.work_time',
-                'hae.end_time',
+                DB::raw('COALESCE(hae.work_time, w.work_time) as work_time'),
+                DB::raw('COALESCE(hae.end_time, w.end_time) as end_time'),
                 'f.name as firm',
                 'hae.attendanceStatus as status_from',
                 'hae.label as label_from',
@@ -43,7 +43,7 @@ class ReportController extends Controller
                 DB::raw("LEAD(hae.created_at) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS to_time"),
                 DB::raw("LEAD(hae.attendanceStatus) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS status_to"),
                 DB::raw("LEAD(hae.label) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS label_to"),
-                DB::raw("ROW_NUMBER() OVER (PARTITION BY hae.employeeNoString, CAST(hae.created_at AS DATE) ORDER BY hae.created_at) AS day_rn")
+                DB::raw("FIRST_VALUE(hae.created_at) OVER (PARTITION BY hae.employeeNoString, DATE(hae.created_at) ORDER BY hae.created_at) AS day_first_check_in")
             )
             ->join('workers as w', 'w.employeeNoString', '=', 'hae.employeeNoString')
             ->join('branches as b', 'w.branch_id', '=', 'b.id')
@@ -81,7 +81,14 @@ class ReportController extends Controller
             ->mergeBindings($eventsWithLead)
             ->where(function ($q) {
                 $q->whereIn('pe.status_from', ['keldi', 'CheckIn', 'checkIn', 'entered'])
-                  ->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'checkOut', 'exited']);
+                  ->where(function ($sub) {
+                      $sub->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'checkOut', 'exited'])
+                          ->orWhereNull('pe.status_to')
+                          ->orWhere(function ($cross) {
+                              $cross->whereIn('pe.status_to', ['keldi', 'CheckIn', 'checkIn', 'entered'])
+                                    ->whereRaw('DATE(pe.to_time) != DATE(pe.from_time)');
+                          });
+                  });
             })
             ->select(
                 'pe.id',
@@ -94,19 +101,15 @@ class ReportController extends Controller
                 'pe.end_time',
                 'pe.firm',
                 'pe.from_time',
-                'pe.to_time',
+                DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), pe.to_time, NULL) as to_time'),
                 'pe.status_from',
-                DB::raw("CONCAT(pe.label_from, '/', pe.label_to) as status"),
+                DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), CONCAT(pe.label_from, "/", pe.label_to), pe.label_from) as status'),
                 DB::raw("CASE
-                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'checkIn', 'entered') AND pe.day_rn = 1
-                    THEN TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(pe.from_time), pe.work_time), pe.from_time)
+                    WHEN ROW_NUMBER() OVER (PARTITION BY pe.employeeNoString, DATE(pe.from_time) ORDER BY pe.from_time) = 1
+                    THEN GREATEST(0, COALESCE(TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(pe.from_time), pe.work_time), pe.day_first_check_in), 0))
                     ELSE 0
                 END as late_minutes"),
-                DB::raw("CASE
-                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'checkIn', 'entered')
-                    THEN TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time)
-                    ELSE 0
-                END as worked_minutes"),
+                DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time), 0) as worked_minutes'),
                 DB::raw("0 as break_minutes")
             );
 
@@ -332,8 +335,7 @@ class ReportController extends Controller
             ->select(
                 'pe.worker_id',
                 DB::raw('COALESCE(SUM(pe.worked_minutes), 0) AS worked_minutes'),
-                DB::raw('COALESCE(SUM(pe.break_minutes), 0) AS break_minutes'),
-                DB::raw('COALESCE(SUM(IF(pe.late_minutes > 0, pe.late_minutes, 0)), 0) AS late_minutes'),
+                DB::raw('COALESCE(SUM(pe.late_minutes), 0) AS late_minutes'),
                 DB::raw('COALESCE(COUNT(DISTINCT DATE(pe.from_time)), 0) AS worked_days'),
                 DB::raw('COALESCE(COUNT(DISTINCT CASE WHEN pe.late_minutes > 0 THEN DATE(pe.from_time) END), 0) AS late_days')
             )
