@@ -43,8 +43,8 @@ class ReportController extends Controller
                 DB::raw("LEAD(hae.created_at) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS to_time"),
                 DB::raw("LEAD(hae.attendanceStatus) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS status_to"),
                 DB::raw("LEAD(hae.label) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS label_to"),
-                DB::raw("MIN(CASE WHEN hae.attendanceStatus IN ('keldi', 'CheckIn', 'checkIn', 'entered') THEN hae.created_at END) OVER (PARTITION BY hae.employeeNoString, DATE(hae.created_at)) AS day_first_check_in"),
-                DB::raw("MIN(CASE WHEN hae.attendanceStatus IN ('keldi', 'CheckIn', 'checkIn', 'entered') THEN COALESCE(hae.work_time, w.work_time) END) OVER (PARTITION BY hae.employeeNoString, DATE(hae.created_at)) AS day_first_work_time")
+                DB::raw("MIN(CASE WHEN hae.attendanceStatus IN ('keldi', 'CheckIn', 'checkIn', 'entered') AND (TIME(hae.created_at) >= '05:00:00' OR COALESCE(hae.work_time, w.work_time) < '06:00:00') THEN hae.created_at END) OVER (PARTITION BY hae.employeeNoString, DATE(hae.created_at)) AS day_first_check_in"),
+                DB::raw("MIN(CASE WHEN hae.attendanceStatus IN ('keldi', 'CheckIn', 'checkIn', 'entered') AND (TIME(hae.created_at) >= '05:00:00' OR COALESCE(hae.work_time, w.work_time) < '06:00:00') THEN COALESCE(hae.work_time, w.work_time) END) OVER (PARTITION BY hae.employeeNoString, DATE(hae.created_at)) AS day_first_work_time")
             )
             ->join('workers as w', 'w.employeeNoString', '=', 'hae.employeeNoString')
             ->join('branches as b', 'w.branch_id', '=', 'b.id')
@@ -102,11 +102,16 @@ class ReportController extends Controller
                 'pe.end_time',
                 'pe.firm',
                 'pe.from_time',
+                'pe.day_first_check_in',
+                'pe.day_first_work_time',
                 DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), pe.to_time, NULL) as to_time'),
                 'pe.status_from',
                 DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), CONCAT(pe.label_from, "/", pe.label_to), pe.label_from) as status'),
                 DB::raw("CASE
-                    WHEN ROW_NUMBER() OVER (PARTITION BY pe.employeeNoString, DATE(pe.from_time) ORDER BY pe.from_time) = 1
+                    WHEN ROW_NUMBER() OVER (
+                        PARTITION BY pe.employeeNoString, DATE(pe.from_time) 
+                        ORDER BY (TIME(pe.from_time) < '05:00:00'), pe.from_time
+                    ) = 1 AND pe.day_first_check_in IS NOT NULL
                     THEN GREATEST(0, COALESCE(TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(pe.from_time), pe.day_first_work_time), pe.day_first_check_in), 0))
                     ELSE 0
                 END as late_minutes"),
