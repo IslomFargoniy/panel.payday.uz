@@ -48,6 +48,19 @@ const BranchDeviceTable = ({ branch }: BranchDeviceTableProps) => {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
+    const formatLastSeen = (dateStr?: string) => {
+        if (!dateStr) return null;
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return null;
+
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+
+        return `${hours}:${minutes}, ${day}.${month}`;
+    };
+
     const devices = branch.branch_devices || [];
 
     return (
@@ -220,7 +233,7 @@ const BranchDeviceTable = ({ branch }: BranchDeviceTableProps) => {
                                         </div>
                                         {item.last_seen_at ? (
                                             <span className="text-[10px] text-slate-400 font-mono" title={t('last_seen', 'Oxirgi aloqa vaqti')}>
-                                                {t('last_seen', 'Oxirgi aloqa')}: {new Date(item.last_seen_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, {new Date(item.last_seen_at).toLocaleDateString([], { day: '2-digit', month: '2-digit' })}
+                                                {t('last_seen', 'Oxirgi aloqa')}: {formatLastSeen(item.last_seen_at)}
                                             </span>
                                         ) : (
                                             <span className="text-[10px] text-slate-400 font-mono">{t('biometric_sync', 'Biometric Sync')}</span>

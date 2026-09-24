@@ -192,6 +192,17 @@ BOOL CALLBACK AlarmMsgCallBack(LONG iHandle, NET_EHOME_ALARM_MSG *pAlarmMsg, voi
     std::string payload = "";
     std::string savedPic = "";
 
+    {
+        std::lock_guard<std::mutex> lock(g_device_mutex);
+        for (auto& pair : g_devices) {
+            if (pair.second.serial == serial || pair.second.device_id == serial) {
+                pair.second.last_seen = getCurrentTimeString();
+                pair.second.online = true;
+                break;
+            }
+        }
+    }
+
     // 1. Check XML Buffer
     if (pAlarmMsg->pXmlBuf && pAlarmMsg->dwXmlBufLen > 0) {
         payload = std::string((char*)pAlarmMsg->pXmlBuf, pAlarmMsg->dwXmlBufLen);

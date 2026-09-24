@@ -274,6 +274,10 @@ class HikvisionController extends Controller
 
                 if ($branchDevice) {
                     $shortSerial = $branchDevice->device_id ?: ($shortSerial ?: 'default');
+                    $branchDevice->update([
+                        'is_online' => true,
+                        'last_seen_at' => now(),
+                    ]);
                 } elseif (empty($shortSerial) || $shortSerial === 'default') {
                     $shortSerial = $eventData->AccessControllerEvent->serialNo ?? 'default';
                 }

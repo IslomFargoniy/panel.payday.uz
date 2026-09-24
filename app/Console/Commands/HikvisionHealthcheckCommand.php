@@ -137,19 +137,23 @@ class HikvisionHealthcheckCommand extends Command
 
             foreach ($isupDevices as $dev) {
                 $isCurrentlyOnline = in_array($dev->device_id, $onlineDeviceIds);
-                if ((bool)$dev->is_online !== $isCurrentlyOnline) {
-                    $dev->is_online = $isCurrentlyOnline;
-                    if ($isCurrentlyOnline) {
-                        $dev->last_seen_at = now();
-                    }
+                if ($isCurrentlyOnline) {
+                    $wasOffline = !$dev->is_online;
+                    $dev->is_online = true;
+                    $dev->last_seen_at = now();
                     $dev->save();
 
-                    $statusWord = $isCurrentlyOnline ? 'ONLINE 🟢' : 'OFFLINE 🔴';
-                    $this->line("Device status updated: {$dev->device_id} is now {$statusWord}");
-                    Log::info("BranchDevice status synchronized by healthcheck", [
-                        'device_id' => $dev->device_id,
-                        'is_online' => $isCurrentlyOnline
-                    ]);
+                    if ($wasOffline) {
+                        $this->line("Device status updated: {$dev->device_id} is now ONLINE 🟢");
+                        Log::info("BranchDevice status changed to ONLINE", ['device_id' => $dev->device_id]);
+                    }
+                } else {
+                    if ($dev->is_online) {
+                        $dev->is_online = false;
+                        $dev->save();
+                        $this->line("Device status updated: {$dev->device_id} is now OFFLINE 🔴");
+                        Log::info("BranchDevice status changed to OFFLINE", ['device_id' => $dev->device_id]);
+                    }
                 }
             }
 
