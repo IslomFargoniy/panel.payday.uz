@@ -53,7 +53,6 @@ const SalaryTable = ({ searchData, ...salary }: SalaryTableProps) => {
                                 <th className="px-3.5 py-3">{t('firm', 'Filial')}</th>
                                 <th className="px-3.5 py-3">{t('amount', 'Summa')}</th>
                                 <th className="px-3.5 py-3">{t('worked_minutes', 'Ish vaqti')}</th>
-                                <th className="px-3.5 py-3">{t('break_minutes', 'Tanaffus')}</th>
                                 <th className="px-3.5 py-3">{t('hour_price', 'Soat narxi')}</th>
                                 <th className="px-3.5 py-3">{t('from', 'Boshlanishi')}</th>
                                 <th className="px-3.5 py-3">{t('to', 'Tugashi')}</th>
@@ -64,7 +63,7 @@ const SalaryTable = ({ searchData, ...salary }: SalaryTableProps) => {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900">
                             {(!salary.data || salary.data.length === 0) ? (
                                 <tr>
-                                    <td colSpan={12} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+                                    <td colSpan={11} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
                                         {t('no_data', 'Ma’lumot mavjud emas')}
                                     </td>
                                 </tr>
@@ -90,9 +89,6 @@ const SalaryTable = ({ searchData, ...salary }: SalaryTableProps) => {
                                             </td>
                                             <td className="px-3.5 py-2.5 font-mono text-slate-600 dark:text-slate-300">
                                                 {~~(item.worked_minute! / 60)}s {item.worked_minute! % 60}daq
-                                            </td>
-                                            <td className="px-3.5 py-2.5 font-mono text-slate-500">
-                                                {~~(item.break_minute! / 60)}s {item.break_minute! % 60}daq
                                             </td>
                                             <td className="px-3.5 py-2.5 font-mono text-slate-600 dark:text-slate-300">
                                                 {Number(item.hour_price).toLocaleString()}

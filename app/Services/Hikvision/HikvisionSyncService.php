@@ -350,9 +350,7 @@ class HikvisionSyncService
 
                     // Determine attendance status & label (use device value if provided, else toggle)
                     $attendanceStatus = $event['attendanceStatus'] ?? null;
-                    $label = $event['label'] ?? null;
-
-                    if (empty($attendanceStatus)) {
+                    if (empty($attendanceStatus) || $attendanceStatus === 'undefined') {
                         $lastEvent = \App\Models\Hikvision\HikvisionAccessEvent::where('employeeNoString', $employeeNo)
                             ->whereHas('hikvisionAccess', function ($q) use ($eventDateTime) {
                                 $q->whereDate('dateTime', $eventDateTime->format('Y-m-d'));
@@ -364,9 +362,7 @@ class HikvisionSyncService
                         $attendanceStatus = ($lastStatus === 'checkIn') ? 'checkOut' : 'checkIn';
                     }
 
-                    if (empty($label)) {
-                        $label = ($attendanceStatus === 'checkIn') ? 'Keldi' : (($attendanceStatus === 'checkOut') ? 'Ketdi' : null);
-                    }
+                    $label = ($attendanceStatus === 'checkIn') ? 'Keldi' : 'Ketdi';
 
                     $access = \App\Models\Hikvision\HikvisionAccess::create([
                         'ipAddress' => $device->ip_address,

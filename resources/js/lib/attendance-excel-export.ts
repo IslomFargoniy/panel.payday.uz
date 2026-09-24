@@ -148,7 +148,10 @@ export const exportAttendanceToExcel = async (
             const day = String(dayIndex + 1).padStart(2, '0');
             const dateToCompare = `${searchData.month}-${day}`;
 
-            const event = item.hikvision_access_events?.find((event) => event.created_at.startsWith(dateToCompare));
+            const dayEvents = item.hikvision_access_events?.filter((event) => {
+                return format(new Date(event.created_at), 'yyyy-MM-dd') === dateToCompare;
+            });
+            const event = dayEvents?.find(e => format(new Date(e.created_at), 'HH:mm:ss') >= '05:00:00') || dayEvents?.[0];
             const isOffDay = item.holidays?.includes(Number(day));
 
             if (event) {

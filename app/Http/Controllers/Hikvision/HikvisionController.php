@@ -358,10 +358,7 @@ class HikvisionController extends Controller
                         $status = ($lastStatus === 'checkIn') ? 'checkOut' : 'checkIn';
                     }
 
-                    $label = $accessEventData->label ?? null;
-                    if (empty($label)) {
-                        $label = ($status === 'checkIn') ? 'Keldi' : (($status === 'checkOut') ? 'Ketdi' : null);
-                    }
+                    $label = ($status === 'checkIn') ? 'Keldi' : 'Ketdi';
 
                     // Check if an event already exists at this exact second (e.g. from ISUP sync or soft-deleted)
                     $existingEvent = HikvisionAccessEvent::withTrashed()

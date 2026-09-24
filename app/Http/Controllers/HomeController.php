@@ -52,17 +52,23 @@ class HomeController extends Controller
         $allWorker = (clone $workersQuery)->count('workers.id');
 
         // 2. Today's First Event (On Time vs Late) - Fast MIN() with GROUP BY
-        $todayFirstEvents = DB::table('hikvision_access_events')
-            ->select('employeeNoString', 'work_time', DB::raw('MIN(created_at) as first_created_at'))
-            ->whereNull('deleted_at')
-            ->whereBetween('created_at', [$todayStart, $todayEnd])
-            ->whereIn('attendanceStatus', ['keldi', 'CheckIn', 'checkIn', 'entered'])
-            ->groupBy('employeeNoString', 'work_time');
+        $todayFirstEvents = DB::table('hikvision_access_events as hae')
+            ->join('workers as w', 'w.employeeNoString', '=', 'hae.employeeNoString')
+            ->select(
+                'hae.employeeNoString',
+                DB::raw('COALESCE(hae.work_time, w.work_time) as work_time'),
+                DB::raw("MIN(CASE WHEN TIME(hae.created_at) >= '05:00:00' OR COALESCE(hae.work_time, w.work_time) < '06:00:00' THEN hae.created_at END) as first_created_at")
+            )
+            ->whereNull('hae.deleted_at')
+            ->whereBetween('hae.created_at', [$todayStart, $todayEnd])
+            ->whereIn('hae.attendanceStatus', ['keldi', 'CheckIn', 'checkIn', 'entered'])
+            ->groupBy('hae.employeeNoString', DB::raw('COALESCE(hae.work_time, w.work_time)'));
 
         $result = (clone $workersQuery)
             ->joinSub($todayFirstEvents, 'first_event', function ($join) {
                 $join->on('workers.employeeNoString', '=', 'first_event.employeeNoString');
             })
+            ->whereNotNull('first_event.first_created_at')
             ->selectRaw('
                 COALESCE(SUM(CASE WHEN TIME(first_event.first_created_at) <= TIME(first_event.work_time) THEN 1 ELSE 0 END), 0) AS on_time,
                 COALESCE(SUM(CASE WHEN TIME(first_event.first_created_at) > TIME(first_event.work_time) THEN 1 ELSE 0 END), 0) AS late
@@ -132,14 +138,16 @@ class HomeController extends Controller
                 'b.name as branch',
                 'w.branch_id',
                 'b.firm_id',
-                'hae.work_time',
+                DB::raw('COALESCE(hae.work_time, w.work_time) as work_time'),
                 'f.name as firm',
                 'hae.attendanceStatus as status_from',
                 'hae.label as label_from',
                 'hae.created_at as from_time',
                 DB::raw("LEAD(hae.created_at) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS to_time"),
                 DB::raw("LEAD(hae.attendanceStatus) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS status_to"),
-                DB::raw("LEAD(hae.label) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS label_to")
+                DB::raw("LEAD(hae.label) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS label_to"),
+                DB::raw("MIN(CASE WHEN hae.attendanceStatus IN ('keldi', 'CheckIn', 'checkIn', 'entered') AND (TIME(hae.created_at) >= '05:00:00' OR COALESCE(hae.work_time, w.work_time) < '06:00:00') THEN hae.created_at END) OVER (PARTITION BY hae.employeeNoString, DATE(hae.created_at)) AS day_first_check_in"),
+                DB::raw("MIN(CASE WHEN hae.attendanceStatus IN ('keldi', 'CheckIn', 'checkIn', 'entered') AND (TIME(hae.created_at) >= '05:00:00' OR COALESCE(hae.work_time, w.work_time) < '06:00:00') THEN COALESCE(hae.work_time, w.work_time) END) OVER (PARTITION BY hae.employeeNoString, DATE(hae.created_at)) AS day_first_work_time")
             )
             ->join('workers as w', 'w.employeeNoString', '=', 'hae.employeeNoString')
             ->join('branches as b', 'w.branch_id', '=', 'b.id')
@@ -169,7 +177,14 @@ class HomeController extends Controller
             ->mergeBindings($eventsWithLead)
             ->where(function ($q) {
                 $q->whereIn('pe.status_from', ['keldi', 'CheckIn', 'checkIn', 'entered'])
-                    ->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'checkOut', 'exited']);
+                  ->where(function ($sub) {
+                      $sub->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'checkOut', 'exited'])
+                          ->orWhereNull('pe.status_to')
+                          ->orWhere(function ($cross) {
+                              $cross->whereIn('pe.status_to', ['keldi', 'CheckIn', 'checkIn', 'entered'])
+                                    ->whereRaw('DATE(pe.to_time) != DATE(pe.from_time)');
+                          });
+                  });
             })
             ->select(
                 'pe.worker',
@@ -179,17 +194,18 @@ class HomeController extends Controller
                 'pe.work_time',
                 'pe.firm',
                 'pe.from_time',
-                'pe.to_time',
+                DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), pe.to_time, NULL) as to_time'),
                 'pe.status_from',
-                DB::raw("CONCAT(pe.label_from, '/', pe.label_to) as status"),
+                DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), CONCAT(pe.label_from, "/", pe.label_to), pe.label_from) as status'),
                 DB::raw("CASE
-                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'checkIn', 'entered')
-                    THEN TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(pe.from_time), pe.work_time), pe.from_time)
-                    ELSE 0 END as late_minutes"),
-                DB::raw("CASE
-                    WHEN pe.status_from IN ('keldi', 'CheckIn', 'checkIn', 'entered')
-                    THEN TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time)
-                    ELSE 0 END as worked_minutes")
+                    WHEN ROW_NUMBER() OVER (
+                        PARTITION BY pe.employeeNoString, DATE(pe.from_time) 
+                        ORDER BY (TIME(pe.from_time) < '05:00:00'), pe.from_time
+                    ) = 1 AND pe.day_first_check_in IS NOT NULL AND TIME(pe.day_first_check_in) > TIME(pe.day_first_work_time)
+                    THEN GREATEST(1, TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(pe.from_time), pe.day_first_work_time), pe.day_first_check_in))
+                    ELSE 0
+                END as late_minutes"),
+                DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time), 0) as worked_minutes')
             );
 
         $resultsForHisobot = DB::table(DB::raw("({$pairedEvents->toSql()}) as paired_events"))

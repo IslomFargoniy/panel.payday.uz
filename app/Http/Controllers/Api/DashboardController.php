@@ -43,39 +43,35 @@ class DashboardController extends Controller
 
         // Today attendance counts
         $today = date('Y-m-d');
+        $todayStart = Carbon::today()->startOfDay()->toDateTimeString();
+        $todayEnd = Carbon::today()->endOfDay()->toDateTimeString();
 
-        $inTimeCount = (clone $workerQuery)
-            ->join('hikvision_access_events as hae', function ($join) {
-                $join->on('hae.employeeNoString', '=', 'workers.employeeNoString')
-                    ->whereRaw('CURDATE() = DATE(hae.created_at)')
-                    ->where('hae.attendanceStatus', 'checkIn')
-                    ->whereNull('hae.deleted_at')
-                    ->whereRaw('TIME(hae.created_at) <= TIME(workers.work_time)');
+        $todayFirstEvents = DB::table('hikvision_access_events as hae')
+            ->join('workers as w', 'w.employeeNoString', '=', 'hae.employeeNoString')
+            ->select(
+                'hae.employeeNoString',
+                DB::raw('COALESCE(hae.work_time, w.work_time) as work_time'),
+                DB::raw("MIN(CASE WHEN TIME(hae.created_at) >= '05:00:00' OR COALESCE(hae.work_time, w.work_time) < '06:00:00' THEN hae.created_at END) as first_created_at")
+            )
+            ->whereNull('hae.deleted_at')
+            ->whereBetween('hae.created_at', [$todayStart, $todayEnd])
+            ->whereIn('hae.attendanceStatus', ['keldi', 'CheckIn', 'checkIn', 'entered'])
+            ->groupBy('hae.employeeNoString', DB::raw('COALESCE(hae.work_time, w.work_time)'));
+
+        $attendanceResult = (clone $workerQuery)
+            ->joinSub($todayFirstEvents, 'first_event', function ($join) {
+                $join->on('workers.employeeNoString', '=', 'first_event.employeeNoString');
             })
-            ->distinct('workers.id')
-            ->count('workers.id');
+            ->whereNotNull('first_event.first_created_at')
+            ->selectRaw('
+                COALESCE(SUM(CASE WHEN TIME(first_event.first_created_at) <= TIME(first_event.work_time) THEN 1 ELSE 0 END), 0) AS on_time,
+                COALESCE(SUM(CASE WHEN TIME(first_event.first_created_at) > TIME(first_event.work_time) THEN 1 ELSE 0 END), 0) AS late
+            ')
+            ->first();
 
-        $lateCount = (clone $workerQuery)
-            ->join('hikvision_access_events as hae', function ($join) {
-                $join->on('hae.employeeNoString', '=', 'workers.employeeNoString')
-                    ->whereRaw('CURDATE() = DATE(hae.created_at)')
-                    ->where('hae.attendanceStatus', 'checkIn')
-                    ->whereNull('hae.deleted_at')
-                    ->whereRaw('TIME(hae.created_at) > TIME(workers.work_time)');
-            })
-            ->distinct('workers.id')
-            ->count('workers.id');
-
-        $cameCount = (clone $workerQuery)
-            ->join('hikvision_access_events as hae', function ($join) {
-                $join->on('hae.employeeNoString', '=', 'workers.employeeNoString')
-                    ->whereRaw('CURDATE() = DATE(hae.created_at)')
-                    ->where('hae.attendanceStatus', 'checkIn')
-                    ->whereNull('hae.deleted_at');
-            })
-            ->distinct('workers.id')
-            ->count('workers.id');
-
+        $inTimeCount = (int) ($attendanceResult->on_time ?? 0);
+        $lateCount = (int) ($attendanceResult->late ?? 0);
+        $cameCount = $inTimeCount + $lateCount;
         $notComeCount = max(0, $allWorkerCount - $cameCount);
 
         // Firms and Branches for filter

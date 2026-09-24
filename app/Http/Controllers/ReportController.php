@@ -111,8 +111,8 @@ class ReportController extends Controller
                     WHEN ROW_NUMBER() OVER (
                         PARTITION BY pe.employeeNoString, DATE(pe.from_time) 
                         ORDER BY (TIME(pe.from_time) < '05:00:00'), pe.from_time
-                    ) = 1 AND pe.day_first_check_in IS NOT NULL
-                    THEN GREATEST(0, COALESCE(TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(pe.from_time), pe.day_first_work_time), pe.day_first_check_in), 0))
+                    ) = 1 AND pe.day_first_check_in IS NOT NULL AND TIME(pe.day_first_check_in) > TIME(pe.day_first_work_time)
+                    THEN GREATEST(1, TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(pe.from_time), pe.day_first_work_time), pe.day_first_check_in))
                     ELSE 0
                 END as late_minutes"),
                 DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time), 0) as worked_minutes'),
