@@ -72,8 +72,23 @@ echo -e "${BLUE}--> Ruxsatlar (permissions) sozlanmoqda...${NC}"
 sudo chown -R panel_payday_usr:panel_payday_usr $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache
 sudo chmod -R 775 $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache
 
-echo -e "${BLUE}--> Queue workerlar qayta ishga tushirilmoqda...${NC}"
+echo -e "${BLUE}--> Queue workerlar va Supervisor qayta ishga tushirilmoqda...${NC}"
 sudo $PHP_BIN artisan queue:restart || true
+sudo supervisorctl reread || true
+sudo supervisorctl update || true
+sudo supervisorctl restart payday-worker:* || true
+
+# Agar gateway kompilyatsiya kutubxonalari mavjud bo'lsa, qayta kompilyatsiya va restart qilish
+if [ -d "/opt/ip-camera-ehome-server/thirdparty/HCISUPSDK/linux64/include" ]; then
+    echo -e "${BLUE}--> Hikvision Gateway tekshirilmoqda va qayta kompilyatsiya qilinmoqda...${NC}"
+    sudo g++ -std=c++17 -O2 $SERVER_PATH/gateway_main.cpp -o /usr/local/bin/hikvision-gateway \
+        -I/opt/ip-camera-ehome-server/thirdparty/HCISUPSDK/linux64/include \
+        -I/opt/hikvision-gateway/include \
+        -L/opt/ip-camera-ehome-server/thirdparty/HCISUPSDK/linux64/lib \
+        -lHCISUPCMS -lHCISUPAlarm -lHCISUPSS -lpthread -ldl || true
+    sudo chmod +x /usr/local/bin/hikvision-gateway || true
+    sudo supervisorctl restart hikvision-gateway || true
+fi
 
 echo -e "${GREEN}✔ Serverdagi yangilanish muvaffaqiyatli yakunlandi!${NC}"
 EOF

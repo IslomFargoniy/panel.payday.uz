@@ -18,6 +18,44 @@
 
 using json = nlohmann::json;
 
+struct GatewayConfig {
+    std::string server_ip = "193.180.213.188";
+    int server_port = 80;
+    std::string server_host = "panel.payday.uz";
+    std::string storage_base_dir = "/var/www/panel_payday_usr/data/www/panel.payday.uz/storage/app/public/hikvision";
+    int cms_port = 7660;
+    int alarm_port = 7200;
+    int api_port = 7661;
+    std::string das_address = "193.180.213.188";
+    int das_port = 7660;
+};
+
+static GatewayConfig g_config;
+
+void loadConfig(const std::string& configPath) {
+    std::ifstream f(configPath);
+    if (!f.is_open()) {
+        std::cout << "[CONFIG] Config file not found at " << configPath << ", using default values." << std::endl;
+        return;
+    }
+    try {
+        json j;
+        f >> j;
+        if (j.contains("server_ip")) g_config.server_ip = j["server_ip"].get<std::string>();
+        if (j.contains("server_port")) g_config.server_port = j["server_port"].get<int>();
+        if (j.contains("server_host")) g_config.server_host = j["server_host"].get<std::string>();
+        if (j.contains("storage_base_dir")) g_config.storage_base_dir = j["storage_base_dir"].get<std::string>();
+        if (j.contains("cms_port")) g_config.cms_port = j["cms_port"].get<int>();
+        if (j.contains("alarm_port")) g_config.alarm_port = j["alarm_port"].get<int>();
+        if (j.contains("api_port")) g_config.api_port = j["api_port"].get<int>();
+        if (j.contains("das_address")) g_config.das_address = j["das_address"].get<std::string>();
+        if (j.contains("das_port")) g_config.das_port = j["das_port"].get<int>();
+        std::cout << "[CONFIG] Loaded successfully from " << configPath << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[CONFIG ERROR] " << e.what() << ", using defaults." << std::endl;
+    }
+}
+
 struct ConnectedDevice {
     LONG login_id;
     std::string device_id;
@@ -44,10 +82,10 @@ std::string getCurrentTimeString() {
 void notifyLaravelDeviceStatus(const std::string& device_id, const std::string& status, const std::string& ip, const std::string& serial) {
     std::thread([device_id, status, ip, serial]() {
         try {
-            httplib::Client cli("193.180.213.188", 80);
+            httplib::Client cli(g_config.server_ip.c_str(), g_config.server_port);
             cli.set_connection_timeout(std::chrono::seconds(3));
             cli.set_read_timeout(std::chrono::seconds(3));
-            httplib::Headers headers = {{"Host", "panel.payday.uz"}};
+            httplib::Headers headers = {{"Host", g_config.server_host}};
             json payload = {
                 {"device_id", device_id},
                 {"status", status},
@@ -69,10 +107,10 @@ std::string fetchDeviceKey(const std::string& device_id) {
     }
     
     try {
-        httplib::Client cli("193.180.213.188", 80);
+        httplib::Client cli(g_config.server_ip.c_str(), g_config.server_port);
         cli.set_connection_timeout(std::chrono::seconds(2));
         cli.set_read_timeout(std::chrono::seconds(2));
-        httplib::Headers headers = {{"Host", "panel.payday.uz"}};
+        httplib::Headers headers = {{"Host", g_config.server_host}};
         auto res = cli.Get(("/api/hikvision-device-key?device_id=" + device_id).c_str(), headers);
         if (res && res->status == 200) {
             auto j = json::parse(res->body);
@@ -91,10 +129,10 @@ std::string fetchDeviceKey(const std::string& device_id) {
 void forwardAlarmToLaravel(const std::string& serial, DWORD alarmType, const std::string& rawPayload, const std::string& savedPicFilename) {
     std::thread([serial, alarmType, rawPayload, savedPicFilename]() {
         try {
-            httplib::Client cli("193.180.213.188", 80);
+            httplib::Client cli(g_config.server_ip.c_str(), g_config.server_port);
             cli.set_connection_timeout(std::chrono::seconds(4));
             cli.set_read_timeout(std::chrono::seconds(4));
-            httplib::Headers headers = {{"Host", "panel.payday.uz"}};
+            httplib::Headers headers = {{"Host", g_config.server_host}};
 
             json postObj;
             try {
@@ -125,8 +163,8 @@ void forwardAlarmToLaravel(const std::string& serial, DWORD alarmType, const std
 std::string savePictureBytes(const std::string& serial, const BYTE* pData, DWORD dwLen) {
     if (!pData || dwLen == 0) return "";
 
-    std::string baseDir = "/var/www/panel_payday_usr/data/www/panel.payday.uz/storage/app/public/hikvision/" + serial;
-    mkdir("/var/www/panel_payday_usr/data/www/panel.payday.uz/storage/app/public/hikvision", 0775);
+    std::string baseDir = g_config.storage_base_dir + "/" + serial;
+    mkdir(g_config.storage_base_dir.c_str(), 0775);
     mkdir(baseDir.c_str(), 0775);
 
     auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -221,10 +259,10 @@ BOOL CALLBACK RegistrationCallBack(LONG lUserID, DWORD dwDataType, void* pOutBuf
         json jDas;
         jDas["Type"] = "DAS";
         jDas["DasInfo"] = {
-            {"Address", "193.180.213.188"},
+            {"Address", g_config.das_address},
             {"Domain", ""},
             {"ServerID", ""},
-            {"Port", 7660},
+            {"Port", g_config.das_port},
             {"UdpPort", 0}
         };
         std::string dasInfo = jDas.dump();
@@ -301,6 +339,12 @@ BOOL CALLBACK RegistrationCallBack(LONG lUserID, DWORD dwDataType, void* pOutBuf
 }
 
 int main(int argc, char* argv[]) {
+    std::string configPath = "gateway_config.json";
+    if (argc > 1) {
+        configPath = argv[1];
+    }
+    loadConfig(configPath);
+
     std::cout << "Starting Hikvision ISUP 5.0 Gateway Server..." << std::endl;
 
     if (!NET_ECMS_Init()) {
@@ -331,30 +375,30 @@ int main(int argc, char* argv[]) {
     struRegMode.dwRegisterListenMode = REGISTER_LISTEN_MODE_ALL;
     NET_ECMS_SetSDKLocalCfg(REGISTER_LISTEN_MODE, &struRegMode);
 
-    // Start CMS Listen on 0.0.0.0:7660
+    // Start CMS Listen on 0.0.0.0:cms_port
     NET_EHOME_CMS_LISTEN_PARAM struListen = {0};
     strcpy(struListen.struAddress.szIP, "0.0.0.0");
-    struListen.struAddress.wPort = 7660;
+    struListen.struAddress.wPort = (WORD)g_config.cms_port;
     struListen.fnCB = RegistrationCallBack;
     struListen.dwKeepAliveSec = 15;
     struListen.dwTimeOutCount = 6;
 
     LONG listenHandle = NET_ECMS_StartListen(&struListen);
     if (listenHandle < 0) {
-        std::cerr << "Failed to start ISUP listening on port 7660! Error: " << NET_ECMS_GetLastError() << std::endl;
+        std::cerr << "Failed to start ISUP listening on port " << g_config.cms_port << "! Error: " << NET_ECMS_GetLastError() << std::endl;
         NET_ECMS_Fini();
         return 1;
     }
 
     DWORD ver = NET_ECMS_GetBuildVersion();
-    std::cout << "✔ ISUP 5.0 CMS listening on 0.0.0.0:7660 (Version: " << std::hex << ver << ")" << std::endl;
+    std::cout << "✔ ISUP 5.0 CMS listening on 0.0.0.0:" << g_config.cms_port << " (Version: " << std::hex << ver << ")" << std::endl;
 
-    // Start Alarm Listen on 0.0.0.0:7200
+    // Start Alarm Listen on 0.0.0.0:alarm_port
     LONG alarmHandle = -1;
     if (NET_EALARM_Init()) {
         NET_EHOME_ALARM_LISTEN_PARAM struAlarmParam = {0};
         strcpy(struAlarmParam.struAddress.szIP, "0.0.0.0");
-        struAlarmParam.struAddress.wPort = 7200;
+        struAlarmParam.struAddress.wPort = (WORD)g_config.alarm_port;
         struAlarmParam.fnMsgCb = AlarmMsgCallBack;
         struAlarmParam.byProtocolType = 0;
         struAlarmParam.byUseCmsPort = 0;
@@ -364,7 +408,7 @@ int main(int argc, char* argv[]) {
 
         alarmHandle = NET_EALARM_StartListen(&struAlarmParam);
         if (alarmHandle >= 0) {
-            std::cout << "✔ ISUP 5.0 Alarm Server listening on 0.0.0.0:7200" << std::endl;
+            std::cout << "✔ ISUP 5.0 Alarm Server listening on 0.0.0.0:" << g_config.alarm_port << std::endl;
         }
     }
 
@@ -487,8 +531,8 @@ int main(int argc, char* argv[]) {
         }
     });
 
-    std::cout << "✔ HTTP REST API listening on 127.0.0.1:7661" << std::endl;
-    svr.listen("0.0.0.0", 7661);
+    std::cout << "✔ HTTP REST API listening on 0.0.0.0:" << g_config.api_port << std::endl;
+    svr.listen("0.0.0.0", g_config.api_port);
 
     if (alarmHandle >= 0) {
         NET_EALARM_StopListen(alarmHandle);

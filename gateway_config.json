@@ -1,0 +1,11 @@
+{
+  "server_ip": "193.180.213.188",
+  "server_port": 80,
+  "server_host": "panel.payday.uz",
+  "storage_base_dir": "/var/www/panel_payday_usr/data/www/panel.payday.uz/storage/app/public/hikvision",
+  "cms_port": 7660,
+  "alarm_port": 7200,
+  "api_port": 7661,
+  "das_address": "193.180.213.188",
+  "das_port": 7660
+}

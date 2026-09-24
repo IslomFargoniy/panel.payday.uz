@@ -9,4 +9,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('hikvision:sync-events')->everyMinute()->runInBackground();
+Schedule::command('hikvision:healthcheck')->everyMinute()->runInBackground();
+
 

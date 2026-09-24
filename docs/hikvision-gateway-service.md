@@ -68,9 +68,24 @@ sudo ldconfig
 
 ---
 
-## 3. Systemd Xizmati (Service) Sifatida Sozlash
+---
 
-Daemon server o‘chib yonganda yoki nosozlikda avtomatik qayta tiklanishi uchun `systemd` xizmatini yarating:
+## 3. Servis Sifatida Sozlash (Supervisor yoki Systemd)
+
+### 3.1. Supervisor orqali sozlash (Tavsiya etiladi)
+
+Supervisor ham C++ daemonni, ham Laravel Queue workerlarni boshqaradi:
+Konfiguratsiya fayli loyihaning `deploy/supervisor/hikvision-gateway.conf` yo‘lida mavjud.
+
+Faylni Supervisor papkasiga nusxalang:
+```bash
+sudo cp deploy/supervisor/hikvision-gateway.conf /etc/supervisor/conf.d/
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl status hikvision-gateway
+```
+
+### 3.2. Systemd orqali sozlash (Muqobil variant)
 
 ```bash
 sudo nano /etc/systemd/system/hikvision-gateway.service
@@ -85,14 +100,13 @@ After=network.target nginx.service mysql.service
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/var/www/panel.payday.uz
-ExecStart=/usr/local/bin/hikvision-gateway
+WorkingDirectory=/var/www/panel_payday_usr/data/www/panel.payday.uz
+ExecStart=/usr/local/bin/hikvision-gateway /var/www/panel_payday_usr/data/www/panel.payday.uz/gateway_config.json
 Restart=always
 RestartSec=5
 LimitNOFILE=65535
 Environment="LD_LIBRARY_PATH=/opt/ip-camera-ehome-server/thirdparty/HCISUPSDK/linux64/lib"
 
-# Loglarni saqlash
 StandardOutput=append:/var/log/hikvision-gateway.log
 StandardError=append:/var/log/hikvision-gateway-error.log
 
@@ -100,18 +114,10 @@ StandardError=append:/var/log/hikvision-gateway-error.log
 WantedBy=multi-user.target
 ```
 
-### 3.1. Xizmatni Faollashtirish va Ishga Tushirish
 ```bash
-# Systemd konfiguratsiyasini yangilash
 sudo systemctl daemon-reload
-
-# Xizmatni yoqish (avto-start)
 sudo systemctl enable hikvision-gateway
-
-# Xizmatni ishga tushirish
 sudo systemctl start hikvision-gateway
-
-# Holatini tekshirish
 sudo systemctl status hikvision-gateway
 ```
 
@@ -119,13 +125,14 @@ sudo systemctl status hikvision-gateway
 
 ## 4. Xizmatni Boshqarish va Monitoring Buyruqlari
 
-| Amal | Buyruq |
-|---|---|
-| **Holatni ko‘rish** | `sudo systemctl status hikvision-gateway` |
-| **Qayta ishga tushirish** | `sudo systemctl restart hikvision-gateway` |
-| **To‘xtatish** | `sudo systemctl stop hikvision-gateway` |
-| **Jonli loglarni ko‘rish** | `tail -f /var/log/hikvision-gateway.log` |
-| **Journalctl orqali ko‘rish**| `sudo journalctl -u hikvision-gateway -f` |
+| Amal | Supervisor Buyrug‘i | Systemd Buyrug‘i |
+|---|---|---|
+| **Holatni ko‘rish** | `sudo supervisorctl status hikvision-gateway` | `sudo systemctl status hikvision-gateway` |
+| **Qayta ishga tushirish** | `sudo supervisorctl restart hikvision-gateway` | `sudo systemctl restart hikvision-gateway` |
+| **To‘xtatish** | `sudo supervisorctl stop hikvision-gateway` | `sudo systemctl stop hikvision-gateway` |
+| **Jonli loglarni ko‘rish** | `tail -f /var/log/hikvision-gateway.log` | `tail -f /var/log/hikvision-gateway.log` |
+| **Avtomatik Sog‘liq Tekshiruvi**| `php artisan hikvision:healthcheck` | `php artisan hikvision:healthcheck` |
+
 
 ---
 

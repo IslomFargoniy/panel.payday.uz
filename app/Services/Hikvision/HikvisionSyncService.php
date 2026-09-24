@@ -13,6 +13,15 @@ use Illuminate\Support\Facades\Storage;
 class HikvisionSyncService
 {
     /**
+     * Get ISUP gateway API url
+     */
+    protected function gatewayUrl(string $path = '/api/isapi'): string
+    {
+        $base = rtrim(config('hikvision.gateway_url', 'http://127.0.0.1:7661'), '/');
+        return $base . '/' . ltrim($path, '/');
+    }
+
+    /**
      * Sync single worker (and face photo) to all devices in worker's branch
      */
     public function syncWorker(Worker $worker): array
@@ -71,7 +80,7 @@ class HikvisionSyncService
 
             // Route through ISUP Gateway if ISUP connection type or device_id is present
             if ($device->connection_type === 'isup' && !empty($device->device_id)) {
-                $isupRes = \Illuminate\Support\Facades\Http::timeout(6)->post('http://127.0.0.1:7661/api/isapi', [
+                $isupRes = \Illuminate\Support\Facades\Http::timeout(6)->post($this->gatewayUrl(), [
                     'device_id' => $device->device_id,
                     'method' => 'POST',
                     'url' => 'POST /ISAPI/AccessControl/UserInfo/Record?format=json',
@@ -82,7 +91,7 @@ class HikvisionSyncService
 
                 // Upload face picture via ISUP using public FaceURL
                 if ($worker->avatar && Storage::disk('public')->exists($worker->avatar)) {
-                    $faceUrl = "https://panel.payday.uz/storage/" . ltrim($worker->avatar, '/');
+                    $faceUrl = url('storage/' . ltrim($worker->avatar, '/'));
                     $facePayload = [
                         'faceLibType' => 'blackFD',
                         'FDID' => '1',
@@ -90,7 +99,7 @@ class HikvisionSyncService
                         'faceURL' => $faceUrl,
                     ];
 
-                    $faceRes = \Illuminate\Support\Facades\Http::timeout(10)->post('http://127.0.0.1:7661/api/isapi', [
+                    $faceRes = \Illuminate\Support\Facades\Http::timeout(10)->post($this->gatewayUrl(), [
                         'device_id' => $device->device_id,
                         'method' => 'POST',
                         'url' => 'POST /ISAPI/Intelligent/FDLib/FaceDataRecord?format=json',
@@ -200,7 +209,7 @@ class HikvisionSyncService
                 $employeeNo = (string)($worker->employeeNoString ?: $worker->id);
 
                 if ($device->connection_type === 'isup' && !empty($device->device_id)) {
-                    $delRes = \Illuminate\Support\Facades\Http::timeout(6)->post('http://127.0.0.1:7661/api/isapi', [
+                    $delRes = \Illuminate\Support\Facades\Http::timeout(6)->post($this->gatewayUrl(), [
                         'device_id' => $device->device_id,
                         'method' => 'PUT',
                         'url' => 'PUT /ISAPI/AccessControl/UserInfo/Delete?format=json',
@@ -280,7 +289,7 @@ class HikvisionSyncService
                     ]
                 ];
 
-                $res = \Illuminate\Support\Facades\Http::timeout(10)->post('http://127.0.0.1:7661/api/isapi', [
+                $res = \Illuminate\Support\Facades\Http::timeout(10)->post($this->gatewayUrl(), [
                     'device_id' => $device->device_id,
                     'method' => 'POST',
                     'url' => 'POST /ISAPI/AccessControl/AcsEvent?format=json',

@@ -114,51 +114,28 @@ class HikvisionAccessEventObserver
 Filial: {$worker->branch->name}
 Sana: " . $hikvisionTime->format('Y-m-d H:i:s');
 
-        $token = config('services.telegram.bot_token') ?: env('TELEGRAM_BOT_TOKEN');
-        if (!$token) {
-            \Illuminate\Support\Facades\Log::warning('Telegram bot token is not configured in HikvisionAccessEventObserver.');
-            return;
-        }
-
-        $telegram = new \Telegram\Bot\Api($token);
+        $chatIds = [];
 
         foreach ($users as $user) {
-            try {
-                $telegram->sendPhoto([
-                    'chat_id'    => $user->telegram_id,
-                    'photo'      => InputFile::create($photoPath),
-                    'caption'    => $caption,
-                    'parse_mode' => 'HTML',
-                ]);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('sendPhoto xatolik (user): ' . $e->getMessage());
+            if ($user->telegram_id) {
+                $chatIds[] = $user->telegram_id;
             }
         }
 
         if ($worker->telegram_id) {
-            try {
-                $telegram->sendPhoto([
-                    'chat_id'    => $worker->telegram_id,
-                    'photo'      => InputFile::create($photoPath),
-                    'caption'    => $caption,
-                    'parse_mode' => 'HTML',
-                ]);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('sendPhoto xatolik (worker): ' . $e->getMessage());
-            }
+            $chatIds[] = $worker->telegram_id;
         }
 
         if ($worker->branch && $worker->branch->telegram_group_id) {
-            try {
-                $telegram->sendPhoto([
-                    'chat_id'    => $worker->branch->telegram_group_id,
-                    'photo'      => InputFile::create($photoPath),
-                    'caption'    => $caption,
-                    'parse_mode' => 'HTML',
-                ]);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('sendPhoto xatolik (group): ' . $e->getMessage());
-            }
+            $chatIds[] = $worker->branch->telegram_group_id;
+        }
+
+        if (!empty($chatIds)) {
+            \App\Jobs\SendAttendanceTelegramNotificationJob::dispatch(
+                $photoPath,
+                $caption,
+                $chatIds
+            )->afterResponse();
         }
     }
 
