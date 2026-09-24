@@ -42,6 +42,7 @@ class ReportController extends Controller
                 'hae.created_at as from_time',
                 DB::raw("LEAD(hae.created_at) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS to_time"),
                 DB::raw("LEAD(hae.attendanceStatus) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS status_to"),
+                DB::raw("LEAD(hae.label) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS label_to"),
                 DB::raw("MIN(CASE WHEN hae.attendanceStatus IN ('keldi', 'CheckIn', 'checkIn', 'entered') THEN hae.created_at END) OVER (PARTITION BY hae.employeeNoString, DATE(hae.created_at)) AS day_first_check_in"),
                 DB::raw("MIN(CASE WHEN hae.attendanceStatus IN ('keldi', 'CheckIn', 'checkIn', 'entered') THEN COALESCE(hae.work_time, w.work_time) END) OVER (PARTITION BY hae.employeeNoString, DATE(hae.created_at)) AS day_first_work_time")
             )
