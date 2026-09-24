@@ -129,6 +129,30 @@ class HikvisionHealthcheckCommand extends Command
 
             $this->line("Online device IDs in gateway: " . implode(', ', $onlineDeviceIds));
 
+            // Sync database branch_devices with actual gateway state
+            $isupDevices = BranchDevice::where('connection_type', 'isup')
+                ->where('status', 1)
+                ->whereNotNull('device_id')
+                ->get();
+
+            foreach ($isupDevices as $dev) {
+                $isCurrentlyOnline = in_array($dev->device_id, $onlineDeviceIds);
+                if ((bool)$dev->is_online !== $isCurrentlyOnline) {
+                    $dev->is_online = $isCurrentlyOnline;
+                    if ($isCurrentlyOnline) {
+                        $dev->last_seen_at = now();
+                    }
+                    $dev->save();
+
+                    $statusWord = $isCurrentlyOnline ? 'ONLINE 🟢' : 'OFFLINE 🔴';
+                    $this->line("Device status updated: {$dev->device_id} is now {$statusWord}");
+                    Log::info("BranchDevice status synchronized by healthcheck", [
+                        'device_id' => $dev->device_id,
+                        'is_online' => $isCurrentlyOnline
+                    ]);
+                }
+            }
+
         } catch (\Exception $e) {
             Log::warning("Failed to fetch gateway device status: " . $e->getMessage());
         }

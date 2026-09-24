@@ -85,10 +85,15 @@ const BranchDeviceTable = ({ branch }: BranchDeviceTableProps) => {
                 <div className="space-y-3">
                     {devices.map((item, index) => {
                         const isIsup = item.connection_type === 'isup';
+                        const isOnline = Boolean(item.is_online);
                         return (
                             <div
                                 key={item.id}
-                                className="group relative overflow-hidden rounded-2xl border border-slate-700/80 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white shadow-md transition-all hover:border-indigo-500/80 hover:shadow-indigo-500/10"
+                                className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white shadow-md transition-all ${
+                                    isOnline
+                                        ? 'border-slate-700/80 hover:border-emerald-500/80 hover:shadow-emerald-500/10'
+                                        : 'border-slate-800/80 hover:border-rose-500/60 hover:shadow-rose-500/10'
+                                }`}
                             >
                                 {/* Hikvision Terminal Top Camera Bar */}
                                 <div className="flex items-center justify-between px-3.5 py-2 bg-slate-950/80 border-b border-slate-800">
@@ -98,7 +103,7 @@ const BranchDeviceTable = ({ branch }: BranchDeviceTableProps) => {
                                             <span className="w-2.5 h-2.5 rounded-full bg-slate-950 border border-indigo-400/60 flex items-center justify-center shadow-inner">
                                                 <span className="w-1 h-1 rounded-full bg-indigo-400" />
                                             </span>
-                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500/70 animate-pulse" />
+                                            <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500/80'}`} />
                                             <span className="w-2.5 h-2.5 rounded-full bg-slate-950 border border-slate-700" />
                                         </div>
                                         <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase font-sans">
@@ -192,13 +197,34 @@ const BranchDeviceTable = ({ branch }: BranchDeviceTableProps) => {
                                     {/* Terminal Bottom Status Bar */}
                                     <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="relative flex h-2 w-2">
-                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                                            </span>
-                                            <span className="text-emerald-400 font-medium font-sans">{t('online_active', 'Online • Faol')}</span>
+                                            {isOnline ? (
+                                                <>
+                                                    <span className="relative flex h-2 w-2">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                                                    </span>
+                                                    <span className="text-emerald-400 font-medium font-sans">
+                                                        {t('online_active', 'Online • Faol')}
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="relative flex h-2 w-2">
+                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+                                                    </span>
+                                                    <span className="text-rose-400 font-medium font-sans">
+                                                        {t('offline_inactive', 'Offline • Aloqada emas')}
+                                                    </span>
+                                                </>
+                                            )}
                                         </div>
-                                        <span className="text-[10px] text-slate-400 font-mono">{t('biometric_sync', 'Biometric Sync')}</span>
+                                        {item.last_seen_at ? (
+                                            <span className="text-[10px] text-slate-400 font-mono" title={t('last_seen', 'Oxirgi aloqa vaqti')}>
+                                                {t('last_seen', 'Oxirgi aloqa')}: {new Date(item.last_seen_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, {new Date(item.last_seen_at).toLocaleDateString([], { day: '2-digit', month: '2-digit' })}
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] text-slate-400 font-mono">{t('biometric_sync', 'Biometric Sync')}</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
