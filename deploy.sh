@@ -70,7 +70,7 @@ sudo $PHP_BIN artisan route:cache || true
 
 echo -e "${BLUE}--> Ruxsatlar (permissions) sozlanmoqda...${NC}"
 sudo chown -R panel_payday_usr:panel_payday_usr $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache
-sudo chmod -R 775 $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache
+sudo chmod -R 777 $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache
 
 echo -e "${BLUE}--> Queue workerlar va Supervisor qayta ishga tushirilmoqda...${NC}"
 sudo $PHP_BIN artisan queue:restart || true
