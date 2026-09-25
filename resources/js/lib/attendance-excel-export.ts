@@ -254,42 +254,19 @@ export const exportDailyAttendanceToExcel = async (
             : '-';
 
         let lateTime = '-';
-        if (checkIns.length > 0) {
-            const ci = checkIns[0];
-            if (ci.work_time && ci.created_at) {
-                const createdAt = parseISO(ci.created_at);
-                const datePart = format(createdAt, 'yyyy-MM-dd');
-                let workTimeStr = ci.work_time.trim();
-                if (/^\d{2}:\d{2}$/.test(workTimeStr)) workTimeStr += ':00';
-                if (/^\d{2}:\d{2}:\d{2}$/.test(workTimeStr)) {
-                    const workTime = new Date(`${datePart}T${workTimeStr}`);
-                    if (createdAt > workTime) {
-                        const totalSeconds = differenceInSeconds(createdAt, workTime);
-                        const hours = Math.floor(totalSeconds / 3600);
-                        const minutes = Math.floor((totalSeconds % 3600) / 60);
-                        const seconds = totalSeconds % 60;
-                        lateTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                    }
-                }
-            }
+        if (item.late_minutes !== undefined && item.late_minutes > 0) {
+            const hours = Math.floor(item.late_minutes / 60);
+            const minutes = item.late_minutes % 60;
+            lateTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        } else if (checkIns.length > 0) {
+            lateTime = t('on_time', 'O‘z vaqtida');
         }
 
         let workedTimes = '-';
-        if (checkIns.length > 0 && checkOuts.length > 0) {
-            const times = checkIns.map((ci, i) => {
-                const co = checkOuts[i];
-                if (co?.created_at && ci?.created_at) {
-                    const inTime = new Date(ci.created_at).getTime();
-                    const outTime = new Date(co.created_at).getTime();
-                    const diffMs = outTime - inTime;
-                    const diffMinutes = Math.floor(diffMs / 60000);
-                    const hours = Math.floor(diffMinutes / 60);
-                    const minutes = diffMinutes % 60;
-                    return `${hours} : ${minutes}`;
-                }
-                return '-';
-            });
-            workedTimes = times.join(', ');
+        if (item.worked_minutes !== undefined && item.worked_minutes > 0) {
+            const hours = Math.floor(item.worked_minutes / 60);
+            const minutes = item.worked_minutes % 60;
+            workedTimes = `${hours} : ${String(minutes).padStart(2, '0')}`;
         }
 
         worksheet.addRow([

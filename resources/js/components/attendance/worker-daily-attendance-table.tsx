@@ -93,58 +93,47 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                             </td>
 
                                             <td className="px-3.5 py-2.5">
-                                                {checkIns.length > 0 ? (
-                                                    checkIns.map((ci, i) => {
-                                                        if (!ci.work_time || !ci.created_at || i !== 0) return null;
-
-                                                        const createdAt = parseISO(ci.created_at);
-                                                        const datePart = format(createdAt, 'yyyy-MM-dd');
-
-                                                        let workTimeStr = ci.work_time.trim();
-                                                        if (/^\d{2}:\d{2}$/.test(workTimeStr)) workTimeStr += ':00';
-                                                        if (!/^\d{2}:\d{2}:\d{2}$/.test(workTimeStr)) return <span key={i} className="text-slate-400">—</span>;
-
-                                                        const workTime = new Date(`${datePart}T${workTimeStr}`);
-                                                        if (createdAt <= workTime) return <span key={i} className="text-emerald-500 font-mono text-[11px]">{t('on_time', 'O‘z vaqtida')}</span>;
-
-                                                        const totalSeconds = differenceInSeconds(createdAt, workTime);
-                                                        const hours = Math.floor(totalSeconds / 3600);
-                                                        const minutes = Math.floor((totalSeconds % 3600) / 60);
-                                                        const seconds = totalSeconds % 60;
-
+                                                {item.late_minutes !== undefined && item.late_minutes > 0 ? (
+                                                    (() => {
+                                                        const hours = Math.floor(item.late_minutes / 60);
+                                                        const minutes = item.late_minutes % 60;
                                                         return (
-                                                            <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 font-mono text-[11px] font-semibold">
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 font-mono text-[11px] font-semibold">
                                                                 <Clock className="w-3 h-3" />
-                                                                {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+                                                                {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}
                                                             </span>
                                                         );
-                                                    })
+                                                    })()
+                                                ) : checkIns.length > 0 ? (
+                                                    <span className="text-emerald-500 font-mono text-[11px]">{t('on_time', 'O‘z vaqtida')}</span>
                                                 ) : (
                                                     <span className="text-slate-400">—</span>
                                                 )}
                                             </td>
 
                                             <td className="px-3.5 py-2.5">
-                                                {checkIns.length > 0 && checkOuts.length > 0 ? (
-                                                    checkIns.map((ci, i) => {
-                                                        const co = checkOuts[i];
-                                                        if (co?.created_at && ci?.created_at) {
-                                                            const inTime = new Date(ci.created_at).getTime();
-                                                            const outTime = new Date(co.created_at).getTime();
-                                                            const diffMs = outTime - inTime;
-
-                                                            const diffMinutes = Math.floor(diffMs / 60000);
-                                                            const hours = Math.floor(diffMinutes / 60);
-                                                            const minutes = diffMinutes % 60;
-
-                                                            return (
-                                                                <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 font-mono text-[11px]">
-                                                                    {hours}s {minutes}daq
+                                                {item.worked_minutes !== undefined && item.worked_minutes > 0 ? (
+                                                    (() => {
+                                                        const hours = Math.floor(item.worked_minutes / 60);
+                                                        const minutes = item.worked_minutes % 60;
+                                                        return (
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 font-mono text-[11px] font-semibold">
+                                                                    <Clock className="w-3 h-3 text-indigo-500" />
+                                                                    {hours}s {String(minutes).padStart(2, '0')}daq
                                                                 </span>
-                                                            );
-                                                        }
-                                                        return null;
-                                                    })
+                                                                {item.paired_events && item.paired_events.length > 1 && (
+                                                                    <div className="flex flex-wrap gap-1 text-[10px] text-slate-400 font-mono">
+                                                                        {item.paired_events.map((p, idx) => (
+                                                                            <span key={idx}>
+                                                                                {format(new Date(p.from_time), 'HH:mm')}-{p.to_time ? format(new Date(p.to_time), 'HH:mm') : '...'}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()
                                                 ) : (
                                                     <span className="text-slate-400">—</span>
                                                 )}

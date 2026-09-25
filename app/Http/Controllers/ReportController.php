@@ -24,7 +24,7 @@ class ReportController extends Controller
      * Build the paired events query using window functions (LEAD, ROW_NUMBER).
      * Replaces expensive derived-table self-joins and correlated subqueries.
      */
-    private function buildPairedEventsQuery(Request $request, string $from, string $to)
+    public function buildPairedEventsQuery(Request $request, string $from, string $to)
     {
         $eventsWithLead = DB::table('hikvision_access_events as hae')
             ->select(
@@ -73,7 +73,7 @@ class ReportController extends Controller
             $eventsWithLead->where('f.id', $request->firm_id);
         }
 
-        if (!Auth::user()->hasRole('Admin')) {
+        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             $firmIds = Auth::user()->user_firms()->pluck('firm_id');
             $eventsWithLead->whereIn('f.id', $firmIds);
         }

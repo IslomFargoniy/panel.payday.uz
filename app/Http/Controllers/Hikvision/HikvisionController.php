@@ -121,6 +121,24 @@ class HikvisionController extends Controller
 
         $workers = $workers->paginate($per_page);
 
+        // Standardize calculation with salary_report and monthly_attendance via ReportController
+        $reportController = new \App\Http\Controllers\ReportController();
+        $subReq = clone $request;
+        $subReq->merge([
+            'branch_id' => $branch->id,
+            'from' => $date,
+            'to' => $date,
+        ]);
+        $pairedEvents = $reportController->buildPairedEventsQuery($subReq, $date, $date)->get();
+        $pairedByWorker = $pairedEvents->groupBy('worker_id');
+
+        foreach ($workers as $worker) {
+            $workerPairs = $pairedByWorker->get($worker->id, collect());
+            $worker->paired_events = $workerPairs->values()->toArray();
+            $worker->worked_minutes = (int) $workerPairs->sum('worked_minutes');
+            $worker->late_minutes = (int) ($workerPairs->first()->late_minutes ?? 0);
+        }
+
         return Inertia::render('daily_attendance/index', [
             'worker' => $workers,
             'branch' => $branch,
