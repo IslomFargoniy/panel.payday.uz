@@ -134,6 +134,7 @@ class HomeController extends Controller
         $eventsWithLead = DB::table('hikvision_access_events as hae')
             ->select(
                 'hae.id',
+                'hae.employeeNoString',
                 'w.name as worker',
                 'b.name as branch',
                 'w.branch_id',
@@ -187,6 +188,7 @@ class HomeController extends Controller
                   });
             })
             ->select(
+                'pe.employeeNoString',
                 'pe.worker',
                 'pe.branch',
                 'pe.branch_id',
