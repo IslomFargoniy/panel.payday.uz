@@ -119,6 +119,7 @@ class ReportController extends Controller
                 'fe.attendanceStatus as status_from',
                 'fe.label as label_from',
                 'fe.created_at as from_time',
+                DB::raw("LEAD(fe.id) OVER (PARTITION BY fe.employeeNoString ORDER BY fe.created_at) AS to_id"),
                 DB::raw("LEAD(fe.created_at) OVER (PARTITION BY fe.employeeNoString ORDER BY fe.created_at) AS to_time"),
                 DB::raw("LEAD(fe.attendanceStatus) OVER (PARTITION BY fe.employeeNoString ORDER BY fe.created_at) AS status_to"),
                 DB::raw("LEAD(fe.label) OVER (PARTITION BY fe.employeeNoString ORDER BY fe.created_at) AS label_to"),
@@ -144,6 +145,7 @@ class ReportController extends Controller
                 'pe.day_first_check_in',
                 'pe.day_first_work_time',
                 DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited") AND (DATE(pe.to_time) = DATE(pe.from_time) OR (DATE(pe.to_time) = DATE_ADD(DATE(pe.from_time), INTERVAL 1 DAY) AND TIME(pe.to_time) <= "12:00:00")), pe.to_time, NULL) as to_time'),
+                DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited") AND (DATE(pe.to_time) = DATE(pe.from_time) OR (DATE(pe.to_time) = DATE_ADD(DATE(pe.from_time), INTERVAL 1 DAY) AND TIME(pe.to_time) <= "12:00:00")), pe.to_id, NULL) as to_id'),
                 'pe.status_from',
                 DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), CONCAT(pe.label_from, "/", pe.label_to), pe.label_from) as status'),
                 DB::raw("CASE

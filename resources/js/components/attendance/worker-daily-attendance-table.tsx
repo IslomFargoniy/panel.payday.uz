@@ -11,6 +11,26 @@ type WorkerTableProps = {
     searchData: SearchData;
 };
 
+const safeParseDate = (dateStr?: string | null): Date | null => {
+    if (!dateStr) return null;
+    try {
+        const normalized = dateStr.includes(' ') && !dateStr.includes('T')
+            ? dateStr.replace(' ', 'T')
+            : dateStr;
+        const d = new Date(normalized);
+        return isNaN(d.getTime()) ? null : d;
+    } catch {
+        return null;
+    }
+};
+
+const extractTimeStr = (str?: string | null): string => {
+    if (!str) return '';
+    if (str.includes(' ')) return str.split(' ')[1].slice(0, 8);
+    const d = safeParseDate(str);
+    return d ? format(d, 'HH:mm:ss') : str.slice(0, 8);
+};
+
 const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) => {
     const { t } = useTranslation();
 
@@ -47,8 +67,11 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                     const checkIns = item.hikvision_access_events?.filter(event => ['checkIn', 'keldi', 'entered'].includes(event.attendanceStatus)) || [];
                                     const checkOuts = item.hikvision_access_events?.filter(event => ['checkOut', 'ketdi', 'exited'].includes(event.attendanceStatus)) || [];
 
-                                    const pairedFromTimes = new Set(item.paired_events?.map(p => p.from_time).filter(Boolean) || []);
-                                    const pairedToTimes = new Set(item.paired_events?.map(p => p.to_time).filter(Boolean) || []);
+                                    const pairedFromIds = new Set(item.paired_events?.map(p => Number(p.id)).filter(Boolean) || []);
+                                    const pairedToIds = new Set(item.paired_events?.map(p => Number(p.to_id)).filter(Boolean) || []);
+
+                                    const pairedFromTimes = new Set(item.paired_events?.map(p => extractTimeStr(p.from_time)).filter(Boolean) || []);
+                                    const pairedToTimes = new Set(item.paired_events?.map(p => extractTimeStr(p.to_time)).filter(Boolean) || []);
 
                                     return (
                                         <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
@@ -69,9 +92,12 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                                 {checkIns.length > 0 ? (
                                                     <div className="flex flex-wrap gap-1">
                                                         {checkIns.map((ci, i) => {
-                                                            const isAccepted = pairedFromTimes.size > 0 
-                                                                ? pairedFromTimes.has(ci.created_at)
+                                                            const ciTime = format(new Date(ci.created_at), 'HH:mm:ss');
+                                                            const hasPairedRef = pairedFromIds.size > 0 || pairedFromTimes.size > 0;
+                                                            const isAccepted = hasPairedRef
+                                                                ? (pairedFromIds.has(Number(ci.id)) || pairedFromTimes.has(ciTime))
                                                                 : i === 0;
+
                                                             return (
                                                                 <span
                                                                     key={i}
@@ -83,7 +109,7 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                                                     }`}
                                                                 >
                                                                     <ArrowDownLeft className={`w-3 h-3 ${isAccepted ? 'text-emerald-500' : 'text-slate-400'}`} />
-                                                                    {format(new Date(ci.created_at), 'HH:mm:ss')}
+                                                                    {ciTime}
                                                                 </span>
                                                             );
                                                         })}
@@ -97,9 +123,12 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                                 {checkOuts.length > 0 ? (
                                                     <div className="flex flex-wrap gap-1">
                                                         {checkOuts.map((co, i) => {
-                                                            const isAccepted = pairedToTimes.size > 0
-                                                                ? pairedToTimes.has(co.created_at)
+                                                            const coTime = format(new Date(co.created_at), 'HH:mm:ss');
+                                                            const hasPairedRef = pairedToIds.size > 0 || pairedToTimes.size > 0;
+                                                            const isAccepted = hasPairedRef
+                                                                ? (pairedToIds.has(Number(co.id)) || pairedToTimes.has(coTime))
                                                                 : i === checkOuts.length - 1;
+
                                                             return (
                                                                 <span
                                                                     key={i}
@@ -111,7 +140,7 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                                                     }`}
                                                                 >
                                                                     <ArrowUpRight className={`w-3 h-3 ${isAccepted ? 'text-blue-500' : 'text-slate-400'}`} />
-                                                                    {format(new Date(co.created_at), 'HH:mm:ss')}
+                                                                    {coTime}
                                                                 </span>
                                                             );
                                                         })}
@@ -155,7 +184,7 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                                                     <div className="flex flex-wrap gap-1 text-[10px] text-slate-400 font-mono">
                                                                         {item.paired_events.map((p, idx) => (
                                                                             <span key={idx}>
-                                                                                {format(new Date(p.from_time), 'HH:mm')}-{p.to_time ? format(new Date(p.to_time), 'HH:mm') : '...'}
+                                                                                {extractTimeStr(p.from_time).slice(0, 5)}-{p.to_time ? extractTimeStr(p.to_time).slice(0, 5) : '...'}
                                                                             </span>
                                                                         ))}
                                                                     </div>
