@@ -26,7 +26,8 @@ class ReportController extends Controller
      */
     public function buildPairedEventsQuery(Request $request, string $from, string $to)
     {
-        $eventsWithLead = DB::table('hikvision_access_events as hae')
+        // 1. Raw events with LAG and LEAD to identify consecutive duplicates per day
+        $rawEvents = DB::table('hikvision_access_events as hae')
             ->select(
                 'hae.id',
                 'hae.employeeNoString',
@@ -37,14 +38,17 @@ class ReportController extends Controller
                 DB::raw('COALESCE(hae.work_time, w.work_time) as work_time'),
                 DB::raw('COALESCE(hae.end_time, w.end_time) as end_time'),
                 'f.name as firm',
-                'hae.attendanceStatus as status_from',
-                'hae.label as label_from',
-                'hae.created_at as from_time',
-                DB::raw("LEAD(hae.created_at) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS to_time"),
-                DB::raw("LEAD(hae.attendanceStatus) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS status_to"),
-                DB::raw("LEAD(hae.label) OVER (PARTITION BY hae.employeeNoString ORDER BY hae.created_at) AS label_to"),
-                DB::raw("MIN(CASE WHEN hae.attendanceStatus IN ('keldi', 'CheckIn', 'checkIn', 'entered') AND (TIME(hae.created_at) >= '05:00:00' OR COALESCE(hae.work_time, w.work_time) < '06:00:00') THEN hae.created_at END) OVER (PARTITION BY hae.employeeNoString, DATE(hae.created_at)) AS day_first_check_in"),
-                DB::raw("MIN(CASE WHEN hae.attendanceStatus IN ('keldi', 'CheckIn', 'checkIn', 'entered') AND (TIME(hae.created_at) >= '05:00:00' OR COALESCE(hae.work_time, w.work_time) < '06:00:00') THEN COALESCE(hae.work_time, w.work_time) END) OVER (PARTITION BY hae.employeeNoString, DATE(hae.created_at)) AS day_first_work_time")
+                'hae.attendanceStatus',
+                'hae.label',
+                'hae.created_at',
+                DB::raw("LAG(hae.attendanceStatus) OVER (
+                    PARTITION BY hae.employeeNoString, DATE(hae.created_at) 
+                    ORDER BY hae.created_at
+                ) AS prev_status"),
+                DB::raw("LEAD(hae.attendanceStatus) OVER (
+                    PARTITION BY hae.employeeNoString, DATE(hae.created_at) 
+                    ORDER BY hae.created_at
+                ) AS next_status")
             )
             ->join('workers as w', 'w.employeeNoString', '=', 'hae.employeeNoString')
             ->join('branches as b', 'w.branch_id', '=', 'b.id')
@@ -53,10 +57,10 @@ class ReportController extends Controller
             ->whereBetween('hae.created_at', [$from, $to . " 23:59:59"]);
 
         if ($request->worker_id) {
-            $eventsWithLead->where('w.id', $request->worker_id);
+            $rawEvents->where('w.id', $request->worker_id);
         }
         if ($request->search) {
-            $eventsWithLead->where(function ($query) use ($request) {
+            $rawEvents->where(function ($query) use ($request) {
                 $query->where('w.name', 'like', '%' . $request->search . '%')
                     ->orWhere('b.name', 'like', '%' . $request->search . '%')
                     ->orWhere('f.name', 'like', '%' . $request->search . '%')
@@ -67,30 +71,65 @@ class ReportController extends Controller
             });
         }
         if ($request->branch_id) {
-            $eventsWithLead->where('b.id', $request->branch_id);
+            $rawEvents->where('b.id', $request->branch_id);
         }
         if ($request->firm_id) {
-            $eventsWithLead->where('f.id', $request->firm_id);
+            $rawEvents->where('f.id', $request->firm_id);
         }
 
         if (Auth::check() && !Auth::user()->hasRole('Admin')) {
             $firmIds = Auth::user()->user_firms()->pluck('firm_id');
-            $eventsWithLead->whereIn('f.id', $firmIds);
+            $rawEvents->whereIn('f.id', $firmIds);
         }
 
-        $pairedQuery = DB::table(DB::raw("({$eventsWithLead->toSql()}) as pe"))
-            ->mergeBindings($eventsWithLead)
+        // 2. Filter out consecutive duplicates:
+        // When checking in repeatedly: keep ONLY the first check-in (prev_status is NOT check-in)
+        // When checking out repeatedly: keep ONLY the last check-out (next_status is NOT check-out)
+        $filteredEvents = DB::table(DB::raw("({$rawEvents->toSql()}) as re"))
+            ->mergeBindings($rawEvents)
             ->where(function ($q) {
-                $q->whereIn('pe.status_from', ['keldi', 'CheckIn', 'checkIn', 'entered'])
-                  ->where(function ($sub) {
-                      $sub->whereIn('pe.status_to', ['ketdi', 'CheckOut', 'checkOut', 'exited'])
-                          ->orWhereNull('pe.status_to')
-                          ->orWhere(function ($cross) {
-                              $cross->whereIn('pe.status_to', ['keldi', 'CheckIn', 'checkIn', 'entered'])
-                                    ->whereRaw('DATE(pe.to_time) != DATE(pe.from_time)');
-                          });
-                  });
-            })
+                $q->where(function ($sub) {
+                    $sub->whereIn('re.attendanceStatus', ['keldi', 'CheckIn', 'checkIn', 'entered'])
+                        ->where(function ($c) {
+                            $c->whereNotIn('re.prev_status', ['keldi', 'CheckIn', 'checkIn', 'entered'])
+                              ->orWhereNull('re.prev_status');
+                        });
+                })->orWhere(function ($sub) {
+                    $sub->whereIn('re.attendanceStatus', ['ketdi', 'CheckOut', 'checkOut', 'exited'])
+                        ->where(function ($c) {
+                            $c->whereNotIn('re.next_status', ['ketdi', 'CheckOut', 'checkOut', 'exited'])
+                              ->orWhereNull('re.next_status');
+                        });
+                });
+            });
+
+        // 3. Pair surviving events using LEAD()
+        $pairedStage = DB::table(DB::raw("({$filteredEvents->toSql()}) as fe"))
+            ->mergeBindings($filteredEvents)
+            ->select(
+                'fe.id',
+                'fe.employeeNoString',
+                'fe.worker_id',
+                'fe.worker',
+                'fe.phone',
+                'fe.branch',
+                'fe.work_time',
+                'fe.end_time',
+                'fe.firm',
+                'fe.attendanceStatus as status_from',
+                'fe.label as label_from',
+                'fe.created_at as from_time',
+                DB::raw("LEAD(fe.created_at) OVER (PARTITION BY fe.employeeNoString ORDER BY fe.created_at) AS to_time"),
+                DB::raw("LEAD(fe.attendanceStatus) OVER (PARTITION BY fe.employeeNoString ORDER BY fe.created_at) AS status_to"),
+                DB::raw("LEAD(fe.label) OVER (PARTITION BY fe.employeeNoString ORDER BY fe.created_at) AS label_to"),
+                DB::raw("MIN(CASE WHEN fe.attendanceStatus IN ('keldi', 'CheckIn', 'checkIn', 'entered') AND (TIME(fe.created_at) >= '05:00:00' OR fe.work_time < '06:00:00') THEN fe.created_at END) OVER (PARTITION BY fe.employeeNoString, DATE(fe.created_at)) AS day_first_check_in"),
+                DB::raw("MIN(CASE WHEN fe.attendanceStatus IN ('keldi', 'CheckIn', 'checkIn', 'entered') AND (TIME(fe.created_at) >= '05:00:00' OR fe.work_time < '06:00:00') THEN fe.work_time END) OVER (PARTITION BY fe.employeeNoString, DATE(fe.created_at)) AS day_first_work_time")
+            );
+
+        // 4. Final paired query (only checkIn shifts)
+        $pairedQuery = DB::table(DB::raw("({$pairedStage->toSql()}) as pe"))
+            ->mergeBindings($pairedStage)
+            ->whereIn('pe.status_from', ['keldi', 'CheckIn', 'checkIn', 'entered'])
             ->select(
                 'pe.id',
                 'pe.employeeNoString',
@@ -104,7 +143,7 @@ class ReportController extends Controller
                 'pe.from_time',
                 'pe.day_first_check_in',
                 'pe.day_first_work_time',
-                DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), pe.to_time, NULL) as to_time'),
+                DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited") AND (DATE(pe.to_time) = DATE(pe.from_time) OR (DATE(pe.to_time) = DATE_ADD(DATE(pe.from_time), INTERVAL 1 DAY) AND TIME(pe.to_time) <= "12:00:00")), pe.to_time, NULL) as to_time'),
                 'pe.status_from',
                 DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), CONCAT(pe.label_from, "/", pe.label_to), pe.label_from) as status'),
                 DB::raw("CASE
@@ -115,7 +154,7 @@ class ReportController extends Controller
                     THEN GREATEST(1, TIMESTAMPDIFF(MINUTE, TIMESTAMP(DATE(pe.from_time), pe.day_first_work_time), pe.day_first_check_in))
                     ELSE 0
                 END as late_minutes"),
-                DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited"), TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time), 0) as worked_minutes'),
+                DB::raw('IF(pe.status_to IN ("ketdi", "CheckOut", "checkOut", "exited") AND (DATE(pe.to_time) = DATE(pe.from_time) OR (DATE(pe.to_time) = DATE_ADD(DATE(pe.from_time), INTERVAL 1 DAY) AND TIME(pe.to_time) <= "12:00:00")), TIMESTAMPDIFF(MINUTE, pe.from_time, pe.to_time), 0) as worked_minutes'),
                 DB::raw("0 as break_minutes")
             );
 

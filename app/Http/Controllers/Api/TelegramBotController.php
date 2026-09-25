@@ -32,12 +32,14 @@ class TelegramBotController extends Controller
              
              $todayCheckIn = HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
                  ->whereDate('created_at', $todayStr)
-                 ->where('attendanceStatus', '=', 'checkIn')
+                 ->whereIn('attendanceStatus', ['checkIn', 'keldi', 'entered'])
+                 ->orderBy('created_at', 'asc')
                  ->first();
                  
              $todayCheckOut = HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
                  ->whereDate('created_at', $todayStr)
-                 ->where('attendanceStatus', '=', 'checkOut')
+                 ->whereIn('attendanceStatus', ['checkOut', 'ketdi', 'exited'])
+                 ->orderBy('created_at', 'desc')
                  ->first();
 
             return response()->json([

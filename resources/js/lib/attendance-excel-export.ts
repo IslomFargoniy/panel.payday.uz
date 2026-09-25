@@ -242,16 +242,31 @@ export const exportDailyAttendanceToExcel = async (
     worker.data.forEach((item, rowIndex) => {
         const globalIndex = (worker.current_page - 1) * worker.per_page + rowIndex + 1;
 
-        const checkIns = item.hikvision_access_events?.filter((e) => e.attendanceStatus === 'checkIn') || [];
-        const checkOuts = item.hikvision_access_events?.filter((e) => e.attendanceStatus === 'checkOut') || [];
+        const checkIns = item.hikvision_access_events?.filter((e) => ['checkIn', 'keldi', 'entered'].includes(e.attendanceStatus)) || [];
+        const checkOuts = item.hikvision_access_events?.filter((e) => ['checkOut', 'ketdi', 'exited'].includes(e.attendanceStatus)) || [];
 
-        const checkInTimes = checkIns.length
-            ? checkIns.map((ci) => format(new Date(ci.created_at), 'HH:mm:ss')).join(', ')
-            : '-';
+        let checkInTimes = '-';
+        let checkOutTimes = '-';
 
-        const checkOutTimes = checkOuts.length
-            ? checkOuts.map((co) => format(new Date(co.created_at), 'HH:mm:ss')).join(', ')
-            : '-';
+        if (item.paired_events && item.paired_events.length > 0) {
+            checkInTimes = item.paired_events
+                .map((p) => p.from_time ? format(new Date(p.from_time), 'HH:mm:ss') : '')
+                .filter(Boolean)
+                .join(', ') || '-';
+
+            checkOutTimes = item.paired_events
+                .map((p) => p.to_time ? format(new Date(p.to_time), 'HH:mm:ss') : '')
+                .filter(Boolean)
+                .join(', ') || '-';
+        } else {
+            checkInTimes = checkIns.length
+                ? format(new Date(checkIns[0].created_at), 'HH:mm:ss')
+                : '-';
+
+            checkOutTimes = checkOuts.length
+                ? format(new Date(checkOuts[checkOuts.length - 1].created_at), 'HH:mm:ss')
+                : '-';
+        }
 
         let lateTime = '-';
         if (item.late_minutes !== undefined && item.late_minutes > 0) {

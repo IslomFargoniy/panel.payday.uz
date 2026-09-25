@@ -44,8 +44,11 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                 worker.data.map((item, rowIndex) => {
                                     const globalIndex = (worker.current_page - 1) * worker.per_page + rowIndex + 1;
 
-                                    const checkIns = item.hikvision_access_events?.filter(event => event.attendanceStatus === 'checkIn') || [];
-                                    const checkOuts = item.hikvision_access_events?.filter(event => event.attendanceStatus === 'checkOut') || [];
+                                    const checkIns = item.hikvision_access_events?.filter(event => ['checkIn', 'keldi', 'entered'].includes(event.attendanceStatus)) || [];
+                                    const checkOuts = item.hikvision_access_events?.filter(event => ['checkOut', 'ketdi', 'exited'].includes(event.attendanceStatus)) || [];
+
+                                    const pairedFromTimes = new Set(item.paired_events?.map(p => p.from_time).filter(Boolean) || []);
+                                    const pairedToTimes = new Set(item.paired_events?.map(p => p.to_time).filter(Boolean) || []);
 
                                     return (
                                         <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
@@ -65,12 +68,25 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                             <td className="px-3.5 py-2.5">
                                                 {checkIns.length > 0 ? (
                                                     <div className="flex flex-wrap gap-1">
-                                                        {checkIns.map((ci, i) => (
-                                                            <span key={i} className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-mono text-[11px]">
-                                                                <ArrowDownLeft className="w-3 h-3 text-emerald-500" />
-                                                                {format(new Date(ci.created_at), 'HH:mm:ss')}
-                                                            </span>
-                                                        ))}
+                                                        {checkIns.map((ci, i) => {
+                                                            const isAccepted = pairedFromTimes.size > 0 
+                                                                ? pairedFromTimes.has(ci.created_at)
+                                                                : i === 0;
+                                                            return (
+                                                                <span
+                                                                    key={i}
+                                                                    title={isAccepted ? t('check_in_accepted', 'Qabul qilingan kirish') : t('check_in_consecutive_skipped', 'Ketma-ket kelish (birinchisi hisobga olingan)')}
+                                                                    className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md font-mono text-[11px] transition-all ${
+                                                                        isAccepted
+                                                                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold'
+                                                                            : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 line-through opacity-60'
+                                                                    }`}
+                                                                >
+                                                                    <ArrowDownLeft className={`w-3 h-3 ${isAccepted ? 'text-emerald-500' : 'text-slate-400'}`} />
+                                                                    {format(new Date(ci.created_at), 'HH:mm:ss')}
+                                                                </span>
+                                                            );
+                                                        })}
                                                     </div>
                                                 ) : (
                                                     <span className="text-slate-400">—</span>
@@ -80,12 +96,25 @@ const WorkerDailyAttendanceTable = ({ worker, searchData }: WorkerTableProps) =>
                                             <td className="px-3.5 py-2.5">
                                                 {checkOuts.length > 0 ? (
                                                     <div className="flex flex-wrap gap-1">
-                                                        {checkOuts.map((co, i) => (
-                                                            <span key={i} className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 font-mono text-[11px]">
-                                                                <ArrowUpRight className="w-3 h-3 text-blue-500" />
-                                                                {format(new Date(co.created_at), 'HH:mm:ss')}
-                                                            </span>
-                                                        ))}
+                                                        {checkOuts.map((co, i) => {
+                                                            const isAccepted = pairedToTimes.size > 0
+                                                                ? pairedToTimes.has(co.created_at)
+                                                                : i === checkOuts.length - 1;
+                                                            return (
+                                                                <span
+                                                                    key={i}
+                                                                    title={isAccepted ? t('check_out_accepted', 'Qabul qilingan chiqish') : t('check_out_consecutive_skipped', 'Ketma-ket ketish (oxirgisi hisobga olingan)')}
+                                                                    className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md font-mono text-[11px] transition-all ${
+                                                                        isAccepted
+                                                                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 font-semibold'
+                                                                            : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 line-through opacity-60'
+                                                                    }`}
+                                                                >
+                                                                    <ArrowUpRight className={`w-3 h-3 ${isAccepted ? 'text-blue-500' : 'text-slate-400'}`} />
+                                                                    {format(new Date(co.created_at), 'HH:mm:ss')}
+                                                                </span>
+                                                            );
+                                                        })}
                                                     </div>
                                                 ) : (
                                                     <span className="text-slate-400">—</span>
