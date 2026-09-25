@@ -19,6 +19,7 @@ import {
 import { Plus, Cpu } from 'lucide-react';
 import { Branch } from '@/types';
 import { Input } from '@/components/ui/input';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 interface createBranch {
     branch: Branch;
@@ -45,6 +46,17 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
         connection_type: 'isup',
         encryption_key: `PayDay${branch.id}2026`,
     });
+
+    const connectionTypeOptions = [
+        {
+            value: 'isup',
+            label: t('isup_option', 'ISUP 5.0 (2 tomonlama avtomatik sinxronizatsiya)'),
+        },
+        {
+            value: 'http_listening',
+            label: t('http_listening_option', 'HTTP Listening (1 tomonlama klassik)'),
+        },
+    ];
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -119,15 +131,15 @@ export default function CreateBranchDeviceModal({ branch }: createBranch) {
                         <Label htmlFor="connection_type" className="text-xs font-medium text-slate-700 dark:text-slate-300">
                             {t('connection_type', 'Ulanish turi')}
                         </Label>
-                        <select
+                        <SearchableSelect
                             id="connection_type"
-                            className="w-full h-9.5 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             value={data.connection_type}
-                            onChange={(e) => setData('connection_type', e.target.value as 'isup' | 'http_listening')}
-                        >
-                            <option value="isup">{t('isup_option', 'ISUP 5.0 (2 tomonlama avtomatik sinxronizatsiya)')}</option>
-                            <option value="http_listening">{t('http_listening_option', 'HTTP Listening (1 tomonlama klassik)')}</option>
-                        </select>
+                            onChange={(val) => setData('connection_type', val as 'isup' | 'http_listening')}
+                            options={connectionTypeOptions}
+                            placeholder={t('connection_type', 'Ulanish turi')}
+                            searchPlaceholder={t('search', 'Qidirish...')}
+                            triggerClassName="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
+                        />
                         <InputError message={errors.connection_type} />
                     </div>
 

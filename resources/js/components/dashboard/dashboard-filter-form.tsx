@@ -3,6 +3,7 @@ import { Branch, Firm, SearchData } from '@/types';
 import { Building2, GitBranch, Search, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import SearchableSelect from '@/components/ui/searchable-select';
 
 interface SearchFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -16,19 +17,6 @@ const DashboardFilterForm = ({ handleSubmit, setData, data, firms, branches }: S
     const { t } = useTranslation();
     const formRef = React.useRef<HTMLFormElement>(null);
     const shouldAutoSubmitRef = React.useRef(false);
-
-    const handleFirmChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('firm_id', parseInt(e.target.value, 10));
-        if (data.branch_id) {
-            setData('branch_id', 0);
-        }
-        shouldAutoSubmitRef.current = true;
-    };
-
-    const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('branch_id', parseInt(e.target.value, 10));
-        shouldAutoSubmitRef.current = true;
-    };
 
     const handleReset = () => {
         setData('firm_id', 0);
@@ -61,39 +49,39 @@ const DashboardFilterForm = ({ handleSubmit, setData, data, firms, branches }: S
     return (
         <form ref={formRef} onSubmit={handleSubmit} className="flex flex-wrap items-center gap-2">
             {firms && firms.length > 0 && (
-                <div className="relative">
-                    <Building2 className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                    <select
-                        value={data.firm_id || ''}
-                        onChange={handleFirmChange}
-                        className="h-9 rounded-xl border border-slate-200 bg-white pl-8 pr-7 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                        <option value="0">{t('select_firm')}</option>
-                        {firms.map((firm) => (
-                            <option key={firm.id} value={firm.id}>
-                                {firm.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                <SearchableSelect
+                    value={data.firm_id}
+                    onChange={(val) => {
+                        const firm_id = Number(val) || 0;
+                        setData('firm_id', firm_id);
+                        if (data.branch_id) {
+                            setData('branch_id', 0);
+                        }
+                        shouldAutoSubmitRef.current = true;
+                    }}
+                    options={firms.map((firm) => ({ value: firm.id, label: firm.name }))}
+                    placeholder={t('select_firm')}
+                    emptyOptionLabel={t('select_firm')}
+                    icon={<Building2 className="h-3.5 w-3.5 text-slate-400" />}
+                    className="min-w-[160px]"
+                    allowClear
+                />
             )}
 
             {branches && branches.length > 0 && (
-                <div className="relative">
-                    <GitBranch className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                    <select
-                        value={data.branch_id || ''}
-                        onChange={handleBranchChange}
-                        className="h-9 rounded-xl border border-slate-200 bg-white pl-8 pr-7 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                        <option value="0">{t('select_branch')}</option>
-                        {filteredBranches.map((branch) => (
-                            <option key={branch.id} value={branch.id}>
-                                {branch.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                <SearchableSelect
+                    value={data.branch_id}
+                    onChange={(val) => {
+                        setData('branch_id', Number(val) || 0);
+                        shouldAutoSubmitRef.current = true;
+                    }}
+                    options={filteredBranches.map((branch) => ({ value: branch.id, label: branch.name }))}
+                    placeholder={t('select_branch')}
+                    emptyOptionLabel={t('select_branch')}
+                    icon={<GitBranch className="h-3.5 w-3.5 text-slate-400" />}
+                    className="min-w-[160px]"
+                    allowClear
+                />
             )}
 
             <Button

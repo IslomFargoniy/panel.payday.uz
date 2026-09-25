@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Building2 } from 'lucide-react';
 import { Firm, User } from '@/types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 interface createUser {
     user: User;
@@ -35,6 +35,11 @@ export default function CreateUserFirmModal({ user, firms }: createUser) {
         user_id: user.id,
         firm_id: 0
     });
+
+    const firmOptions = firms.map((firm) => ({
+        value: firm.id,
+        label: firm.name,
+    }));
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -90,28 +95,14 @@ export default function CreateUserFirmModal({ user, firms }: createUser) {
                             {t('firm')}
                         </Label>
 
-                        <Select
-                            value={data.firm_id ? data.firm_id.toString() : 'placeholder'}
-                            onValueChange={(val) => {
-                                if (val === 'placeholder') return;
-                                setData('firm_id', parseInt(val));
-                            }}
-                        >
-                            <SelectTrigger className="h-9.5 rounded-xl border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800">
-                                <SelectValue placeholder={t('select')} />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800">
-                                {firms.map((firm) => (
-                                    <SelectItem
-                                        key={firm.id}
-                                        value={firm.id.toString()}
-                                        className="text-xs rounded-lg cursor-pointer"
-                                    >
-                                        {firm.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <SearchableSelect
+                            value={data.firm_id || ''}
+                            onChange={(val) => setData('firm_id', typeof val === 'number' ? val : parseInt(String(val)) || 0)}
+                            options={firmOptions}
+                            placeholder={t('select')}
+                            searchPlaceholder={t('search', 'Qidirish...')}
+                            triggerClassName="h-9.5 rounded-xl border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
+                        />
 
                         <InputError message={errors.firm_id} />
                     </div>

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
 import { Button } from '@/components/ui/button';
+import SearchableSelect from '@/components/ui/searchable-select';
 
 interface ReportFilterFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -87,16 +88,20 @@ const ReportFilterForm = ({
                 />
 
                 {typeof data.total === 'number' && (
-                    <select
+                    <SearchableSelect
                         value={data.per_page}
-                        onChange={handlePerPageChange}
-                        className="h-9 w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                        <option value={15}>15</option>
-                        <option value={30}>30</option>
-                        <option value={50}>50</option>
-                        <option value={data.total}>{t('pagination_optionAll')}</option>
-                    </select>
+                        onChange={(val) => {
+                            setData('per_page', Number(val));
+                            shouldAutoSubmitRef.current = true;
+                        }}
+                        options={[
+                            { value: 15, label: '15' },
+                            { value: 30, label: '30' },
+                            { value: 50, label: '50' },
+                            { value: data.total, label: t('pagination_optionAll') || 'Barchasi' },
+                        ]}
+                        className="w-full sm:w-20"
+                    />
                 )}
 
                 {(typeof data.from === 'string' || typeof data.to === 'string') && (
@@ -120,46 +125,50 @@ const ReportFilterForm = ({
                 )}
 
                 {/* Firm Select */}
-                <select
-                    value={data.firm_id || ''}
-                    onChange={handleFirmChange}
-                    className="h-9 w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                    <option value="">{t('select_firm')}</option>
-                    {firms.map((firm) => (
-                        <option key={firm.id} value={firm.id}>
-                            {firm.name}
-                        </option>
-                    ))}
-                </select>
+                <SearchableSelect
+                    value={data.firm_id}
+                    onChange={(val) => {
+                        const fid = val ? Number(val) : undefined;
+                        setData('firm_id', fid);
+                        if (data.branch_id) {
+                            setData('branch_id', undefined);
+                        }
+                        shouldAutoSubmitRef.current = true;
+                    }}
+                    options={firms.map((firm) => ({ value: firm.id, label: firm.name }))}
+                    placeholder={t('select_firm')}
+                    emptyOptionLabel={t('select_firm')}
+                    className="w-full sm:w-44"
+                    allowClear
+                />
 
                 {/* Branch Select */}
-                <select
-                    value={data.branch_id || ''}
-                    onChange={handleBranchChange}
-                    className="h-9 w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                    <option value="">{t('select_branch')}</option>
-                    {branches.map((branch) => (
-                        <option key={branch.id} value={branch.id}>
-                            {branch.name}
-                        </option>
-                    ))}
-                </select>
+                <SearchableSelect
+                    value={data.branch_id}
+                    onChange={(val) => {
+                        setData('branch_id', val ? Number(val) : undefined);
+                        shouldAutoSubmitRef.current = true;
+                    }}
+                    options={branches.map((branch) => ({ value: branch.id, label: branch.name }))}
+                    placeholder={t('select_branch')}
+                    emptyOptionLabel={t('select_branch')}
+                    className="w-full sm:w-44"
+                    allowClear
+                />
 
                 {/* Worker Select */}
-                <select
-                    value={data.worker_id || ''}
-                    onChange={handleWorkerChange}
-                    className="h-9 w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                    <option value="">{t('select_worker')}</option>
-                    {workers.map((worker) => (
-                        <option key={worker.id} value={worker.id}>
-                            {worker.name}
-                        </option>
-                    ))}
-                </select>
+                <SearchableSelect
+                    value={data.worker_id}
+                    onChange={(val) => {
+                        setData('worker_id', val ? Number(val) : undefined);
+                        shouldAutoSubmitRef.current = true;
+                    }}
+                    options={workers.map((worker) => ({ value: worker.id, label: worker.name, sublabel: worker.phone || undefined }))}
+                    placeholder={t('select_worker')}
+                    emptyOptionLabel={t('select_worker')}
+                    className="w-full sm:w-48"
+                    allowClear
+                />
 
                 {/* Submit button */}
                 <Button

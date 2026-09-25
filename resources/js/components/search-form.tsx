@@ -6,6 +6,7 @@ import DatePicker from 'react-datepicker';
 import { MaskedDateInput } from '@/components/ui/masked-date-input';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import SearchableSelect from '@/components/ui/searchable-select';
 
 interface SearchFormProps {
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -173,36 +174,45 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, cla
                     {firms && (
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t('firm')}</label>
-                            <select
-                                value={data.firm_id || ''}
-                                onChange={handleFirmChange}
-                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                            >
-                                <option value="0">{t('firm')}</option>
-                                {firms.map((firm) => (
-                                    <option key={firm.id} value={firm.id}>
-                                        {firm.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <SearchableSelect
+                                value={data.firm_id}
+                                onChange={(val) => {
+                                    const firm_id = Number(val) || 0;
+                                    setData('firm_id', firm_id);
+                                    if (firm_id) {
+                                        setBranches(branches?.filter((branch) => branch.firm_id === firm_id));
+                                    } else {
+                                        setBranches(branches);
+                                    }
+                                    if (data.branch_id) {
+                                        setData('branch_id', 0);
+                                    }
+                                    shouldAutoSubmitRef.current = true;
+                                }}
+                                options={firms.map((f) => ({ value: f.id, label: f.name }))}
+                                placeholder={t('firm')}
+                                emptyOptionLabel={t('firm')}
+                                triggerClassName="h-10 rounded-xl"
+                                allowClear
+                            />
                         </div>
                     )}
 
                     {filteredBranches && (
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t('branch')}</label>
-                            <select
-                                value={data.branch_id || ''}
-                                onChange={handleBranchChange}
-                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                            >
-                                <option value="0">{t('branch')}</option>
-                                {filteredBranches.map((branch) => (
-                                    <option key={branch.id} value={branch.id}>
-                                        {branch.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <SearchableSelect
+                                value={data.branch_id}
+                                onChange={(val) => {
+                                    setData('branch_id', Number(val) || 0);
+                                    shouldAutoSubmitRef.current = true;
+                                }}
+                                options={filteredBranches.map((b) => ({ value: b.id, label: b.name }))}
+                                placeholder={t('branch')}
+                                emptyOptionLabel={t('branch')}
+                                triggerClassName="h-10 rounded-xl"
+                                allowClear
+                            />
                         </div>
                     )}
                 </div>
@@ -211,18 +221,18 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, cla
                 {workers && (
                     <div className="space-y-1">
                         <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t('worker')}</label>
-                        <select
-                            value={data.worker_id || 0}
-                            onChange={handleWorkerChange}
-                            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                        >
-                            <option value="0">{t('worker')}</option>
-                            {workers.map((worker) => (
-                                <option key={worker.id} value={worker.id}>
-                                    {worker.name}
-                                </option>
-                            ))}
-                        </select>
+                        <SearchableSelect
+                            value={data.worker_id}
+                            onChange={(val) => {
+                                setData('worker_id', Number(val) || 0);
+                                shouldAutoSubmitRef.current = true;
+                            }}
+                            options={workers.map((w) => ({ value: w.id, label: w.name, sublabel: w.phone || undefined }))}
+                            placeholder={t('worker')}
+                            emptyOptionLabel={t('worker')}
+                            triggerClassName="h-10 rounded-xl"
+                            allowClear
+                        />
                     </div>
                 )}
 
@@ -230,16 +240,20 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, cla
                 {typeof data.total === 'number' && (
                     <div className="space-y-1">
                         <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t('pagination_optionAll') || 'Qatorlar soni'}</label>
-                        <select
+                        <SearchableSelect
                             value={data.per_page}
-                            onChange={handlePerPageChange}
-                            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                        >
-                            <option value={15}>15</option>
-                            <option value={30}>30</option>
-                            <option value={50}>50</option>
-                            <option value={data.total}>{t('pagination_optionAll')}</option>
-                        </select>
+                            onChange={(val) => {
+                                setData('per_page', Number(val));
+                                shouldAutoSubmitRef.current = true;
+                            }}
+                            options={[
+                                { value: 15, label: '15' },
+                                { value: 30, label: '30' },
+                                { value: 50, label: '50' },
+                                { value: data.total, label: t('pagination_optionAll') || 'Barchasi' },
+                            ]}
+                            triggerClassName="h-10 rounded-xl"
+                        />
                     </div>
                 )}
 
@@ -268,16 +282,20 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, cla
                 />
 
                 {typeof data.total === 'number' && (
-                    <select
+                    <SearchableSelect
                         value={data.per_page}
-                        onChange={handlePerPageChange}
-                        className="h-9 w-auto rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                        <option value={15}>15</option>
-                        <option value={30}>30</option>
-                        <option value={50}>50</option>
-                        <option value={data.total}>{t('pagination_optionAll')}</option>
-                    </select>
+                        onChange={(val) => {
+                            setData('per_page', Number(val));
+                            shouldAutoSubmitRef.current = true;
+                        }}
+                        options={[
+                            { value: 15, label: '15' },
+                            { value: 30, label: '30' },
+                            { value: 50, label: '50' },
+                            { value: data.total, label: t('pagination_optionAll') || 'Barchasi' },
+                        ]}
+                        className="w-20"
+                    />
                 )}
 
                 {(typeof data.from === 'string' || typeof data.to === 'string') && (
@@ -333,48 +351,57 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, cla
                 )}
 
                 {firms && (
-                    <select
-                        value={data.firm_id || ''}
-                        onChange={handleFirmChange}
-                        className="h-9 w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                        <option value="0">{t('firm')}</option>
-                        {firms.map((firm) => (
-                            <option key={firm.id} value={firm.id}>
-                                {firm.name}
-                            </option>
-                        ))}
-                    </select>
+                    <SearchableSelect
+                        value={data.firm_id}
+                        onChange={(val) => {
+                            const firm_id = Number(val) || 0;
+                            setData('firm_id', firm_id);
+                            if (firm_id) {
+                                setBranches(branches?.filter((b) => b.firm_id === firm_id));
+                            } else {
+                                setBranches(branches);
+                            }
+                            if (data.branch_id) {
+                                setData('branch_id', 0);
+                            }
+                            shouldAutoSubmitRef.current = true;
+                        }}
+                        options={firms.map((f) => ({ value: f.id, label: f.name }))}
+                        placeholder={t('firm')}
+                        emptyOptionLabel={t('firm')}
+                        className="w-36 sm:w-44"
+                        allowClear
+                    />
                 )}
 
                 {filteredBranches && (
-                    <select
-                        value={data.branch_id || ''}
-                        onChange={handleBranchChange}
-                        className="h-9 w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                        <option value="0">{t('branch')}</option>
-                        {filteredBranches.map((branch) => (
-                            <option key={branch.id} value={branch.id}>
-                                {branch.name}
-                            </option>
-                        ))}
-                    </select>
+                    <SearchableSelect
+                        value={data.branch_id}
+                        onChange={(val) => {
+                            setData('branch_id', Number(val) || 0);
+                            shouldAutoSubmitRef.current = true;
+                        }}
+                        options={filteredBranches.map((b) => ({ value: b.id, label: b.name }))}
+                        placeholder={t('branch')}
+                        emptyOptionLabel={t('branch')}
+                        className="w-36 sm:w-44"
+                        allowClear
+                    />
                 )}
 
                 {workers && (
-                    <select
-                        value={data.worker_id || 0}
-                        onChange={handleWorkerChange}
-                        className="h-9 w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                        <option value="0">{t('worker')}</option>
-                        {workers.map((worker) => (
-                            <option key={worker.id} value={worker.id}>
-                                {worker.name}
-                            </option>
-                        ))}
-                    </select>
+                    <SearchableSelect
+                        value={data.worker_id}
+                        onChange={(val) => {
+                            setData('worker_id', Number(val) || 0);
+                            shouldAutoSubmitRef.current = true;
+                        }}
+                        options={workers.map((w) => ({ value: w.id, label: w.name, sublabel: w.phone || undefined }))}
+                        placeholder={t('worker')}
+                        emptyOptionLabel={t('worker')}
+                        className="w-40 sm:w-48"
+                        allowClear
+                    />
                 )}
 
                 <Button

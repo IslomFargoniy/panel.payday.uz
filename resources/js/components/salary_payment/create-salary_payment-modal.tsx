@@ -5,13 +5,7 @@ import { useTranslation } from 'react-i18next';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectTrigger,
-    SelectValue,
-    SelectContent,
-    SelectItem
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
@@ -43,6 +37,12 @@ export default function CreateSalaryPaymentModal({ workers }: PageProps) {
         amount: 0,
         comment: ''
     });
+
+    const workerOptions = workers.map((worker) => ({
+        value: worker.id,
+        label: worker.name,
+        sublabel: worker?.balance !== undefined ? `${worker.balance.toLocaleString('ru-RU')} so‘m` : undefined,
+    }));
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -94,28 +94,14 @@ export default function CreateSalaryPaymentModal({ workers }: PageProps) {
                             {t('worker', 'Xodim')} <span className="text-rose-500">*</span>
                         </Label>
 
-                        <Select
-                            value={data.worker_id ? data.worker_id.toString() : 'placeholder'}
-                            onValueChange={(val) => {
-                                if (val === 'placeholder') return;
-                                setData('worker_id', parseInt(val));
-                            }}
-                        >
-                            <SelectTrigger className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800">
-                                <SelectValue placeholder={t('select', 'Xodimni tanlang')} />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800">
-                                {workers.map((worker) => (
-                                    <SelectItem
-                                        key={worker.id}
-                                        value={worker.id.toString()}
-                                        className="text-xs sm:text-sm"
-                                    >
-                                        {worker.name} ({worker?.balance?.toLocaleString('ru-RU')} so‘m)
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <SearchableSelect
+                            value={data.worker_id || ''}
+                            onChange={(val) => setData('worker_id', typeof val === 'number' ? val : parseInt(String(val)) || 0)}
+                            options={workerOptions}
+                            placeholder={t('select', 'Xodimni tanlang')}
+                            searchPlaceholder={t('search_worker', 'Xodimni qidirish...')}
+                            triggerClassName="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
+                        />
 
                         <InputError message={errors.worker_id} />
                     </div>
