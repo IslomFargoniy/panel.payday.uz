@@ -1,6 +1,9 @@
 package uz.payday.app.presentation.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.ui.res.painterResource
+import uz.payday.app.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,24 +67,13 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Logo Container
-                Box(
+                Image(
+                    painter = painterResource(id = R.drawable.ic_payday_logo),
+                    contentDescription = "PayDay Logo",
                     modifier = Modifier
                         .size(80.dp)
                         .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(Indigo600, Indigo700)
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AccountBalanceWallet,
-                        contentDescription = "PayDay Logo",
-                        tint = Color.White,
-                        modifier = Modifier.size(44.dp)
-                    )
-                }
+                )
 
                 Spacer(modifier = Modifier.height(20.dp))
 

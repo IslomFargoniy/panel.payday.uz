@@ -4,24 +4,23 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <group
-        android:scaleX="1.2"
-        android:scaleY="1.2"
-        android:translateX="-10.8"
-        android:translateY="-10.8">
-        <!-- Card / Wallet Outer Shape -->
+        android:pivotX="33.15"
+        android:pivotY="31.75"
+        android:scaleX="1.5"
+        android:scaleY="1.5"
+        android:translateX="20.85"
+        android:translateY="22.25">
+        <!-- White 'P' -->
         <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M34,36h40c2.2,0 4,1.8 4,4v28c0,2.2 -1.8,4 -4,4H34c-2.2,0 -4,-1.8 -4,-4V40C30,37.8 31.8,36 34,36z" />
-        <!-- Accent Stripe -->
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M20,17H34.5C39.7467,17 44,21.2533 44,26.5C44,31.7467 39.7467,36 34.5,36H28V46.5H20V17Z" />
+        <!-- Cyan loop -->
         <path
-            android:fillColor="#10B981"
-            android:pathData="M30,44h48v6H30z" />
-        <!-- Badge Lock / Check -->
+            android:fillColor="#FF54A9F7"
+            android:pathData="M28,23H33.5C35.433,23 37,24.567 37,26.5C37,28.433 35.433,30 33.5,30H28V23Z" />
+        <!-- Green dot -->
         <path
-            android:fillColor="#4F46E5"
-            android:pathData="M60,56m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M59,54h2v4h-2z" />
+            android:fillColor="#FF34D399"
+            android:pathData="M41.5,41m-4.8,0a4.8,4.8 0,1 1,9.6 0a4.8,4.8 0,1 1,-9.6 0" />
     </group>
 </vector>
