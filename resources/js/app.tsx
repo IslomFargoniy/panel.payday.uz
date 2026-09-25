@@ -32,7 +32,7 @@ createInertiaApp({
 // This will set light / dark mode on load...
 initializeTheme();
 
-// Initialize locale cookie for Laravel backend
+// Initialize locale cookie for backend
 const initialLang = localStorage.getItem('lang') || localStorage.getItem('i18nextLng') || 'uz';
 const normLang = initialLang.startsWith('ru') ? 'ru' : initialLang.startsWith('en') ? 'en' : 'uz';
 document.cookie = `locale=${normLang};path=/;max-age=31536000;SameSite=Lax`;

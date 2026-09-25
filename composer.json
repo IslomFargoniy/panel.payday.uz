@@ -1,11 +1,11 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/react-starter-kit",
+    "name": "payday/panel",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "PayDay Management Panel",
     "keywords": [
-        "laravel",
-        "framework"
+        "payday",
+        "panel"
     ],
     "license": "MIT",
     "require": {

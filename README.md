@@ -1,13 +1,11 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel 12">
+<img src="public/images/icons/payday-icon.png" width="120" alt="PayDay">
 
 # 🚀 PayDay Panel – Premium Boshqaruv Tizimi
 
-**Zamonaviy, Tezkor va Keng Qamrovli Laravel + React (Inertia.js) ilovasi**
+**Zamonaviy, Tezkor va Keng Qamrovli Xodimlar Davomati va Maosh Boshqaruv Paneli**
 
-[![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net/)
-[![Laravel Version](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com/)
 [![React Version](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
