@@ -34,6 +34,11 @@
 
         <title inertia>{{ config('app.name', 'PayDay') }}</title>
 
+        <link rel="icon" type="image/x-icon" href="/favicon.ico">
+        <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/icon-72x72.png">
+        <link rel="icon" type="image/png" sizes="192x192" href="/images/icons/icon-192x192.png">
+        <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png">
+
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
