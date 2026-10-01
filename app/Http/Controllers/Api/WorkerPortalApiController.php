@@ -331,15 +331,8 @@ class WorkerPortalApiController extends Controller
             'comment' => 'required|string|max:500',
         ]);
 
-        // If day_off, optionally record in WorkerHoliday
-        if ($validated['type'] === 'day_off' && !empty($validated['date'])) {
-            WorkerHoliday::create([
-                'worker_id' => $worker->id,
-                'from' => $validated['date'],
-                'to' => $validated['date'],
-                'comment' => 'Xodim arizasi: ' . $validated['comment'],
-            ]);
-        }
+        // NOTE (A3): Xodim dam olish kuni (day_off) arizasi berganida avtomatik WorkerHoliday yaratilmaydi.
+        // Rahbariyat tasdiqlaganidan keyin WorkerHoliday yaratilishi kerak.
 
         return response()->json([
             'success' => true,

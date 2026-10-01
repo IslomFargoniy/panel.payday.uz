@@ -106,12 +106,12 @@ class SalaryController extends Controller
                 DB::raw($salary->id . ' as salary_id')
             )
                 ->where('firm_id', $firm_id)
+                ->whereBetween('date', [$salary->from, $salary->to])
                 ->get();
 
-// Convert to array and insert all at once
-            SalaryFirmHoliday::insert($firm_holidays->toArray());
-
-            //////
+            if ($firm_holidays->isNotEmpty()) {
+                SalaryFirmHoliday::insert($firm_holidays->toArray());
+            }
 
             $branch_id = $salary->worker->branch_id;
 
@@ -122,14 +122,12 @@ class SalaryController extends Controller
                 DB::raw($salary->id . ' as salary_id')
             )
                 ->where('branch_id', $branch_id)
+                ->whereBetween('date', [$salary->from, $salary->to])
                 ->get();
 
-// Convert to array and insert all at once
-            SalaryBranchHoliday::insert($branch_holidays->toArray());
-
-            //////
-
-            $branch_id = $salary->worker->branch_id;
+            if ($branch_holidays->isNotEmpty()) {
+                SalaryBranchHoliday::insert($branch_holidays->toArray());
+            }
 
             $branch_days = BranchDay::select(
                 'day_id',
@@ -138,10 +136,39 @@ class SalaryController extends Controller
                 ->where('branch_id', $branch_id)
                 ->get();
 
-// Convert to array and insert all at once
-            SalaryBranchDay::insert($branch_days->toArray());
+            if ($branch_days->isNotEmpty()) {
+                SalaryBranchDay::insert($branch_days->toArray());
+            }
 
-            //////
+            // Snapshot worker days
+            $worker_days = \App\Models\Worker\WorkerDay::select(
+                'day_id',
+                DB::raw($salary->id . ' as salary_id')
+            )
+                ->where('worker_id', $salary->worker_id)
+                ->get();
+
+            if ($worker_days->isNotEmpty()) {
+                \App\Models\Salary\SalaryWorkerDay::insert($worker_days->toArray());
+            }
+
+            // Snapshot worker holidays within salary period
+            $worker_holidays = \App\Models\Worker\WorkerHoliday::select(
+                'from',
+                'to',
+                'comment',
+                DB::raw($salary->id . ' as salary_id')
+            )
+                ->where('worker_id', $salary->worker_id)
+                ->where(function ($q) use ($salary) {
+                    $q->where('from', '<=', $salary->to)
+                      ->where('to', '>=', $salary->from);
+                })
+                ->get();
+
+            if ($worker_holidays->isNotEmpty()) {
+                \App\Models\Salary\SalaryWorkerHoliday::insert($worker_holidays->toArray());
+            }
 
             DB::commit();
 

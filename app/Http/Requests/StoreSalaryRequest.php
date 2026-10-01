@@ -40,4 +40,60 @@ class StoreSalaryRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $workerId = $this->worker_id;
+            $from = $this->from;
+            $to = $this->to;
+
+            if ($workerId && $from && $to) {
+                // 1. Prevent overlapping salary periods for the same worker
+                $overlapExists = \App\Models\Salary\Salary::where('worker_id', $workerId)
+                    ->where(function ($q) use ($from, $to) {
+                        $q->where('from', '<=', $to)
+                          ->where('to', '>=', $from);
+                    })
+                    ->exists();
+
+                if ($overlapExists) {
+                    $validator->errors()->add('from', 'Ushbu xodim uchun tanlangan davr bilan kesishuvchi maosh allaqachon mavjud.');
+                }
+
+                // 2. Server-side recalculation of worked_minute and fine deduction
+                $worker = \App\Models\Worker\Worker::find($workerId);
+                if ($worker) {
+                    $pairingService = app(\App\Services\Attendance\AttendancePairingService::class);
+                    $subReq = new \Illuminate\Http\Request([
+                        'worker_id' => $workerId,
+                        'from' => $from,
+                        'to' => $to,
+                    ]);
+                    $pairedEvents = $pairingService->buildPairedEventsQuery($subReq, $from, $to)->get();
+                    $serverWorkedMinutes = (int) $pairedEvents->sum('worked_minutes');
+                    $serverLateMinutes = (int) $pairedEvents->sum('late_minutes');
+
+                    $hourPrice = (float) ($this->hour_price ?: $worker->hour_price);
+                    $finePrice = (float) ($worker->fine_price ?? 0);
+
+                    $earned = ($serverWorkedMinutes * $hourPrice) / 60;
+                    $penalty = ($serverLateMinutes / 60) * $finePrice;
+                    $expectedAmount = (int) max(0, round($earned - $penalty));
+
+                    // Fallback to client worked_minute if no events in system (e.g. manual entry)
+                    if ($expectedAmount === 0 && (int)$this->worked_minute > 0) {
+                        $expectedAmount = (int) max(0, round(((int)$this->worked_minute * $hourPrice) / 60));
+                    }
+
+                    if ($expectedAmount > 0 && abs((int)$this->amount - $expectedAmount) > 100 && empty($this->comment)) {
+                        $validator->errors()->add(
+                            'comment',
+                            'Maosh summasi hisoblangan miqdordan farq qiladi (' . number_format($expectedAmount, 0, '', ' ') . ' so\'m). Iltimos, izoh (comment) qoldiring.'
+                        );
+                    }
+                }
+            }
+        });
+    }
+
 }

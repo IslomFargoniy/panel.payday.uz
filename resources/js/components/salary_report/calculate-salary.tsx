@@ -18,8 +18,10 @@ const CalculateSalary = ({ report, search_data }: CalculateSalaryProps) => {
     const { t } = useTranslation();
     const nameInput = useRef<HTMLInputElement>(null);
 
-    // Summani hisoblash va yaxlitlash (round)
-    const initialAmount = Math.round((report.worked_minutes * (report?.hour_price ?? 0)) / 60);
+    // Summani hisoblash va yaxlitlash (round) - jarimani avtomatik ayirish
+    const totalEarned = (report.worked_minutes * (report?.hour_price ?? 0)) / 60;
+    const totalFine = ((report.late_minutes ?? 0) / 60) * (report?.fine_price ?? 0);
+    const initialAmount = Math.max(0, Math.round(totalEarned - totalFine));
 
     const { data, setData, post, processing, reset, errors, clearErrors } = useForm({
         worker_id: search_data.worker_id,

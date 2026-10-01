@@ -52,4 +52,14 @@ class Salary extends Model
     {
         return $this->hasMany(SalaryBranchDay::class , 'salary_id');
     }
+
+    public function salary_worker_days()
+    {
+        return $this->hasMany(SalaryWorkerDay::class, 'salary_id');
+    }
+
+    public function salary_worker_holidays()
+    {
+        return $this->hasMany(SalaryWorkerHoliday::class, 'salary_id');
+    }
 }
