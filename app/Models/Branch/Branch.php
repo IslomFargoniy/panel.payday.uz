@@ -42,14 +42,29 @@ class Branch extends Model
         return $this->hasMany(BranchDay::class , 'branch_id');
     }
 
+    public function days()
+    {
+        return $this->branch_days();
+    }
+
     public function branch_holidays()
     {
         return $this->hasMany(BranchHoliday::class , 'branch_id');
     }
 
+    public function holidays()
+    {
+        return $this->branch_holidays();
+    }
+
     public function branch_devices()
     {
         return $this->hasMany(BranchDevice::class , 'branch_id');
+    }
+
+    public function devices()
+    {
+        return $this->branch_devices();
     }
 
     public function workers()

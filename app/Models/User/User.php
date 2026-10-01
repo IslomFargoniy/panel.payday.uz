@@ -32,6 +32,7 @@ class User extends Authenticatable
         'password',
         'google_id',
         'telegram_id',
+        'avatar',
     ];
 
     protected $with = [
@@ -79,6 +80,11 @@ class User extends Authenticatable
     public function user_top_up_client()
     {
         return $this->hasMany(UserTopUp::class, 'client_id');
+    }
+
+    public function user_top_up_cleint()
+    {
+        return $this->user_top_up_client();
     }
 
     public function salary_payment()

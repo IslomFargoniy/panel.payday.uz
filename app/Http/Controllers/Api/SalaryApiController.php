@@ -3,31 +3,32 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\ReportController;
+use App\Http\Requests\StoreSalaryPaymentRequest;
+use App\Http\Requests\StoreSalaryRequest;
 use App\Models\Salary\Salary;
 use App\Models\Salary\SalaryPayment;
+use App\Services\Attendance\AttendanceReportService;
+use App\Services\Salary\SalaryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class SalaryApiController extends Controller
 {
-    private function extractInertiaProps($response, Request $request): array
-    {
-        if ($response instanceof \Inertia\Response) {
-            $req = clone $request;
-            $req->headers->set('X-Inertia', 'true');
-            $json = json_decode($response->toResponse($req)->getContent(), true);
-            return $json['props'] ?? [];
-        }
-        return is_array($response) ? $response : [];
+    protected AttendanceReportService $reportService;
+    protected SalaryService $salaryService;
+
+    public function __construct(
+        AttendanceReportService $reportService,
+        SalaryService $salaryService
+    ) {
+        $this->reportService = $reportService;
+        $this->salaryService = $salaryService;
     }
 
     public function salaryReport(Request $request): JsonResponse
     {
-        $reportController = new ReportController();
-        $response = $reportController->salary_report($request);
-        $data = $this->extractInertiaProps($response, $request);
+        $data = $this->reportService->getSalaryReportData($request);
 
         return response()->json([
             'success' => true,
@@ -37,6 +38,7 @@ class SalaryApiController extends Controller
 
     public function salaryList(Request $request): JsonResponse
     {
+        /** @var \App\Models\User\User $user */
         $user = Auth::user();
         $query = Salary::with(['worker', 'user', 'worker.branch.firm']);
 
@@ -50,7 +52,7 @@ class SalaryApiController extends Controller
             $query->where('worker_id', $request->worker_id);
         }
 
-        $perPage = $request->input('per_page', 15);
+        $perPage = (int) $request->input('per_page', 15);
         $salaries = $query->latest('id')->paginate($perPage);
 
         return response()->json([
@@ -59,30 +61,17 @@ class SalaryApiController extends Controller
         ]);
     }
 
-    public function calculateSalary(Request $request): JsonResponse
+    public function calculateSalary(StoreSalaryRequest $request): JsonResponse
     {
         /** @var \App\Models\User\User $user */
         $user = Auth::user();
-
-        $validated = $request->validate([
-            'worker_id' => 'required|exists:workers,id',
-            'amount' => 'required|numeric|min:0',
-            'from' => 'required|date',
-            'to' => 'required|date',
-            'worked_minutes' => 'nullable|integer',
-            'break_minutes' => 'nullable|integer',
-            'hour_price' => 'nullable|numeric|min:0',
-            'date' => 'nullable|date',
-        ]);
+        $validated = $request->validated();
 
         if (!$user->hasRole('Admin') && !$user->hasWorkerAccess($validated['worker_id'])) {
             return response()->json(['success' => false, 'message' => 'Ruxsat berilmagan.'], 403);
         }
 
-        $validated['user_id'] = $user->id;
-        $validated['date'] = $validated['date'] ?? date('Y-m-d');
-
-        $salary = Salary::create($validated);
+        $salary = $this->salaryService->createSalary($validated, $user->id);
 
         return response()->json([
             'success' => true,
@@ -93,6 +82,7 @@ class SalaryApiController extends Controller
 
     public function paymentList(Request $request): JsonResponse
     {
+        /** @var \App\Models\User\User $user */
         $user = Auth::user();
         $query = SalaryPayment::with(['worker', 'user', 'worker.branch.firm']);
 
@@ -106,7 +96,7 @@ class SalaryApiController extends Controller
             $query->where('worker_id', $request->worker_id);
         }
 
-        $perPage = $request->input('per_page', 15);
+        $perPage = (int) $request->input('per_page', 15);
         $payments = $query->latest('id')->paginate($perPage);
 
         return response()->json([
@@ -115,17 +105,11 @@ class SalaryApiController extends Controller
         ]);
     }
 
-    public function storePayment(Request $request): JsonResponse
+    public function storePayment(StoreSalaryPaymentRequest $request): JsonResponse
     {
         /** @var \App\Models\User\User $user */
         $user = Auth::user();
-
-        $validated = $request->validate([
-            'worker_id' => 'required|exists:workers,id',
-            'amount' => 'required|numeric|min:0',
-            'date' => 'required|date',
-            'comment' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         if (!$user->hasRole('Admin') && !$user->hasWorkerAccess($validated['worker_id'])) {
             return response()->json(['success' => false, 'message' => 'Ruxsat berilmagan.'], 403);

@@ -157,6 +157,9 @@ class ApiIdorProtectionTest extends TestCase
         $response = $this->postJson('/api/salary/calculate', [
             'worker_id' => $this->otherWorker->id,
             'amount' => 5000000,
+            'worked_minute' => 600,
+            'break_minute' => 0,
+            'hour_price' => 50000,
             'from' => '2026-09-01',
             'to' => '2026-09-30',
         ]);

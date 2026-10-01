@@ -11,6 +11,10 @@ class StoreSalaryPaymentRequest extends FormRequest
      */
     public function authorize(): bool
     {
+        $user = $this->user();
+        if ($user && $this->worker_id && !$user->hasRole('Admin')) {
+            return $user->hasWorkerAccess((int) $this->worker_id);
+        }
         return true;
     }
 

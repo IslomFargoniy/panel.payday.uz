@@ -23,135 +23,18 @@ class HikvisionController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function attendance(Request $request)
+    public function attendance(Request $request, \App\Services\Attendance\AttendanceReportService $reportService)
     {
-        $per_page = $request->per_page ? (int)$request->per_page : 15;
+        $data = $reportService->getAttendanceGridData($request);
 
-        if ($request->month) {
-            $month = $request->month;
-            $monthNumber = Carbon::parse($month)->month;
-            $year = Carbon::parse($month)->year;
-        } else {
-            $month = date('Y-m'); // '2025-05'
-            $monthNumber = (int)date('m'); // '05'
-            $year = (int)date('Y'); // '2025'
-        }
-
-        $monthStart = Carbon::create($year, $monthNumber, 1)->startOfMonth()->toDateTimeString();
-        $monthEnd = Carbon::create($year, $monthNumber, 1)->endOfMonth()->toDateTimeString();
-
-        $currentMonth = Carbon::now()->format('Y-m');
-        $currentDay = Carbon::now()->day;
-
-        if ($month === $currentMonth || empty($month)) {
-            $daysInMonth = $currentDay;
-        } else {
-            $daysInMonth = Carbon::create($year, $monthNumber, 1)->daysInMonth;
-        }
-
-        $workers = Worker::with([
-            'HikvisionAccessEvents' => function ($query) use ($monthStart, $monthEnd) {
-                $query->whereBetween('created_at', [$monthStart, $monthEnd])
-                    ->whereIn('attendanceStatus', \App\Enums\AttendanceStatus::inValues());
-            }
-        ]);
-
-        if ($request->firm_id) {
-            $workers = $workers->whereHas('branch', function ($query) use ($request) {
-                $query->where('firm_id', $request->firm_id);
-            });
-        }
-
-        if ($request->branch_id) {
-            $workers = $workers->where('branch_id', $request->branch_id);
-        }
-
-        if (!Auth::user()->hasRole('Admin')) {
-            $userFirms = Auth::user()->user_firms()->pluck('firm_id');
-            $workers = $workers->whereHas('branch', function ($query) use ($userFirms) {
-                $query->whereIn('firm_id', $userFirms);
-            });
-        }
-
-        $workers = $workers->paginate($per_page);
-
-        // Batch calculate holidays for paginated workers
-        $holidaysMap = $this->batchGetHolidays($workers->items(), $month);
-        foreach ($workers as $worker) {
-            $worker->holidays = $holidaysMap[$worker->id] ?? [];
-        }
-
-        // Lean dropdown filters
-        $firms = Firm::query()->without(['branches'])->select('id', 'name');
-        $branches = Branch::query()->without(['firm', 'workers'])->select('id', 'firm_id', 'name');
-
-        if (!Auth::user()->hasRole('Admin')) {
-            $userFirms = Auth::user()->user_firms()->pluck('firm_id');
-            $firms->whereIn('id', $userFirms);
-            $branches->whereIn('firm_id', $userFirms);
-        }
-
-        return Inertia::render('attendance/index', [
-            'worker' => $workers,
-            'daysInMonth' => $daysInMonth,
-            'firms' => $firms->get(),
-            'branches' => $branches->get(),
-        ]);
+        return Inertia::render('attendance/index', $data);
     }
 
-    public function daily_attendance(Request $request, Branch $branch)
+    public function daily_attendance(Request $request, Branch $branch, \App\Services\Attendance\AttendanceReportService $reportService)
     {
-        /** @var \App\Models\User\User $user */
-        $user = Auth::user();
-        if ($user && !$user->hasRole('Admin') && !$user->hasBranchAccess($branch)) {
-            abort(403, 'Unauthorized access to this branch.');
-        }
+        $data = $reportService->getDailyAttendanceData($request, $branch);
 
-        $per_page = $request->per_page ? (int)$request->per_page : 15;
-        $date = $request->date ?: date('Y-m-d');
-
-        $workers = Worker::with([
-            'HikvisionAccessEvents' => function ($query) use ($date) {
-                $query->whereBetween('created_at', ["{$date} 00:00:00", "{$date} 23:59:59"])
-                    ->whereIn('attendanceStatus', \App\Enums\AttendanceStatus::allValues());
-            }
-        ])
-            ->where('branch_id', '=', $branch->id);
-
-        if (!Auth::user()->hasRole('Admin')) {
-            $userFirms = Auth::user()->user_firms()->pluck('firm_id');
-            $workers = $workers->whereHas('branch', function ($query) use ($userFirms) {
-                $query->whereIn('firm_id', $userFirms);
-            });
-        }
-
-        $workers = $workers->paginate($per_page);
-
-        // Standardize calculation with salary_report and monthly_attendance via AttendancePairingService
-        $subReq = clone $request;
-        $nextDay = Carbon::parse($date)->addDay()->format('Y-m-d');
-        $subReq->merge([
-            'branch_id' => $branch->id,
-            'from' => $date,
-            'to' => $nextDay,
-        ]);
-        $pairedEvents = app(\App\Services\Attendance\AttendancePairingService::class)
-            ->buildPairedEventsQuery($subReq, $date, $nextDay)
-            ->whereRaw("DATE(pe.from_time) = ?", [$date])
-            ->get();
-        $pairedByWorker = $pairedEvents->groupBy('worker_id');
-
-        foreach ($workers as $worker) {
-            $workerPairs = $pairedByWorker->get($worker->id, collect());
-            $worker->paired_events = $workerPairs->values()->toArray();
-            $worker->worked_minutes = (int) $workerPairs->sum('worked_minutes');
-            $worker->late_minutes = (int) ($workerPairs->max('late_minutes') ?? 0);
-        }
-
-        return Inertia::render('daily_attendance/index', [
-            'worker' => $workers,
-            'branch' => $branch,
-        ]);
+        return Inertia::render('daily_attendance/index', $data);
     }
 
     private function batchGetHolidays(array $workers, string $month): array

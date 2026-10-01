@@ -89,6 +89,32 @@ class Worker extends Model
         return $this->hasMany(HikvisionAccessEvent::class, 'employeeNoString', 'employeeNoString');
     }
 
+    public function days()
+    {
+        return $this->worker_days();
+    }
+
+    public function holidays()
+    {
+        return $this->worker_holidays();
+    }
+
+    public function hikvision_access_events()
+    {
+        return $this->HikvisionAccessEvents();
+    }
+
+    public function setAvatarAttribute($value): void
+    {
+        if ($value && is_string($value)) {
+            $value = ltrim(str_replace('/storage/', '', $value), '/');
+            if (str_starts_with($value, 'storage/')) {
+                $value = substr($value, 8);
+            }
+        }
+        $this->attributes['avatar'] = $value ?: null;
+    }
+
     public function checkIn()
     {
         return $this->hasMany(HikvisionAccessEvent::class, 'employeeNoString', 'employeeNoString')

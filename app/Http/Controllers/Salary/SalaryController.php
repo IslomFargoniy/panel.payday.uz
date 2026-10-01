@@ -88,94 +88,14 @@ class SalaryController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreSalaryRequest $request)
+    public function store(StoreSalaryRequest $request, \App\Services\Salary\SalaryService $salaryService)
     {
         try {
-
-            DB::beginTransaction();
-            $validated = $request->validated();
-            $validated['user_id'] = $request->user()->id;
-            $salary = Salary::create($validated);
-
-            $firm_id = $salary->worker->branch->firm_id;
-
-            $firm_holidays = FirmHoliday::select(
-                'name',
-                'date',
-                'comment',
-                DB::raw($salary->id . ' as salary_id')
-            )
-                ->where('firm_id', $firm_id)
-                ->whereBetween('date', [$salary->from, $salary->to])
-                ->get();
-
-            if ($firm_holidays->isNotEmpty()) {
-                SalaryFirmHoliday::insert($firm_holidays->toArray());
-            }
-
-            $branch_id = $salary->worker->branch_id;
-
-            $branch_holidays = BranchHoliday::select(
-                'name',
-                'date',
-                'comment',
-                DB::raw($salary->id . ' as salary_id')
-            )
-                ->where('branch_id', $branch_id)
-                ->whereBetween('date', [$salary->from, $salary->to])
-                ->get();
-
-            if ($branch_holidays->isNotEmpty()) {
-                SalaryBranchHoliday::insert($branch_holidays->toArray());
-            }
-
-            $branch_days = BranchDay::select(
-                'day_id',
-                DB::raw($salary->id . ' as salary_id')
-            )
-                ->where('branch_id', $branch_id)
-                ->get();
-
-            if ($branch_days->isNotEmpty()) {
-                SalaryBranchDay::insert($branch_days->toArray());
-            }
-
-            // Snapshot worker days
-            $worker_days = \App\Models\Worker\WorkerDay::select(
-                'day_id',
-                DB::raw($salary->id . ' as salary_id')
-            )
-                ->where('worker_id', $salary->worker_id)
-                ->get();
-
-            if ($worker_days->isNotEmpty()) {
-                \App\Models\Salary\SalaryWorkerDay::insert($worker_days->toArray());
-            }
-
-            // Snapshot worker holidays within salary period
-            $worker_holidays = \App\Models\Worker\WorkerHoliday::select(
-                'from',
-                'to',
-                'comment',
-                DB::raw($salary->id . ' as salary_id')
-            )
-                ->where('worker_id', $salary->worker_id)
-                ->where(function ($q) use ($salary) {
-                    $q->where('from', '<=', $salary->to)
-                      ->where('to', '>=', $salary->from);
-                })
-                ->get();
-
-            if ($worker_holidays->isNotEmpty()) {
-                \App\Models\Salary\SalaryWorkerHoliday::insert($worker_holidays->toArray());
-            }
-
-            DB::commit();
+            $salaryService->createSalary($request->validated(), $request->user()->id);
 
             // Redirect back with Inertia-compatible flash message
             return back()->with('success', 'Salary created successfully.');
         } catch (\Exception $e) {
-            DB::rollBack();
 
             // Log to Telegram or other services
             telegramlog($e->getMessage());
