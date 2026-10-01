@@ -384,10 +384,17 @@ class HikvisionSyncService
                         'work_time' => $worker->work_time,
                         'end_time' => $worker->end_time,
                     ]);
+                    $resolvedTime = app(\App\Services\Hikvision\EventTimeResolver::class)->resolve(
+                        $eventDateTime,
+                        Carbon::now('Asia/Tashkent'),
+                        $device->device_id ?: $device->mac_address,
+                        true // legacy behavior was device time
+                    );
+
                     $eventModel->hikvision_access_id = $access->id;
                     $eventModel->timestamps = false;
-                    $eventModel->created_at = $eventDateTime;
-                    $eventModel->updated_at = $eventDateTime;
+                    $eventModel->created_at = $resolvedTime;
+                    $eventModel->updated_at = $resolvedTime;
                     $eventModel->save();
 
                     if (isset($event['FaceRect']) && is_array($event['FaceRect'])) {

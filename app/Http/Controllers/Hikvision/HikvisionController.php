@@ -369,8 +369,14 @@ class HikvisionController extends Controller
                             'shortSerialNumber' => $shortSerial,
                         ]);
 
+                        $resolvedEventTime = app(\App\Services\Hikvision\EventTimeResolver::class)->resolve(
+                            $dateTimeStr,
+                            Carbon::now('Asia/Tashkent'),
+                            $shortSerial ?: ($macAddress ?: $deviceId)
+                        );
+
                         // 2. Save HikvisionAccessEvent
-                        $hikvisionAccessEvent = $hikvisionAccess->hikvisionAccessEvent()->create([
+                        $hikvisionAccessEvent = new HikvisionAccessEvent([
                             'deviceName' => $accessEventData->deviceName ?? null,
                             'majorEventType' => $accessEventData->majorEventType ?? null,
                             'subEventType' => $accessEventData->subEventType ?? null,
@@ -390,6 +396,10 @@ class HikvisionController extends Controller
                             'work_time' => $checkWorker->work_time,
                             'end_time' => $checkWorker->end_time,
                         ]);
+                        $hikvisionAccessEvent->hikvision_access_id = $hikvisionAccess->id;
+                        $hikvisionAccessEvent->created_at = $resolvedEventTime;
+                        $hikvisionAccessEvent->updated_at = $resolvedEventTime;
+                        $hikvisionAccessEvent->save();
 
                         // 3. Save FaceRect
                         if (isset($accessEventData->FaceRect)) {

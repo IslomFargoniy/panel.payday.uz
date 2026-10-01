@@ -257,8 +257,14 @@ class TelegramBotController extends Controller
                 'shortSerialNumber' => 'TELEGRAM',
             ]);
 
+            $resolvedEventTime = app(\App\Services\Hikvision\EventTimeResolver::class)->resolve(
+                now('Asia/Tashkent'),
+                now('Asia/Tashkent'),
+                'TELEGRAM'
+            );
+
             // 6. Save HikvisionAccessEvent (Aligning with Controller)
-            $event = $hikvisionAccess->hikvisionAccessEvent()->create([
+            $event = new HikvisionAccessEvent([
                 'deviceName' => 'Telegram_Mini_App',
                 'majorEventType' => 5,
                 'subEventType' => 75,
@@ -277,6 +283,10 @@ class TelegramBotController extends Controller
                 'work_time' => $worker->work_time,
                 'end_time' => $worker->end_time,
             ]);
+            $event->hikvision_access_id = $hikvisionAccess->id;
+            $event->created_at = $resolvedEventTime;
+            $event->updated_at = $resolvedEventTime;
+            $event->save();
 
             // 7. Webhook Trigger (mirroring HikvisionController)
             $webhookUrl = optional($worker->branch->firm->firm_setting)->webhook_url;
