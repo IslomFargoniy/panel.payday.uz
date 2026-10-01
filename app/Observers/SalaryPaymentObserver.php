@@ -13,14 +13,16 @@ class SalaryPaymentObserver
      */
     public function creating(SalaryPayment $salaryPayment): void
     {
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $allowed = $user->user_firms()
+                    ->where('firm_id', $salaryPayment->worker->branch->firm_id)
+                    ->exists();
 
-        if (!Auth::user()->hasRole('Admin')) {
-            $allowed = Auth::user()->user_firms()
-                ->where('firm_id', $salaryPayment->worker->branch->firm_id)
-                ->exists();
-
-            if (!$allowed) {
-                throw new \Exception('You do not belong to this firm.');
+                if (!$allowed) {
+                    throw new \Exception('You do not belong to this firm.');
+                }
             }
         }
 
@@ -41,13 +43,16 @@ class SalaryPaymentObserver
      */
     public function updating(SalaryPayment $salaryPayment): void
     {
-        if (!Auth::user()->hasRole('Admin')) {
-            $allowed = Auth::user()->user_firms()
-                ->where('firm_id', $salaryPayment->worker->branch->firm_id)
-                ->exists();
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $allowed = $user->user_firms()
+                    ->where('firm_id', $salaryPayment->worker->branch->firm_id)
+                    ->exists();
 
-            if (!$allowed) {
-                throw new \Exception('You do not belong to this firm.');
+                if (!$allowed) {
+                    throw new \Exception('You do not belong to this firm.');
+                }
             }
         }
 
@@ -66,14 +71,16 @@ class SalaryPaymentObserver
      */
     public function deleting(SalaryPayment $salaryPayment): void
     {
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $allowed = $user->user_firms()
+                    ->where('firm_id', $salaryPayment->worker->branch->firm_id)
+                    ->exists();
 
-        if (!Auth::user()->hasRole('Admin')) {
-            $allowed = Auth::user()->user_firms()
-                ->where('firm_id', $salaryPayment->worker->branch->firm_id)
-                ->exists();
-
-            if (!$allowed) {
-                throw new \Exception('You do not belong to this firm.');
+                if (!$allowed) {
+                    throw new \Exception('You do not belong to this firm.');
+                }
             }
         }
 

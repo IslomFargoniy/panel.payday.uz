@@ -13,10 +13,13 @@ class FirmSettingObserver
     public function creating(FirmSetting $firmSetting): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $firmSetting->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $firmSetting->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
     }
 
@@ -26,10 +29,13 @@ class FirmSettingObserver
     public function updating(FirmSetting $firmSetting): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $firmSetting->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $firmSetting->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
     }
 

@@ -36,6 +36,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'verify.gateway.token' => \App\Http\Middleware\VerifyGatewayToken::class,
+            'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+            'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
+            'ensure.panel.user' => \App\Http\Middleware\EnsurePanelUser::class,
+            'ensure.worker.user' => \App\Http\Middleware\EnsureWorkerUser::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

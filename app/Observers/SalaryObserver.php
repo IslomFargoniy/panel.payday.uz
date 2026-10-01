@@ -9,15 +9,18 @@ use Illuminate\Support\Facades\Auth;
 class SalaryObserver
 {
     /**
-     * Handle the Salary "created" event.
+     * Handle the Salary "creating" event.
      */
-    public function created(Salary $salary): void
+    public function creating(Salary $salary): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $salary->worker->branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $salary->worker->branch->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
 
     }
@@ -36,10 +39,13 @@ class SalaryObserver
     public function deleting(Salary $salary): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms
-                ->where('firm_id', $salary->worker->branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms
+                    ->where('firm_id', $salary->worker->branch->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
 
         $worker = Worker::selectRaw('getBalance(id) as balance')

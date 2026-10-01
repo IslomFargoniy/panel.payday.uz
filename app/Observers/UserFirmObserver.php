@@ -8,12 +8,15 @@ use Illuminate\Support\Facades\Auth;
 class UserFirmObserver
 {
     /**
-     * Handle the UserFirm "created" event.
+     * Handle the UserFirm "creating" event.
      */
-    public function created(UserFirm $userFirm): void
+    public function creating(UserFirm $userFirm): void
     {
-        if (!Auth::user()->hasRole('Admin')) {
-            throw new \Exception('You are not allowed to access this page');
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                throw new \Exception('You are not allowed to access this page');
+            }
         }
     }
 
@@ -26,12 +29,15 @@ class UserFirmObserver
     }
 
     /**
-     * Handle the UserFirm "deleted" event.
+     * Handle the UserFirm "deleting" event.
      */
-    public function deleted(UserFirm $userFirm): void
+    public function deleting(UserFirm $userFirm): void
     {
-        if (!Auth::user()->hasRole('Admin')) {
-            throw new \Exception('You are not allowed to access this page');
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                throw new \Exception('You are not allowed to access this page');
+            }
         }
     }
 

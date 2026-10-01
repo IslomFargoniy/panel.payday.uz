@@ -15,10 +15,13 @@ class WorkerObserver
     public function creating(Worker $worker): void
     {
         // Non-admin users must be part of the firm
-        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $worker->branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $worker->branch->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
     }
 
@@ -40,10 +43,15 @@ class WorkerObserver
     public function updating(Worker $worker): void
     {
         // Non-admin users must be part of the firm
-        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $worker->branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $worker->branch->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            } elseif ($user instanceof Worker && $user->id !== $worker->id) {
+                abort(403, 'Unauthorized worker update');
+            }
         }
     }
 
@@ -62,10 +70,15 @@ class WorkerObserver
     public function deleting(Worker $worker): void
     {
         // 1️⃣ Authorization FIRST
-        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $worker->branch->firm_id)
-                ->firstOrFail();
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $worker->branch->firm_id)
+                    ->firstOrFail();
+            } elseif ($user instanceof Worker) {
+                abort(403, 'Worker cannot delete worker accounts');
+            }
         }
 
         // 2️⃣ Cascade delete all related records

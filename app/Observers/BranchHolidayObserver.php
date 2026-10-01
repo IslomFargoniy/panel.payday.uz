@@ -13,10 +13,13 @@ class BranchHolidayObserver
     public function creating(BranchHoliday $branchHoliday): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $branchHoliday->branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $branchHoliday->branch->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
     }
 
@@ -34,10 +37,13 @@ class BranchHolidayObserver
     public function deleting(BranchHoliday $branchHoliday): void
     {
         // Non-admin users must be part of the firm
-        if (!Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $branchHoliday->branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $branchHoliday->branch->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
     }
 

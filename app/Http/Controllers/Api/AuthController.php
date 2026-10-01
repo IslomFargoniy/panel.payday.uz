@@ -30,7 +30,7 @@ class AuthController extends Controller
             ->first();
 
         if ($user && Hash::check($password, $user->password)) {
-            $token = $user->createToken($deviceName)->plainTextToken;
+            $token = $user->createToken($deviceName, ['panel'])->plainTextToken;
             return response()->json([
                 'success' => true,
                 'message' => 'Muvaffaqiyatli tizimga kirdingiz.',
@@ -63,50 +63,27 @@ class AuthController extends Controller
             ->orWhere('employeeNoString', $login)
             ->first();
 
-        if ($worker) {
-            $passwordMatches = false;
-
-            if (!empty($worker->password)) {
-                $passwordMatches = Hash::check($password, $worker->password);
-            } else {
-                // If worker has no password set yet, allow initial login with employeeNoString or last 4/6 digits of phone
-                $allowedInitial = array_filter([
-                    (string)$worker->employeeNoString,
-                    $worker->phone ? substr($worker->phone, -4) : null,
-                    $worker->phone ? substr($worker->phone, -6) : null,
-                    '123456',
-                ]);
-
-                if (in_array((string)$password, $allowedInitial, true)) {
-                    $passwordMatches = true;
-                    // Auto-hash their password for future security
-                    $worker->password = Hash::make($password);
-                    $worker->save();
-                }
-            }
-
-            if ($passwordMatches) {
-                $token = $worker->createToken($deviceName)->plainTextToken;
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Xush kelibsiz!',
-                    'data' => [
-                        'token' => $token,
-                        'user' => [
-                            'id' => $worker->id,
-                            'name' => $worker->name,
-                            'email' => ($worker->phone ?? $worker->id) . '@payday.uz',
-                            'phone' => $worker->phone,
-                            'roles' => ['Worker'],
-                            'role' => 'Worker',
-                            'worker_id' => $worker->id,
-                            'branch_id' => $worker->branch_id,
-                            'branch_name' => $worker->branch?->name,
-                            'avatar' => $worker->avatar,
-                        ]
+        if ($worker && !empty($worker->password) && Hash::check($password, $worker->password)) {
+            $token = $worker->createToken($deviceName, ['worker'])->plainTextToken;
+            return response()->json([
+                'success' => true,
+                'message' => 'Xush kelibsiz!',
+                'data' => [
+                    'token' => $token,
+                    'user' => [
+                        'id' => $worker->id,
+                        'name' => $worker->name,
+                        'email' => ($worker->phone ?? $worker->id) . '@payday.uz',
+                        'phone' => $worker->phone,
+                        'roles' => ['Worker'],
+                        'role' => 'Worker',
+                        'worker_id' => $worker->id,
+                        'branch_id' => $worker->branch_id,
+                        'branch_name' => $worker->branch?->name,
+                        'avatar' => $worker->avatar,
                     ]
-                ]);
-            }
+                ]
+            ]);
         }
 
         return response()->json([
@@ -164,11 +141,18 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20|unique:users,phone,' . $user->id,
-            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
-        ]);
+        if ($user instanceof Worker) {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'phone' => 'nullable|string|max:20|unique:workers,phone,' . $user->id,
+            ]);
+        } else {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'phone' => 'nullable|string|max:20|unique:users,phone,' . $user->id,
+                'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            ]);
+        }
 
         $user->update($validated);
 

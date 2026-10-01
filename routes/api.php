@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Public Auth Endpoints
-Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
 // Protected Mobile API Endpoints
 Route::middleware('auth:sanctum')->group(function () {
@@ -24,39 +24,44 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
     Route::put('/auth/change-password', [AuthController::class, 'changePassword']);
 
-    // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index']);
+    // Admin / Client Panel Endpoints
+    Route::middleware(['abilities:panel', 'ensure.panel.user'])->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index']);
 
-    // Workers
-    Route::get('/workers', [WorkerApiController::class, 'index']);
-    Route::post('/workers', [WorkerApiController::class, 'store']);
-    Route::get('/workers/{id}', [WorkerApiController::class, 'show']);
-    Route::put('/workers/{id}', [WorkerApiController::class, 'update']);
-    Route::delete('/workers/{id}', [WorkerApiController::class, 'destroy']);
-    Route::post('/workers/{id}/avatar', [WorkerApiController::class, 'uploadAvatar']);
+        // Workers
+        Route::get('/workers', [WorkerApiController::class, 'index']);
+        Route::post('/workers', [WorkerApiController::class, 'store']);
+        Route::get('/workers/{id}', [WorkerApiController::class, 'show']);
+        Route::put('/workers/{id}', [WorkerApiController::class, 'update']);
+        Route::delete('/workers/{id}', [WorkerApiController::class, 'destroy']);
+        Route::post('/workers/{id}/avatar', [WorkerApiController::class, 'uploadAvatar']);
 
-    // Attendance & Reports
-    Route::get('/attendance/daily/{branchId?}', [AttendanceApiController::class, 'dailyAttendance']);
-    Route::get('/attendance/monthly', [AttendanceApiController::class, 'monthlyAttendance']);
-    Route::get('/attendance/grid', [AttendanceApiController::class, 'attendanceGrid']);
+        // Attendance & Reports
+        Route::get('/attendance/daily/{branchId?}', [AttendanceApiController::class, 'dailyAttendance']);
+        Route::get('/attendance/monthly', [AttendanceApiController::class, 'monthlyAttendance']);
+        Route::get('/attendance/grid', [AttendanceApiController::class, 'attendanceGrid']);
 
-    // Salary & Payments
-    Route::get('/salary/report', [SalaryApiController::class, 'salaryReport']);
-    Route::get('/salary/list', [SalaryApiController::class, 'salaryList']);
-    Route::post('/salary/calculate', [SalaryApiController::class, 'calculateSalary']);
-    Route::get('/salary/payments', [SalaryApiController::class, 'paymentList']);
-    Route::post('/salary/payments', [SalaryApiController::class, 'storePayment']);
+        // Salary & Payments
+        Route::get('/salary/report', [SalaryApiController::class, 'salaryReport']);
+        Route::get('/salary/list', [SalaryApiController::class, 'salaryList']);
+        Route::post('/salary/calculate', [SalaryApiController::class, 'calculateSalary']);
+        Route::get('/salary/payments', [SalaryApiController::class, 'paymentList']);
+        Route::post('/salary/payments', [SalaryApiController::class, 'storePayment']);
 
-    // Firms, Branches & Devices
-    Route::get('/firms', [FirmApiController::class, 'firms']);
-    Route::get('/branches', [FirmApiController::class, 'branches']);
-    Route::get('/devices', [FirmApiController::class, 'devices']);
+        // Firms, Branches & Devices
+        Route::get('/firms', [FirmApiController::class, 'firms']);
+        Route::get('/branches', [FirmApiController::class, 'branches']);
+        Route::get('/devices', [FirmApiController::class, 'devices']);
+    });
 
     // Worker Personal Portal (Mobile App)
-    Route::get('/worker/portal/today', [WorkerPortalApiController::class, 'todayStatus']);
-    Route::get('/worker/portal/attendance', [WorkerPortalApiController::class, 'myAttendance']);
-    Route::get('/worker/portal/salary', [WorkerPortalApiController::class, 'mySalary']);
-    Route::post('/worker/portal/requests', [WorkerPortalApiController::class, 'submitRequest']);
+    Route::middleware(['abilities:worker', 'ensure.worker.user'])->group(function () {
+        Route::get('/worker/portal/today', [WorkerPortalApiController::class, 'todayStatus']);
+        Route::get('/worker/portal/attendance', [WorkerPortalApiController::class, 'myAttendance']);
+        Route::get('/worker/portal/salary', [WorkerPortalApiController::class, 'mySalary']);
+        Route::post('/worker/portal/requests', [WorkerPortalApiController::class, 'submitRequest']);
+    });
 });
 
 // Legacy and External Device Callbacks
@@ -64,7 +69,6 @@ Route::any('/hikvision-callback', [HikvisionController::class, 'store']);
 Route::get('/hikvision-device-key', [HikvisionController::class, 'getDeviceKey'])->middleware('verify.gateway.token');
 Route::post('/hikvision-device-status', [HikvisionController::class, 'updateDeviceStatus'])->middleware('verify.gateway.token');
 Route::post('/branch-device/{device}/sync-events', [HikvisionController::class, 'syncDeviceEvents'])->middleware('verify.gateway.token');
-Route::get('/worker/show_history/{worker}', [WorkerController::class, 'show_history']);
 Route::post('/bot/auth', [TelegramBotController::class, 'authenticate']);
 Route::post('/bot/attendance', [TelegramBotController::class, 'recordAttendance']);
 
