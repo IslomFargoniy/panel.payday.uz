@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { Search, ChevronDown, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -44,13 +43,10 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
-    const [dropdownPosition, setDropdownPosition] = useState<{
-        top: number;
-        left: number;
-        width: number;
-        placeAbove: boolean;
-    }>({ top: 0, left: 0, width: 0, placeAbove: false });
+    const [placeAbove, setPlaceAbove] = useState(false);
+    const [alignRight, setAlignRight] = useState(false);
 
+    const containerRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -77,26 +73,15 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
         });
     }, [options, searchTerm]);
 
-    // Recalculate dropdown position
+    // Recalculate dropdown direction (upwards or downwards, left or right)
     const updatePosition = () => {
         if (!triggerRef.current) return;
         const rect = triggerRef.current.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
         const estimatedHeight = 280;
-        const placeAbove = spaceBelow < estimatedHeight && rect.top > estimatedHeight;
-        const width = Math.max(rect.width, 200);
 
-        let left = rect.left;
-        if (left + width > window.innerWidth - 8) {
-            left = Math.max(8, window.innerWidth - width - 8);
-        }
-
-        setDropdownPosition({
-            top: placeAbove ? rect.top - 4 : rect.bottom + 4,
-            left,
-            width,
-            placeAbove,
-        });
+        setPlaceAbove(spaceBelow < estimatedHeight && rect.top > estimatedHeight);
+        setAlignRight(rect.left + 220 > window.innerWidth - 16);
     };
 
     // Toggle dropdown open/close
@@ -133,7 +118,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
             updatePosition();
             const timer = setTimeout(() => {
                 searchInputRef.current?.focus();
-            }, 50);
+            }, 30);
 
             const handleScrollOrResize = () => {
                 updatePosition();
@@ -150,14 +135,12 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
         }
     }, [isOpen]);
 
-    // Click outside listener
+    // Click outside listener (relative to container)
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (
-                triggerRef.current &&
-                !triggerRef.current.contains(e.target as Node) &&
-                dropdownRef.current &&
-                !dropdownRef.current.contains(e.target as Node)
+                containerRef.current &&
+                !containerRef.current.contains(e.target as Node)
             ) {
                 setIsOpen(false);
             }
@@ -218,7 +201,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     }, [highlightedIndex]);
 
     return (
-        <div className={`relative inline-block text-left ${className}`} id={id}>
+        <div ref={containerRef} className={`relative text-left ${className || 'w-full'}`} id={id}>
             {/* Trigger Button */}
             <button
                 ref={triggerRef}
@@ -253,101 +236,92 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 </div>
             </button>
 
-            {/* Portal Dropdown Popover */}
-            {isOpen &&
-                createPortal(
-                    <div
-                        ref={dropdownRef}
-                        style={{
-                            position: 'fixed',
-                            top: dropdownPosition.placeAbove ? 'auto' : `${dropdownPosition.top}px`,
-                            bottom: dropdownPosition.placeAbove ? `${window.innerHeight - dropdownPosition.top}px` : 'auto',
-                            left: `${dropdownPosition.left}px`,
-                            minWidth: `${dropdownPosition.width}px`,
-                            maxWidth: '90vw',
-                            zIndex: 99999,
-                        }}
-                        className="animate-in fade-in-0 zoom-in-95 duration-100 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-800 dark:bg-slate-900 text-xs"
-                    >
-                        {/* Search Input */}
-                        <div className="relative mb-1 px-1">
-                            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                            <input
-                                ref={searchInputRef}
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => {
-                                    setSearchTerm(e.target.value);
-                                    setHighlightedIndex(0);
-                                }}
-                                onKeyDown={handleKeyDown}
-                                placeholder={searchPlaceholder || t('search', 'Qidirish...')}
-                                className="h-8 w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-2.5 text-xs text-slate-700 outline-hidden placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:bg-slate-900"
-                            />
-                        </div>
+            {/* Dropdown Popover */}
+            {isOpen && (
+                <div
+                    ref={dropdownRef}
+                    className={`absolute z-50 ${
+                        placeAbove ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+                    } ${alignRight ? 'right-0' : 'left-0'} w-full min-w-[200px] overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-800 dark:bg-slate-900 text-xs animate-in fade-in-0 zoom-in-95 duration-100`}
+                >
+                    {/* Search Input */}
+                    <div className="relative mb-1 px-1">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                        <input
+                            ref={searchInputRef}
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setHighlightedIndex(0);
+                            }}
+                            onKeyDown={handleKeyDown}
+                            placeholder={searchPlaceholder || t('search', 'Qidirish...')}
+                            className="h-8 w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-2.5 text-xs text-slate-700 outline-hidden placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:bg-slate-900"
+                        />
+                    </div>
 
-                        {/* Options List */}
-                        <div ref={listRef} className="max-h-56 overflow-y-auto scrollbar-thin py-0.5 space-y-0.5">
-                            {/* Empty / All option if configured */}
-                            {emptyOptionLabel && !searchTerm && (
-                                <div
-                                    data-option-item
-                                    onClick={() => handleSelect(typeof options[0]?.value === 'number' ? 0 : '')}
-                                    onMouseEnter={() => setHighlightedIndex(0)}
-                                    className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 cursor-pointer transition-colors ${
-                                        !selectedOption
-                                            ? 'bg-indigo-50 font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
-                                            : highlightedIndex === 0
-                                            ? 'bg-slate-100 dark:bg-slate-800/70 text-slate-900 dark:text-slate-100'
-                                            : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/50'
-                                    }`}
-                                >
-                                    <span className="truncate">{emptyOptionLabel}</span>
-                                    {!selectedOption && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400" />}
-                                </div>
-                            )}
+                    {/* Options List */}
+                    <div ref={listRef} className="max-h-56 overflow-y-auto scrollbar-thin py-0.5 space-y-0.5">
+                        {/* Empty / All option if configured */}
+                        {emptyOptionLabel && !searchTerm && (
+                            <div
+                                data-option-item
+                                onClick={() => handleSelect(typeof options[0]?.value === 'number' ? 0 : '')}
+                                onMouseEnter={() => setHighlightedIndex(0)}
+                                className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 cursor-pointer transition-colors ${
+                                    !selectedOption
+                                        ? 'bg-indigo-50 font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
+                                        : highlightedIndex === 0
+                                        ? 'bg-slate-100 dark:bg-slate-800/70 text-slate-900 dark:text-slate-100'
+                                        : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/50'
+                                }`}
+                            >
+                                <span className="truncate">{emptyOptionLabel}</span>
+                                {!selectedOption && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400" />}
+                            </div>
+                        )}
 
-                            {filteredOptions.length === 0 ? (
-                                <div className="py-4 text-center text-[11px] text-slate-400 dark:text-slate-500">
-                                    {t('no_results', 'Natija topilmadi')}
-                                </div>
-                            ) : (
-                                filteredOptions.map((opt, index) => {
-                                    const itemIndex = emptyOptionLabel && !searchTerm ? index + 1 : index;
-                                    const isSelected = selectedOption?.value === opt.value;
-                                    const isHighlighted = highlightedIndex === itemIndex;
+                        {filteredOptions.length === 0 ? (
+                            <div className="py-4 text-center text-[11px] text-slate-400 dark:text-slate-500">
+                                {t('no_results', 'Natija topilmadi')}
+                            </div>
+                        ) : (
+                            filteredOptions.map((opt, index) => {
+                                const itemIndex = emptyOptionLabel && !searchTerm ? index + 1 : index;
+                                const isSelected = selectedOption?.value === opt.value;
+                                const isHighlighted = highlightedIndex === itemIndex;
 
-                                    return (
-                                        <div
-                                            key={opt.value}
-                                            data-option-item
-                                            onClick={() => handleSelect(opt.value)}
-                                            onMouseEnter={() => setHighlightedIndex(itemIndex)}
-                                            className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 cursor-pointer transition-colors ${
-                                                isSelected
-                                                    ? 'bg-indigo-50 font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
-                                                    : isHighlighted
-                                                    ? 'bg-slate-100 dark:bg-slate-800/70 text-slate-900 dark:text-slate-100'
-                                                    : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/50'
-                                            }`}
-                                        >
-                                            <div className="flex flex-col min-w-0">
-                                                <span className="truncate">{opt.label}</span>
-                                                {opt.sublabel && (
-                                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-                                                        {opt.sublabel}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400" />}
+                                return (
+                                    <div
+                                        key={opt.value}
+                                        data-option-item
+                                        onClick={() => handleSelect(opt.value)}
+                                        onMouseEnter={() => setHighlightedIndex(itemIndex)}
+                                        className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 cursor-pointer transition-colors ${
+                                            isSelected
+                                                ? 'bg-indigo-50 font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
+                                                : isHighlighted
+                                                ? 'bg-slate-100 dark:bg-slate-800/70 text-slate-900 dark:text-slate-100'
+                                                : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/50'
+                                        }`}
+                                    >
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="truncate">{opt.label}</span>
+                                            {opt.sublabel && (
+                                                <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                                                    {opt.sublabel}
+                                                </span>
+                                            )}
                                         </div>
-                                    );
-                                })
-                            )}
-                        </div>
-                    </div>,
-                    document.body
-                )}
+                                        {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400" />}
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
