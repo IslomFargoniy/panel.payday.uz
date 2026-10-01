@@ -119,10 +119,15 @@ class HikvisionSyncService
                 return ['success' => true, 'response' => $status];
             }
 
-            // Fallback to local network direct HTTP if on same network
-            $deviceIp = $device->ip_address ?? '192.168.1.107';
-            $username = $device->username ?? 'admin';
-            $password = $device->password ?? 'hikvision1';
+            // Fallback to local network direct HTTP if configured
+            if (empty($device->ip_address)) {
+                Log::debug("HikvisionSync: Device {$device->id} has no IP address configured, skipping HTTP sync.");
+                return ['success' => false, 'message' => 'Device IP address is not configured'];
+            }
+
+            $deviceIp = $device->ip_address;
+            $username = $device->username ?: 'admin';
+            $password = $device->password ?: '';
 
             $client = new Client([
                 'base_uri' => "http://{$deviceIp}/",
@@ -225,9 +230,15 @@ class HikvisionSyncService
                     continue;
                 }
 
-                $deviceIp = $device->ip_address ?? '192.168.1.107';
-                $username = $device->username ?? 'admin';
-                $password = $device->password ?? 'hikvision1';
+                if (empty($device->ip_address)) {
+                    Log::debug("HikvisionSync: Device {$device->id} has no IP address configured, skipping HTTP delete.");
+                    $results[$device->id] = ['success' => false, 'message' => 'Device IP address is not configured'];
+                    continue;
+                }
+
+                $deviceIp = $device->ip_address;
+                $username = $device->username ?: 'admin';
+                $password = $device->password ?: '';
 
                 $client = new Client([
                     'base_uri' => "http://{$deviceIp}/",

@@ -300,10 +300,6 @@ class WorkerController extends Controller
      */
     public function destroy(Worker $worker)
     {
-        if ($worker->avatar && is_file(public_path('storage/' . $worker->avatar))) {
-            unlink(public_path('storage/' . $worker->avatar));
-        }
-
         $worker->delete();
 
         return back()->with('success', 'Worker deleted successfully.');

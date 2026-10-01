@@ -28,6 +28,13 @@ export interface NavItem {
     isActive?: boolean;
 }
 
+export interface FlashMessages {
+    success?: string | null;
+    error?: string | null;
+    warning?: string | null;
+    info?: string | null;
+}
+
 export interface SharedData {
     name: string;
     phone: string;
@@ -35,6 +42,7 @@ export interface SharedData {
     auth: Auth;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
+    flash?: FlashMessages;
 
     [key: string]: unknown;
 }

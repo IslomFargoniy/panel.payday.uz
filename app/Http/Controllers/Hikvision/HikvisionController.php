@@ -315,7 +315,7 @@ class HikvisionController extends Controller
 
                 } else {
                     if ($request->hasFile('Picture')) {
-                        telegramlog('Worker topilmadi (EmployeeNo: ' . ($accessEventData->employeeNoString ?? 'yo\'q') . ')');
+                        \Illuminate\Support\Facades\Log::warning('Worker topilmadi (EmployeeNo: ' . ($accessEventData->employeeNoString ?? 'yo\'q') . ')');
                     }
 
                     return response()->json(['success' => false]);

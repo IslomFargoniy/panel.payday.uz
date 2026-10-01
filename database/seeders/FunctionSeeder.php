@@ -17,7 +17,8 @@ class FunctionSeeder extends Seeder
 
         // Replace 'mydb' with your actual database name
 
-        $databaseName = env('DB_DATABASE');
+        $databaseName = config('database.connections.mysql.database', env('DB_DATABASE'));
+        $dbUsername = config('database.connections.mysql.username', env('DB_USERNAME', 'root'));
 
 // Get all function names in the database
         $functions = DB::select("SELECT ROUTINE_NAME FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_TYPE = 'FUNCTION' AND ROUTINE_SCHEMA = ?", [$databaseName]);
@@ -30,7 +31,7 @@ class FunctionSeeder extends Seeder
 
         DB::select("
             create
-                definer = " . env('DB_USERNAME') . "@localhost function getBalance(worker_id_ int) returns double
+                definer = " . $dbUsername . "@localhost function getBalance(worker_id_ int) returns double
             BEGIN
 
                 declare balance double;

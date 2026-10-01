@@ -14,7 +14,7 @@ return new class extends Migration
             return;
         }
 
-        $dbUsername = env('DB_USERNAME', 'root');
+        $dbUsername = config('database.connections.mysql.username', env('DB_USERNAME', 'root'));
 
         DB::unprepared("DROP FUNCTION IF EXISTS count_working_days;");
 

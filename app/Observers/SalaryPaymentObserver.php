@@ -27,10 +27,7 @@ class SalaryPaymentObserver
         }
 
 
-        $worker = Worker::selectRaw('getBalance(id) as balance')
-            ->find($salaryPayment->worker_id);
-
-        $balance = $worker->balance;
+        $balance = Worker::getWorkerBalance($salaryPayment->worker_id, true);
 
         if ($balance - $salaryPayment->amount < 0) {
             throw new \Exception('Balans yetarli emas');
@@ -56,10 +53,7 @@ class SalaryPaymentObserver
             }
         }
 
-        $worker = Worker::selectRaw('getBalance(id) as balance')
-            ->find($salaryPayment->worker_id);
-
-        $balance = $worker->balance;
+        $balance = Worker::getWorkerBalance($salaryPayment->worker_id, true);
 
         if ($balance + $salaryPayment->getOriginal('amount') - $salaryPayment->amount < 0) {
             throw new \Exception('Balans yetarli emas');

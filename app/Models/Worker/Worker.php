@@ -13,12 +13,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 
 class Worker extends Model
 {
     /** @use HasFactory<\Database\Factories\Worker\WorkerFactory> */
-    use HasApiTokens, HasFactory;
+    use HasApiTokens, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'branch_id',
@@ -113,6 +114,34 @@ class Worker extends Model
             }
         }
         $this->attributes['avatar'] = $value ?: null;
+    }
+
+    /**
+     * Calculate current balance for a worker using Eloquent sum() with row locking.
+     */
+    public static function getWorkerBalance(int $workerId, bool $lockForUpdate = false): float
+    {
+        $workerQuery = self::withTrashed()->where('id', $workerId);
+        if ($lockForUpdate) {
+            $workerQuery->lockForUpdate();
+        }
+        $worker = $workerQuery->first();
+        if (!$worker) {
+            return 0.0;
+        }
+
+        $salaryQuery = Salary::where('worker_id', $workerId);
+        $paymentQuery = SalaryPayment::where('worker_id', $workerId);
+
+        if ($lockForUpdate) {
+            $salaryQuery->lockForUpdate();
+            $paymentQuery->lockForUpdate();
+        }
+
+        $totalSalaries = (float) $salaryQuery->sum('amount');
+        $totalPayments = (float) $paymentQuery->sum('amount');
+
+        return $totalSalaries - $totalPayments;
     }
 
     public function checkIn()

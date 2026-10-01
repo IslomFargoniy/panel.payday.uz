@@ -2,15 +2,17 @@
 
 namespace App\Observers;
 
+use App\Jobs\SyncWorkerToHikvisionJob;
 use App\Models\Hikvision\HikvisionAccessEvent;
 use App\Models\Worker\Worker;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class WorkerObserver
 {
     /**
-     * Handle the Worker "created" event.
+     * Handle the Worker "creating" event.
      */
     public function creating(Worker $worker): void
     {
@@ -30,15 +32,12 @@ class WorkerObserver
         $worker->employeeNoString = (string)$worker->id;
         $worker->saveQuietly();
 
-        try {
-            app(\App\Services\Hikvision\HikvisionSyncService::class)->syncWorker($worker);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('WorkerObserver sync failed on create: ' . $e->getMessage());
-        }
+        // Asynchronous queue dispatch to prevent blocking web requests
+        SyncWorkerToHikvisionJob::dispatch($worker->id, 'sync');
     }
 
     /**
-     * Handle the Worker "updated" event.
+     * Handle the Worker "updating" event.
      */
     public function updating(Worker $worker): void
     {
@@ -57,15 +56,14 @@ class WorkerObserver
 
     public function updated(Worker $worker): void
     {
-        try {
-            app(\App\Services\Hikvision\HikvisionSyncService::class)->syncWorker($worker);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('WorkerObserver sync failed on update: ' . $e->getMessage());
+        // Only dispatch Hikvision sync when relevant fields changed
+        if ($worker->wasChanged(['name', 'avatar', 'status', 'employeeNoString', 'branch_id'])) {
+            SyncWorkerToHikvisionJob::dispatch($worker->id, 'sync');
         }
     }
 
     /**
-     * Handle the Worker "deleted" event.
+     * Handle the Worker "deleting" event.
      */
     public function deleting(Worker $worker): void
     {
@@ -81,39 +79,38 @@ class WorkerObserver
             }
         }
 
-        // 2️⃣ Cascade delete all related records
-        $employeeNo = (string)($worker->employeeNoString ?: $worker->id);
+        // 2️⃣ Decision A4: Prevent deletion if worker balance != 0
+        $balance = Worker::getWorkerBalance($worker->id, true);
+        if (abs($balance) > 0.01) {
+            throw ValidationException::withMessages([
+                'error' => "Balansi 0 bo'lmagan xodimni o'chirib bo'lmaydi (Hozirgi balans: " . number_format($balance, 0, '', ' ') . " so'm).",
+            ]);
+        }
 
-        // Delete HikvisionAccessEvents and related FaceRects & HikvisionAccess
-        $events = HikvisionAccessEvent::where('employeeNoString', $employeeNo)->get();
-        foreach ($events as $event) {
-            $event->faceReact()->delete();
-            $accessId = $event->hikvision_access_id;
-            $event->delete();
-            if ($accessId && !HikvisionAccessEvent::where('hikvision_access_id', $accessId)->exists()) {
-                \App\Models\Hikvision\HikvisionAccess::where('id', $accessId)->delete();
+        // 3️⃣ If permanent deletion (forceDeleting): prevent if payment/salary history exists
+        if ($worker->isForceDeleting()) {
+            if ($worker->salaries()->exists() || $worker->salary_payments()->exists()) {
+                throw ValidationException::withMessages([
+                    'error' => "Maosh yoki to'lov tarixi mavjud bo'lgan xodimni butunlay o'chirib bo'lmaydi.",
+                ]);
+            }
+
+            // Clean up custom schedule days & holidays on permanent wipe
+            $worker->worker_holidays()->delete();
+            $worker->worker_days()->delete();
+
+            // Delete avatar file if exists
+            if ($worker->avatar && Storage::disk('public')->exists($worker->avatar)) {
+                Storage::disk('public')->delete($worker->avatar);
             }
         }
-
-        // Delete Salaries, Payments, Days, Holidays
-        $worker->salaries()->delete();
-        $worker->salary_payments()->delete();
-        $worker->worker_holidays()->delete();
-        $worker->worker_days()->delete();
-
-        // Delete avatar file if exists
-        if ($worker->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($worker->avatar)) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($worker->avatar);
-        }
+        // When soft-deleting: keep salaries, payments, events, and avatar intact!
     }
 
     public function deleted(Worker $worker): void
     {
-        try {
-            app(\App\Services\Hikvision\HikvisionSyncService::class)->deleteWorker($worker);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('WorkerObserver delete sync failed: ' . $e->getMessage());
-        }
+        // Remove worker credentials/access from terminals upon deletion
+        SyncWorkerToHikvisionJob::dispatch($worker->id, 'delete');
     }
 
     /**
@@ -121,7 +118,8 @@ class WorkerObserver
      */
     public function restored(Worker $worker): void
     {
-        //
+        // Re-sync worker to terminals upon restoration
+        SyncWorkerToHikvisionJob::dispatch($worker->id, 'sync');
     }
 
     /**

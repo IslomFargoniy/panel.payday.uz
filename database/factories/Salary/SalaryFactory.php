@@ -17,7 +17,15 @@ class SalaryFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'user_id' => \App\Models\User\User::factory(),
+            'worker_id' => \App\Models\Worker\Worker::factory(),
+            'amount' => 5000000,
+            'worked_minute' => 9600,
+            'break_minute' => 0,
+            'hour_price' => 31250,
+            'from' => now()->startOfMonth()->toDateString(),
+            'to' => now()->endOfMonth()->toDateString(),
+            'comment' => 'Monthly salary',
         ];
     }
 }

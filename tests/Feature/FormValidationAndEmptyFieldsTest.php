@@ -240,6 +240,17 @@ class FormValidationAndEmptyFieldsTest extends TestCase
             'end_time' => '18:00',
         ]);
 
+        \App\Models\Salary\Salary::create([
+            'user_id' => $admin->id,
+            'worker_id' => $worker->id,
+            'amount' => 1000000,
+            'worked_minute' => 9600,
+            'break_minute' => 0,
+            'hour_price' => 31250,
+            'from' => now()->startOfMonth()->toDateString(),
+            'to' => now()->endOfMonth()->toDateString(),
+        ]);
+
         $response = $this->actingAs($admin)->post('/salary_payment', [
             'worker_id' => $worker->id,
             'amount' => 500000,

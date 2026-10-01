@@ -212,10 +212,15 @@ class AttendanceReportService
     {
         $per_page = $request->per_page ? (int)$request->per_page : 15;
 
-        if ($request->month) {
+        $request->validate([
+            'month' => 'nullable|date_format:Y-m',
+        ]);
+
+        if ($request->filled('month')) {
             $month = $request->month;
-            $monthNumber = Carbon::parse($month)->month;
-            $year = Carbon::parse($month)->year;
+            $monthCarbon = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+            $monthNumber = $monthCarbon->month;
+            $year = $monthCarbon->year;
         } else {
             $month = date('Y-m');
             $monthNumber = (int)date('m');
@@ -228,7 +233,7 @@ class AttendanceReportService
         $currentMonth = Carbon::now()->format('Y-m');
         $currentDay = Carbon::now()->day;
 
-        if ($month === $currentMonth || empty($month)) {
+        if ($month === $currentMonth) {
             $daysInMonth = $currentDay;
         } else {
             $daysInMonth = Carbon::create($year, $monthNumber, 1)->daysInMonth;

@@ -11,7 +11,8 @@ class StoreBranchDeviceRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        return $user ? $user->hasBranchAccess((int) $this->branch_id) : false;
     }
 
     protected function prepareForValidation(): void
@@ -34,9 +35,23 @@ class StoreBranchDeviceRequest extends FormRequest
     {
         return [
             'branch_id' => 'required|exists:branches,id',
-            'mac_address' => 'required|string|max:255',
+            'mac_address' => [
+                'required',
+                'string',
+                'max:255',
+                \Illuminate\Validation\Rule::unique('branch_devices')->where(function ($query) {
+                    return $query->where('status', true);
+                }),
+            ],
             'name' => 'nullable|string|max:255',
-            'device_id' => 'nullable|string|max:255',
+            'device_id' => [
+                'nullable',
+                'string',
+                'max:255',
+                \Illuminate\Validation\Rule::unique('branch_devices')->where(function ($query) {
+                    return $query->where('status', true)->whereNotNull('device_id');
+                }),
+            ],
             'connection_type' => 'nullable|in:isup,http_listening',
             'encryption_key' => 'nullable|string|max:255',
         ];

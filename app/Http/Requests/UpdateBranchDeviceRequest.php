@@ -11,7 +11,10 @@ class UpdateBranchDeviceRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        $device = $this->route('branch_device');
+        $branchId = $this->branch_id ?? ($device instanceof \App\Models\Branch\BranchDevice ? $device->branch_id : ($device ? \App\Models\Branch\BranchDevice::find($device)?->branch_id : null));
+        return $user && $branchId ? $user->hasBranchAccess((int) $branchId) : false;
     }
 
     protected function prepareForValidation(): void
@@ -31,13 +34,35 @@ class UpdateBranchDeviceRequest extends FormRequest
      */
     public function rules(): array
     {
+        $device = $this->route('branch_device');
+        $deviceId = $device instanceof \App\Models\Branch\BranchDevice ? $device->id : $device;
+
         return [
             'branch_id' => 'required|exists:branches,id',
-            'mac_address' => 'required|string|max:255',
+            'mac_address' => [
+                'required',
+                'string',
+                'max:255',
+                \Illuminate\Validation\Rule::unique('branch_devices')
+                    ->ignore($deviceId)
+                    ->where(function ($query) {
+                        return $query->where('status', true);
+                    }),
+            ],
             'name' => 'nullable|string|max:255',
-            'device_id' => 'nullable|string|max:255',
+            'device_id' => [
+                'nullable',
+                'string',
+                'max:255',
+                \Illuminate\Validation\Rule::unique('branch_devices')
+                    ->ignore($deviceId)
+                    ->where(function ($query) {
+                        return $query->where('status', true)->whereNotNull('device_id');
+                    }),
+            ],
             'connection_type' => 'nullable|in:isup,http_listening',
             'encryption_key' => 'nullable|string|max:255',
+            'status' => 'nullable|boolean',
         ];
     }
 

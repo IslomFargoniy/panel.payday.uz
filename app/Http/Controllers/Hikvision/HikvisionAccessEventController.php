@@ -80,10 +80,12 @@ class HikvisionAccessEventController extends Controller
             DB::beginTransaction();
 
             if ($hikvisionAccessEvent) {
+                $access = $hikvisionAccessEvent->hikvisionAccess;
+
                 // Delete Picture safely via Storage disk to prevent path traversal
                 $picture = $hikvisionAccessEvent->picture;
                 if ($picture) {
-                    $shortSerial = $hikvisionAccessEvent->hikvisionAccess->shortSerialNumber ?? 'UNKNOWN';
+                    $shortSerial = $access?->shortSerialNumber ?? 'UNKNOWN';
                     $basePicture = basename($picture);
                     $cleanSerial = preg_replace('/[^a-zA-Z0-9_\-]/', '', $shortSerial);
                     $relativePath = "hikvision/{$cleanSerial}/{$basePicture}";
@@ -99,13 +101,16 @@ class HikvisionAccessEventController extends Controller
                     }
                 }
 
-                $hikvisionAccessEvent->faceReact()->delete();
+                $hikvisionAccessEvent->faceReact()?->delete();
                 $hikvisionAccessEvent->delete();
 
-                // Only delete the parent HikvisionAccess if it's NOT the shared Telegram dummy record
-                $shortSerial = $hikvisionAccessEvent->hikvisionAccess->shortSerialNumber ?? '';
-                if ($shortSerial !== 'TELEGRAM') {
-                    $hikvisionAccessEvent->hikvisionAccess()->delete();
+                if ($access) {
+                    $hasOtherEvents = HikvisionAccessEvent::where('hikvision_access_id', $access->id)
+                        ->where('id', '!=', $hikvisionAccessEvent->id)
+                        ->exists();
+                    if (!$hasOtherEvents) {
+                        $access->delete();
+                    }
                 }
             }
 

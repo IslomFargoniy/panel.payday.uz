@@ -15,14 +15,14 @@ class HikvisionHealthcheckCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'hikvision:healthcheck {--restart : Force restart the daemon via Supervisor}';
+    protected $signature = 'hikvision:healthcheck {--restart : Force restart the daemon}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Perform health check and watchdog monitoring on Hikvision ISUP Gateway C++ Daemon';
+    protected $description = 'Perform health check and watchdog monitoring on Hikvision ISUP Gateway C++ Daemon with exponential backoff';
 
     /**
      * Execute the console command.
@@ -32,10 +32,14 @@ class HikvisionHealthcheckCommand extends Command
         $gatewayBaseUrl = rtrim(config('hikvision.gateway_url', 'http://127.0.0.1:7661'), '/');
         $healthUrl = $gatewayBaseUrl . '/health';
         $devicesUrl = $gatewayBaseUrl . '/api/devices';
+
         $cacheKeyFailures = 'hikvision_gateway_consecutive_failures';
+        $cacheKeyIsDown = 'hikvision_gateway_is_down';
+        $cacheKeyLastRestart = 'hikvision_gateway_last_restart_at';
+        $cacheKeyRestartCount = 'hikvision_gateway_restart_count';
 
         if ($this->option('restart')) {
-            $this->warn('Force restarting Hikvision Gateway via Supervisor...');
+            $this->warn('Force restarting Hikvision Gateway...');
             $this->restartGateway();
             return 0;
         }
@@ -62,15 +66,20 @@ class HikvisionHealthcheckCommand extends Command
         }
 
         if ($isHealthy) {
-            $previousFailures = (int)Cache::get($cacheKeyFailures, 0);
-            if ($previousFailures > 0) {
+            $wasDown = Cache::get($cacheKeyIsDown, false);
+            if ($wasDown) {
+                Cache::forget($cacheKeyIsDown);
                 Cache::forget($cacheKeyFailures);
+                Cache::forget($cacheKeyRestartCount);
+                Cache::forget($cacheKeyLastRestart);
+
                 $msg = "✅ <b>[HIKVISION GATEWAY TIKLANDI]</b>\nISUP Gateway C++ daemon qayta tiklandi va normal ishlamoqda.\nUланган qurilmalar soni: {$connectedCount}";
                 $this->info($msg);
                 if (function_exists('telegramlog')) {
                     telegramlog($msg);
                 }
             } else {
+                Cache::forget($cacheKeyFailures);
                 $this->info("✔ Gateway is healthy. Connected devices: {$connectedCount}");
             }
 
@@ -81,23 +90,48 @@ class HikvisionHealthcheckCommand extends Command
 
         // Handle Failure
         $failures = (int)Cache::increment($cacheKeyFailures);
-        $alertMsg = "⚠️ <b>[HIKVISION GATEWAY XATOLIK]</b>\nISUP Gateway C++ daemon javob bermayapti!\nXatolik: {$errorMessage}\nKetma-ket uzilishlar soni: {$failures}";
+        $wasDown = Cache::get($cacheKeyIsDown, false);
 
-        $this->error($alertMsg);
+        $this->error("ISUP Gateway failed ({$failures} consecutive): {$errorMessage}");
         Log::critical("Hikvision ISUP Gateway Healthcheck Failed ({$failures} consecutive): {$errorMessage}");
 
-        // Only send telegram alert on 2nd consecutive failure to avoid transient network blips
-        if ($failures === 2 && function_exists('telegramlog')) {
-            telegramlog($alertMsg);
+        // State Change: Alert only once when transitioning from UP to DOWN
+        if (!$wasDown && $failures >= 2) {
+            Cache::put($cacheKeyIsDown, true, now()->addDays(7));
+            $alertMsg = "⚠️ <b>[HIKVISION GATEWAY XATOLIK]</b>\nISUP Gateway C++ daemon javob bermayapti!\nXatolik: {$errorMessage}\nKetma-ket uzilishlar soni: {$failures}";
+            if (function_exists('telegramlog')) {
+                telegramlog($alertMsg);
+            }
         }
 
-        // Self-healing: if failed 3 or more times, attempt restart via Supervisor
+        // Self-healing with Backoff: [5, 15, 30] minutes between restarts
         if ($failures >= 3) {
-            $this->warn("Self-healing triggered: attempting supervisor restart...");
-            $restartResult = $this->restartGateway();
+            $backoffMinutes = [0 => 0, 1 => 5, 2 => 15, 3 => 30];
+            $restartCount = (int)Cache::get($cacheKeyRestartCount, 0);
+            $lastRestartAt = Cache::get($cacheKeyLastRestart);
 
-            if (function_exists('telegramlog')) {
-                telegramlog("🔄 <b>[HIKVISION GATEWAY RESTART]</b>\nSupervisor orqali qayta ishga tushirish buyrug'i yuborildi.\nNatija: " . ($restartResult ? "Muvaffaqiyatli" : "Xatolik yuz berdi"));
+            $requiredWaitMinutes = $backoffMinutes[min($restartCount, 3)] ?? 30;
+            $canRestart = true;
+
+            if ($lastRestartAt) {
+                $minutesSinceLast = now()->diffInMinutes(\Carbon\Carbon::parse($lastRestartAt));
+                if ($minutesSinceLast < $requiredWaitMinutes) {
+                    $canRestart = false;
+                    $remaining = $requiredWaitMinutes - $minutesSinceLast;
+                    $this->warn("Restart backoff faol: navbatdagi qayta ishga tushirishga {$remaining} daqiqa qoldi.");
+                }
+            }
+
+            if ($canRestart) {
+                $this->warn("Self-healing triggered: attempting daemon restart (attempt #" . ($restartCount + 1) . ")...");
+                $restartResult = $this->restartGateway();
+
+                Cache::put($cacheKeyLastRestart, now()->toDateTimeString(), now()->addDays(1));
+                Cache::increment($cacheKeyRestartCount);
+
+                if (function_exists('telegramlog')) {
+                    telegramlog("🔄 <b>[HIKVISION GATEWAY RESTART]</b>\nQayta ishga tushirish buyrug'i yuborildi.\nNatija: " . ($restartResult ? "Muvaffaqiyatli" : "Xatolik yuz berdi"));
+                }
             }
         }
 
@@ -163,16 +197,17 @@ class HikvisionHealthcheckCommand extends Command
     }
 
     /**
-     * Restart the C++ daemon using supervisorctl
+     * Restart the C++ daemon using configured restart command
      */
     protected function restartGateway(): bool
     {
+        $command = config('hikvision.restart_command', 'sudo systemctl restart hikvision-isup');
         $output = [];
         $returnVar = 0;
-        @exec('sudo supervisorctl restart hikvision-gateway 2>&1', $output, $returnVar);
+        @exec($command . ' 2>&1', $output, $returnVar);
 
         $outputText = implode("\n", $output);
-        Log::info("Supervisor restart hikvision-gateway output: {$outputText} (code: {$returnVar})");
+        Log::info("Hikvision gateway restart output: {$outputText} (code: {$returnVar})");
 
         return $returnVar === 0;
     }
