@@ -63,20 +63,35 @@ class HikvisionAccessEventController extends Controller
      */
     public function destroy(HikvisionAccessEvent $hikvisionAccessEvent)
     {
+        $user = auth()->user();
+        if ($user && !$user->hasRole('Admin')) {
+            $userFirmIds = $user->user_firms()->pluck('firm_id')->toArray();
+            $eventFirmId = $hikvisionAccessEvent->worker?->branch?->firm_id;
+            if (!$eventFirmId || !in_array($eventFirmId, $userFirmIds)) {
+                abort(403, 'Unauthorized access to this event.');
+            }
+        }
+
         try {
             DB::beginTransaction();
 
             if ($hikvisionAccessEvent) {
-                // Delete Picture
+                // Delete Picture safely via Storage disk to prevent path traversal
                 $picture = $hikvisionAccessEvent->picture;
                 if ($picture) {
                     $shortSerial = $hikvisionAccessEvent->hikvisionAccess->shortSerialNumber ?? 'UNKNOWN';
-                    $filePath = str_contains($picture, '/')
-                        ? public_path("storage/{$picture}")
-                        : public_path("storage/hikvision/{$shortSerial}/{$picture}");
+                    $basePicture = basename($picture);
+                    $cleanSerial = preg_replace('/[^a-zA-Z0-9_\-]/', '', $shortSerial);
+                    $relativePath = "hikvision/{$cleanSerial}/{$basePicture}";
 
-                    if (is_file($filePath)) {
-                        unlink($filePath);
+                    $disk = \Illuminate\Support\Facades\Storage::disk('public');
+                    if ($disk->exists($relativePath)) {
+                        $fullPath = $disk->path($relativePath);
+                        $realPath = realpath($fullPath);
+                        $baseDir = realpath($disk->path('hikvision'));
+                        if ($realPath && $baseDir && str_starts_with($realPath, $baseDir)) {
+                            $disk->delete($relativePath);
+                        }
                     }
                 }
 

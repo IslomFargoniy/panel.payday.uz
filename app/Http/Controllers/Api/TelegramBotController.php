@@ -149,7 +149,11 @@ class TelegramBotController extends Controller
             $filename = '';
             if ($request->hasFile('picture')) {
                 $picture = $request->file('picture');
-                $filename = time() . '_' . rand(1, 50) . '_' . $picture->getClientOriginalName();
+                $ext = strtolower($picture->getClientOriginalExtension());
+                if (!in_array($ext, ['jpg', 'jpeg', 'png'])) {
+                    $ext = 'jpg';
+                }
+                $filename = \Illuminate\Support\Str::uuid()->toString() . '.' . $ext;
                 $picture->storeAs("hikvision/TELEGRAM", $filename, 'public');
             }
 

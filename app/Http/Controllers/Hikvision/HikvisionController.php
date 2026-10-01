@@ -259,13 +259,14 @@ class HikvisionController extends Controller
                 'files' => array_keys($request->allFiles())
             ]);
 
+            $inputs = $request->except(['Picture', 'picture', 'file', 'image']);
             // Normalize incoming payload
             if ($request->has('AccessControllerEvent') && is_string($request->AccessControllerEvent)) {
                 $decoded = json_decode($request->AccessControllerEvent);
                 if (isset($decoded->AccessControllerEvent)) {
                     $eventData = $decoded;
                 } else {
-                    $eventData = json_decode(json_encode($request->all()));
+                    $eventData = json_decode(json_encode($inputs)) ?: new \stdClass();
                     $eventData->AccessControllerEvent = $decoded;
                 }
             } elseif ($request->has('event_log') && is_string($request->event_log)) {
@@ -273,11 +274,11 @@ class HikvisionController extends Controller
                 if (isset($decoded->AccessControllerEvent)) {
                     $eventData = $decoded;
                 } else {
-                    $eventData = json_decode(json_encode($request->all()));
+                    $eventData = json_decode(json_encode($inputs)) ?: new \stdClass();
                     $eventData->AccessControllerEvent = $decoded;
                 }
             } else {
-                $eventData = json_decode(json_encode($request->all()));
+                $eventData = json_decode(json_encode($inputs)) ?: new \stdClass();
             }
 
             if (!isset($eventData->AccessControllerEvent) && isset($eventData->employeeNoString)) {
