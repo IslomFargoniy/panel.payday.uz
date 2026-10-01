@@ -76,17 +76,17 @@ class WorkerPortalApiController extends Controller
 
             if ($scheduleStart && $inTime->greaterThan($scheduleStart)) {
                 $status = 'Kechikkan';
-                $lateMinutes = (int) $inTime->diffInMinutes($scheduleStart);
+                $lateMinutes = (int) $scheduleStart->diffInMinutes($inTime);
             } else {
                 $status = 'Kelgan';
             }
 
             if ($checkOut) {
                 $outTime = Carbon::parse($checkOut->created_at);
-                $workedHours = round($outTime->diffInMinutes($inTime) / 60, 2);
+                $workedHours = round($inTime->diffInMinutes($outTime) / 60, 2);
             } else {
                 // Currently in progress
-                $workedHours = round(Carbon::now()->diffInMinutes($inTime) / 60, 2);
+                $workedHours = round($inTime->diffInMinutes(Carbon::now()) / 60, 2);
             }
         }
 
@@ -137,7 +137,10 @@ class WorkerPortalApiController extends Controller
             ->get()
             ->groupBy(fn($item) => Carbon::parse($item->created_at)->toDateString());
 
-        // 2. Holidays
+        // 2. Schedule and Holidays
+        $scheduleService = new \App\Services\Attendance\WorkScheduleService();
+        $workingDayIndexes = $scheduleService->getWorkingDayIndexes($worker);
+
         $workerHolidays = WorkerHoliday::where('worker_id', $worker->id)
             ->whereDate('from', '<=', $end)
             ->whereDate('to', '>=', $start)
@@ -147,7 +150,16 @@ class WorkerPortalApiController extends Controller
             ->whereBetween('date', [$start, $end])
             ->pluck('date')
             ->map(fn($d) => Carbon::parse($d)->toDateString())
-            ->flip();
+            ->flip()
+            ->toArray();
+
+        $firmId = $worker->branch?->firm_id;
+        $firmHolidays = $firmId ? FirmHoliday::where('firm_id', $firmId)
+            ->whereBetween('date', [$start, $end])
+            ->pluck('date')
+            ->map(fn($d) => Carbon::parse($d)->toDateString())
+            ->flip()
+            ->toArray() : [];
 
         $days = [];
         $totalWorkedMinutes = 0;
@@ -164,8 +176,17 @@ class WorkerPortalApiController extends Controller
             $dayCheckIn = $dayEvents->first(fn($e) => in_array($e->attendanceStatus, ['checkIn', 'keldi', 'entered']));
             $dayCheckOut = $dayEvents->last(fn($e) => in_array($e->attendanceStatus, ['checkOut', 'ketdi', 'exited']));
 
-            $isHoliday = isset($branchHolidays[$dateStr]);
-            $isWeekend = in_array($date->dayOfWeek, [Carbon::SATURDAY, Carbon::SUNDAY]);
+            $dayIdx = \App\Services\Attendance\WorkScheduleService::dayIndex($date);
+            $isWeekend = !in_array($dayIdx, $workingDayIndexes, true);
+
+            $isWorkerHoliday = false;
+            foreach ($workerHolidays as $wh) {
+                if ($dateStr >= $wh->from && $dateStr <= $wh->to) {
+                    $isWorkerHoliday = true;
+                    break;
+                }
+            }
+            $isHoliday = isset($branchHolidays[$dateStr]) || isset($firmHolidays[$dateStr]) || $isWorkerHoliday;
 
             $dayStatus = 'absent';
             $lateMin = 0;
@@ -178,7 +199,7 @@ class WorkerPortalApiController extends Controller
 
                 if ($scheduleStart && $inTime->greaterThan($scheduleStart)) {
                     $dayStatus = 'late';
-                    $lateMin = (int) $inTime->diffInMinutes($scheduleStart);
+                    $lateMin = (int) $scheduleStart->diffInMinutes($inTime);
                     $totalLateMinutes += $lateMin;
                 } else {
                     $dayStatus = 'on_time';
@@ -186,9 +207,9 @@ class WorkerPortalApiController extends Controller
 
                 if ($dayCheckOut) {
                     $outTime = Carbon::parse($dayCheckOut->created_at);
-                    $workedMin = max(0, (int) $outTime->diffInMinutes($inTime));
+                    $workedMin = max(0, (int) $inTime->diffInMinutes($outTime));
                 } else {
-                    $workedMin = $dateStr === $todayStr ? max(0, (int) Carbon::now()->diffInMinutes($inTime)) : 0;
+                    $workedMin = $dateStr === $todayStr ? max(0, (int) $inTime->diffInMinutes(Carbon::now())) : 0;
                 }
                 $totalWorkedMinutes += $workedMin;
             } elseif ($isHoliday) {
