@@ -55,6 +55,30 @@ YELLOW="\033[1;33m"
 RED="\033[0;31m"
 NC="\033[0m"
 
+# Binary'ni xavfsiz o'rnatish: vaqtinchalik faylga nusxalab, keyin mv bilan almashtiriladi.
+# mv inode'ni almashtiradi, shuning uchun ishlab turgan binary ustiga yozishda
+# "Text file busy" xatosi chiqmaydi (oddiy cp shu xatoga olib keladi).
+install_binary() {
+    local src="$1"
+    local tmp="$TARGET_BIN.tmp.$$"
+    sudo cp "$src" "$tmp" && sudo chmod +x "$tmp" && sudo mv -f "$tmp" "$TARGET_BIN"
+}
+
+# Gateway /health javob berishini 10 soniyagacha kutish (0 = OK, 1 = javob bermadi)
+wait_for_health() {
+    local i
+    for i in {1..10}; do
+        echo -n "Kutilmoqda ($i/10s)... "
+        if curl -fsS "${HEADER_FLAG[@]}" http://127.0.0.1:7661/health >/dev/null 2>&1; then
+            echo -e "${GREEN}OK!${NC}"
+            return 0
+        fi
+        sleep 1
+    done
+    echo ""
+    return 1
+}
+
 # 0. --setup-config tekshiruvi
 if [ "$SETUP_CONFIG" = "true" ]; then
     echo -e "${BLUE}--> Konfiguratsiya fayli tekshirilmoqda ($CONFIG_FILE)...${NC}"
@@ -132,7 +156,8 @@ fi
 
 # 3. Atomik almashtirish
 echo -e "${BLUE}--> 3. Yangi binary joyiga ko'chirilmoqda (atomik mv)...${NC}"
-sudo mv "$NEW_BIN" "$TARGET_BIN"
+install_binary "$NEW_BIN"
+sudo rm -f "$NEW_BIN"
 echo -e "${GREEN}✔ Yangi binary o'rnatildi.${NC}"
 
 # 4. Servisni qayta ishga tushirish
@@ -144,15 +169,9 @@ echo -e "${BLUE}--> 5. Gateway sog'lig'i tekshirilmoqda (10 soniya ichida)...${N
 
 # Token 1-qadamdan oldin aniqlangan (GW_TOKEN, HEADER_FLAG)
 HEALTH_OK=false
-for i in {1..10}; do
-    echo -n "Kutilmoqda ($i/10s)... "
-    if curl -fsS "${HEADER_FLAG[@]}" http://127.0.0.1:7661/health >/dev/null 2>&1; then
-        echo -e "${GREEN}OK!${NC}"
-        HEALTH_OK=true
-        break
-    fi
-    sleep 1
-done
+if wait_for_health; then
+    HEALTH_OK=true
+fi
 
 if [ "$HEALTH_OK" = "true" ]; then
     echo -e "\n${GREEN}✔ Gateway muvaffaqiyatli ishga tushdi va /health javob berdi!${NC}"
@@ -163,11 +182,27 @@ if [ "$HEALTH_OK" = "true" ]; then
     echo ""
 else
     echo -e "\n${RED}❌ Health check muvaffaqiyatsiz tugadi (/health javob bermadi)!${NC}"
+
+    # Rollback ichida xato yuz bersa ham skript yarim yo'lda to'xtab qolmasligi kerak
+    set +e
     if [ -f "$BACKUP_BIN" ]; then
         echo -e "${YELLOW}⚠️ Oldingi binary tiklanmoqda ($BACKUP_BIN -> $TARGET_BIN)...${NC}"
-        sudo cp "$BACKUP_BIN" "$TARGET_BIN"
-        sudo systemctl restart hikvision-isup
-        echo -e "${YELLOW}Oldingi holatga qaytarildi va servis restart qilindi.${NC}"
+        if install_binary "$BACKUP_BIN"; then
+            sudo systemctl restart hikvision-isup
+            echo -e "${YELLOW}Rollback: servis qayta ishga tushirildi, health check qayta tekshirilmoqda...${NC}"
+            if wait_for_health; then
+                echo -e "${GREEN}✔ Rollback OK: oldingi binary tiklandi va /health javob beryapti.${NC}"
+            else
+                echo -e "${RED}❌ ROLLBACK HAM MUVAFFAQIYATSIZ — qo'lda aralashuv kerak!${NC}"
+                sudo systemctl status hikvision-isup --no-pager -n 30
+            fi
+        else
+            echo -e "${RED}❌ ROLLBACK HAM MUVAFFAQIYATSIZ — zaxira binary o'rnatilmadi, qo'lda aralashuv kerak!${NC}"
+            sudo systemctl status hikvision-isup --no-pager -n 30
+        fi
+    else
+        echo -e "${RED}❌ Zaxira binary mavjud emas ($BACKUP_BIN), rollback imkonsiz — qo'lda aralashuv kerak!${NC}"
+        sudo systemctl status hikvision-isup --no-pager -n 30
     fi
     exit 1
 fi
