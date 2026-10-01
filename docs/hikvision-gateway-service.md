@@ -70,28 +70,18 @@ sudo ldconfig
 
 ---
 
-## 3. Servis Sifatida Sozlash (Supervisor yoki Systemd)
+---
 
-### 3.1. Supervisor orqali sozlash (Tavsiya etiladi)
+## 3. Servis Sifatida Sozlash (`hikvision-isup.service`)
 
-Supervisor ham C++ daemonni, ham Laravel Queue workerlarni boshqaradi:
-Konfiguratsiya fayli loyihaning `deploy/supervisor/hikvision-gateway.conf` yo‘lida mavjud.
+Production muhitida Gateway alohida **systemd** servisi sifatida boshqariladi (`hikvision-isup.service`):
+- `ExecStart=/usr/local/bin/hikvision-gateway` (yoki `/usr/local/bin/hikvision-gateway /etc/hikvision-gateway/gateway_config.json`)
+- `Restart=always`
+- Supervisor faqat `payday-worker:*` Laravel queue jarayonlari uchun ishlatiladi; Supervisor'da gateway **yo'q**.
 
-Faylni Supervisor papkasiga nusxalang:
-```bash
-sudo cp deploy/supervisor/hikvision-gateway.conf /etc/supervisor/conf.d/
-sudo supervisorctl reread
-sudo supervisorctl update
-sudo supervisorctl status hikvision-gateway
-```
+### 3.1. Systemd Unit Konfiguratsiyasi
+Unit fayli `/etc/systemd/system/hikvision-isup.service` (yoki `/etc/systemd/system/hikvision-gateway.service` aliasi):
 
-### 3.2. Systemd orqali sozlash (Muqobil variant)
-
-```bash
-sudo nano /etc/systemd/system/hikvision-gateway.service
-```
-
-Quyidagi konfiguratsiyani kiriting:
 ```ini
 [Unit]
 Description=PayDay Hikvision ISUP 5.0 Gateway Service
@@ -130,15 +120,38 @@ sudo systemctl status hikvision-isup
 
 ---
 
-## 4. Xizmatni Boshqarish va Monitoring Buyruqlari
+## 4. Gateway-ni Xavfsiz Yangilash (`deploy-gateway.sh`)
 
-| Amal | Supervisor Buyrug‘i | Systemd Buyrug‘i |
-|---|---|---|
-| **Holatni ko‘rish** | `sudo supervisorctl status hikvision-gateway` | `sudo systemctl status hikvision-gateway` |
-| **Qayta ishga tushirish** | `sudo supervisorctl restart hikvision-gateway` | `sudo systemctl restart hikvision-gateway` |
-| **To‘xtatish** | `sudo supervisorctl stop hikvision-gateway` | `sudo systemctl stop hikvision-gateway` |
-| **Jonli loglarni ko‘rish** | `tail -f /var/log/hikvision-gateway.log` | `tail -f /var/log/hikvision-gateway.log` |
-| **Avtomatik Sog‘liq Tekshiruvi**| `php artisan hikvision:healthcheck` | `php artisan hikvision:healthcheck` |
+> ⚠️ **MUHIM QOIDA:** Gateway dasturi `deploy.sh` ichida **kompilyatsiya qilinmaydi**. Umumiy veb-sayt deploy skripti gateway'ga tegmaydi. Gateway faqat alohida `deploy-gateway.sh` orqali qo'lda yangilanadi.
+
+### Ishga tushirish:
+```bash
+# Oddiy yangilash:
+./deploy-gateway.sh
+
+# Konfiguratsiya faylini sozlash bilan birga:
+./deploy-gateway.sh --setup-config
+```
+
+### Skript bajaradigan bosqichlar:
+1. **Compile:** Yangi binary avval `/usr/local/bin/hikvision-gateway.new` vaqtinchalik manziliga kompilyatsiya qilinadi. Xatolik bo'lsa, jarayon to'xtaydi.
+2. **Backup:** Ishlab turgan joriy binary `/usr/local/bin/hikvision-gateway.bak.<timestamp>` qilib saqlanadi.
+3. **Almashtirish:** `.new` fayli `mv` yordamida atomik tarzda joyiga qo'yiladi.
+4. **Restart:** `sudo systemctl restart hikvision-isup` bajariladi.
+5. **Health check:** 10 soniya davomida `curl -fsS http://127.0.0.1:7661/health` (sozlangan bo'lsa `X-Gateway-Token` bilan) tekshiriladi va `/api/devices` dan qurilmalar olinadi.
+6. **Rollback:** Agar 10 soniya ichida healthcheck javob bermasa, avtomatik ravishda zaxiradagi eski binary joyiga qaytariladi va servis qayta ishga tushiriladi (`exit 1`).
+
+---
+
+## 5. Xizmatni Boshqarish va Monitoring Buyruqlari
+
+| Amal | Systemd Buyrug‘i |
+|---|---|
+| **Holatni ko‘rish** | `sudo systemctl status hikvision-isup` |
+| **Qayta ishga tushirish** | `sudo systemctl restart hikvision-isup` |
+| **To‘xtatish** | `sudo systemctl stop hikvision-isup` |
+| **Jonli loglarni ko‘rish** | `tail -f /var/log/hikvision-gateway.log` |
+| **Avtomatik Sog‘liq Tekshiruvi**| `php artisan hikvision:healthcheck` |
 
 
 ---

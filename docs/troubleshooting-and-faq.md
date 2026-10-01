@@ -26,11 +26,11 @@ Ushbu bo‘limda PayDay paneli va Hikvision terminallari bilan ishlashda yuzaga 
    ```
 3. **Gateway xizmati ishlayotganini tekshiring:**
    ```bash
-   sudo systemctl status hikvision-gateway
+   sudo systemctl status hikvision-isup
    ```
    Agar to‘xtab qolgan bo‘lsa:
    ```bash
-   sudo systemctl restart hikvision-gateway
+   sudo systemctl restart hikvision-isup
    ```
 4. **Device ID va Device Key mosligini tekshiring:**
    - PayDay panelida yaratilgan qurilma `Device ID` va `Key` kiritilgan qiymatlar terminaldagi bilan harfma-harf bir xil bo‘lishi kerak (Katta-kichik harflarga sezgir).

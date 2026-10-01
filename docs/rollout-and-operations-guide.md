@@ -103,6 +103,22 @@ Tizimdagi faol qurilmalar uzluksiz ishlashini ta'minlash uchun:
   - Agar gateway javob bermasa, `[5, 15, 30]` daqiqalik backoff bilan restart buyrug'ini beradi.
   - Faqat holat o'zgarganda (DOWN yoki UP) Telegram kanalga xabarnoma jo'natadi.
 
+### ⚠️ Gateway yangilanishi (`deploy-gateway.sh`)
+ISUP Gateway dasturi veb-panelning umumiy `deploy.sh` skriptidan **butunlay ajratilgan** va har deploy paytida qayta kompilyatsiya qilinmaydi.
+Gateway kodiga o'zgartirish kiritilganda u faqat alohida skript orqali qo'lda yangilanadi:
+```bash
+./deploy-gateway.sh
+# yoki konfiguratsiya faylini tekshirish bilan:
+./deploy-gateway.sh --setup-config
+```
+Skript quyidagi qat'iy xavfsizlik zanjirida ishlaydi:
+1. Kod `/usr/local/bin/hikvision-gateway.new` vaqtinchalik manziliga kompilyatsiya qilinadi.
+2. Ishlab turgan joriy binary `/usr/local/bin/hikvision-gateway.bak.<timestamp>` sifatida saqlanadi.
+3. Yangi binary `mv` bilan atomik tarzda joyiga qo'yiladi.
+4. `sudo systemctl restart hikvision-isup` bajariladi.
+5. 10 soniya ichida `/health` (token bilan) va `/api/devices` tekshiriladi.
+6. Agar healthcheck o'tmasa, zaxira nusxa joyiga qaytariladi, servis restart qilinadi va xatolik beriladi (avtomatik rollback).
+
 ---
 
 ## 🔄 4. Orqaga Qaytish Rejasi (Rollback Plan)
