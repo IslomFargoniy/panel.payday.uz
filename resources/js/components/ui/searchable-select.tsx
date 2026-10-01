@@ -201,7 +201,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     }, [highlightedIndex]);
 
     return (
-        <div ref={containerRef} className={`relative text-left ${className || 'w-full'}`} id={id}>
+        <div ref={containerRef} className={`relative text-left ${isOpen ? 'z-50' : 'z-auto'} ${className || 'w-full'}`} id={id}>
             {/* Trigger Button */}
             <button
                 ref={triggerRef}
