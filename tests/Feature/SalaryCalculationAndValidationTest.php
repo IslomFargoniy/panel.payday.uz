@@ -90,7 +90,22 @@ test('StoreSalaryRequest rejects overlapping salary periods for the same worker'
     $response->assertStatus(422)
         ->assertJsonValidationErrors(['from']);
 
-    // Non-overlapping period: 2026-03-16 to 2026-03-31 should be allowed
+    // Overlapping salary 2: starting on exact previous 'to' date (2026-03-15) must also be rejected
+    $responseBoundary = $this->actingAs($this->user)->postJson('/salary', [
+        'worker_id' => $this->worker->id,
+        'amount' => 500000,
+        'worked_minute' => 600,
+        'break_minute' => 0,
+        'hour_price' => 50000,
+        'from' => '2026-03-15',
+        'to' => '2026-03-25',
+        'comment' => 'Exact boundary overlap test',
+    ]);
+
+    $responseBoundary->assertStatus(422)
+        ->assertJsonValidationErrors(['from']);
+
+    // Non-overlapping period: starting from previous 'to' + 1 day (2026-03-16 to 2026-03-31) must be allowed
     $responseSuccess = $this->actingAs($this->user)->post('/salary', [
         'worker_id' => $this->worker->id,
         'amount' => 500000,

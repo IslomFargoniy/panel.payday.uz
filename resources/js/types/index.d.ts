@@ -121,9 +121,9 @@ export interface Report {
     break_minutes: number;
     late_minutes: number;
     late_days: number;
-    last_salary_date?: number;
-    from?: '';
-    to?: '';
+    last_salary_date?: string;
+    from?: string;
+    to?: string;
     hour_price?: number;
     fine_price?: number;
     work_time?: number;

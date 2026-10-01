@@ -23,14 +23,36 @@ const CalculateSalary = ({ report, search_data }: CalculateSalaryProps) => {
     const totalFine = ((report.late_minutes ?? 0) / 60) * (report?.fine_price ?? 0);
     const initialAmount = Math.max(0, Math.round(totalEarned - totalFine));
 
+    // Agar last_salary_date mavjud bo'lsa, keyingi davr (last_salary_date + 1 kun) dan boshlanishi kerak
+    const resolveInitialFrom = () => {
+        if (report?.last_salary_date) {
+            const parts = String(report.last_salary_date).split('-');
+            if (parts.length === 3) {
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1;
+                const day = parseInt(parts[2], 10);
+                const nextDay = new Date(year, month, day + 1);
+                const nextYear = nextDay.getFullYear();
+                const nextMonth = String(nextDay.getMonth() + 1).padStart(2, '0');
+                const nextDate = String(nextDay.getDate()).padStart(2, '0');
+                const nextDayStr = `${nextYear}-${nextMonth}-${nextDate}`;
+
+                if (!report.from || nextDayStr > report.from) {
+                    return nextDayStr;
+                }
+            }
+        }
+        return report.from || '';
+    };
+
     const { data, setData, post, processing, reset, errors, clearErrors } = useForm({
         worker_id: search_data.worker_id,
         amount: initialAmount,
         worked_minute: report.worked_minutes,
         break_minute: 0,
         hour_price: report.hour_price,
-        from: report.from,
-        to: report.to,
+        from: resolveInitialFrom(),
+        to: report.to || '',
         comment: '',
     });
 
@@ -83,6 +105,34 @@ const CalculateSalary = ({ report, search_data }: CalculateSalaryProps) => {
                 </div>
 
                 <form className="space-y-4" onSubmit={submit}>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="from" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                {t('from')}
+                            </Label>
+                            <Input
+                                type="date"
+                                id="from"
+                                value={data.from}
+                                onChange={(e) => setData('from', e.target.value)}
+                                className="h-9 rounded-xl border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
+                            />
+                            <InputError message={errors.from} />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="to" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                {t('to')}
+                            </Label>
+                            <Input
+                                type="date"
+                                id="to"
+                                value={data.to}
+                                onChange={(e) => setData('to', e.target.value)}
+                                className="h-9 rounded-xl border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
+                            />
+                            <InputError message={errors.to} />
+                        </div>
+                    </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="amount" className="text-xs font-medium text-slate-700 dark:text-slate-300">
                             {t('amount')}
