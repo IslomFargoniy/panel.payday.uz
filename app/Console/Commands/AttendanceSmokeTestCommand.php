@@ -64,19 +64,40 @@ class AttendanceSmokeTestCommand extends Command
         });
 
         // 2. Salary report (Maosh hisoboti)
-        $results[] = $this->runCheck('salary_report', function () use ($reportService, $monthStr) {
-            $request = new Request(['month' => $monthStr, 'per_page' => 10]);
+        $results[] = $this->runCheck('salary_report', function () use ($reportService, $parsedDate) {
+            $from = $parsedDate->copy()->startOfMonth()->toDateString();
+            $to = $parsedDate->copy()->endOfMonth()->toDateString();
+            $request = new Request([
+                'from' => $from,
+                'to' => $to,
+                'per_page' => 10,
+            ]);
             $data = $reportService->getSalaryReportData($request);
-            $count = isset($data['resultsForReport']) ? $data['resultsForReport']->count() : 0;
-            return ['rows' => $count, 'detail' => "Paginated {$count} workers"];
+            $paginator = $data['attendance'] ?? null;
+            $count = $paginator ? $paginator->count() : 0;
+            $total = $paginator ? $paginator->total() : 0;
+            $report = $data['report'] ?? null;
+            $workedMinutes = $report->worked_minutes ?? 0;
+            $workingDays = $report->working_days ?? 0;
+            $lateMinutes = $report->late_minutes ?? 0;
+
+            return [
+                'rows' => $total,
+                'detail' => "Sahifada: {$count}, Jami: {$total} | Ishlangan: {$workedMinutes} daq, Ish kunlari: {$workingDays}, Kechikish: {$lateMinutes} daq",
+            ];
         });
 
         // 3. Monthly attendance (Oylik davomat)
         $results[] = $this->runCheck('monthly_attendance', function () use ($reportService, $monthStr) {
             $request = new Request(['month' => $monthStr, 'per_page' => 10]);
             $data = $reportService->getMonthlyAttendanceData($request);
-            $count = isset($data['worker']) ? $data['worker']->count() : 0;
-            return ['rows' => $count, 'detail' => "Paginated {$count} workers"];
+            $paginator = $data['worker'] ?? null;
+            $count = $paginator ? $paginator->count() : 0;
+            $total = $paginator ? $paginator->total() : 0;
+            return [
+                'rows' => $total,
+                'detail' => "Sahifada: {$count}, Jami: {$total} xodim",
+            ];
         });
 
         // 4. Attendance grid
@@ -88,8 +109,14 @@ class AttendanceSmokeTestCommand extends Command
                 'per_page' => 10,
             ]);
             $data = $reportService->getAttendanceGridData($request);
-            $count = isset($data['results']) ? $data['results']->count() : 0;
-            return ['rows' => $count, 'detail' => "Grid events: {$count}"];
+            $paginator = $data['worker'] ?? null;
+            $count = $paginator ? $paginator->count() : 0;
+            $total = $paginator ? $paginator->total() : 0;
+            $daysInMonth = $data['daysInMonth'] ?? 0;
+            return [
+                'rows' => $total,
+                'detail' => "Sahifada: {$count}, Jami: {$total} xodim (Kunlar: {$daysInMonth})",
+            ];
         });
 
         // 5. Daily attendance (har bir faol filial bo'yicha)
@@ -106,10 +133,15 @@ class AttendanceSmokeTestCommand extends Command
             foreach ($branches as $branch) {
                 $checkName = "daily_attendance (Filial: {$branch->name})";
                 $results[] = $this->runCheck($checkName, function () use ($reportService, $dateStr, $branch) {
-                    $request = new Request(['date' => $dateStr]);
+                    $request = new Request(['date' => $dateStr, 'per_page' => 10]);
                     $data = $reportService->getDailyAttendanceData($request, $branch);
-                    $count = isset($data['results']) ? count($data['results']) : 0;
-                    return ['rows' => $count, 'detail' => "Filial ID {$branch->id} bo'yicha {$count} qator"];
+                    $paginator = $data['worker'] ?? null;
+                    $count = $paginator ? $paginator->count() : 0;
+                    $total = $paginator ? $paginator->total() : 0;
+                    return [
+                        'rows' => $total,
+                        'detail' => "Filial ID {$branch->id} bo'yicha sahifada: {$count}, jami: {$total} xodim",
+                    ];
                 });
             }
         }
