@@ -29,9 +29,8 @@ class HikvisionHealthcheckCommand extends Command
      */
     public function handle(): int
     {
-        $gatewayBaseUrl = rtrim(config('hikvision.gateway_url', 'http://127.0.0.1:7661'), '/');
-        $healthUrl = $gatewayBaseUrl . '/health';
-        $devicesUrl = $gatewayBaseUrl . '/api/devices';
+        $healthPath = '/health';
+        $devicesPath = '/api/devices';
 
         $cacheKeyFailures = 'hikvision_gateway_consecutive_failures';
         $cacheKeyIsDown = 'hikvision_gateway_is_down';
@@ -44,14 +43,14 @@ class HikvisionHealthcheckCommand extends Command
             return 0;
         }
 
-        $this->line("Checking Hikvision Gateway health at: {$healthUrl}...");
+        $this->line("Checking Hikvision Gateway health via GatewayClient...");
 
         $isHealthy = false;
         $connectedCount = 0;
         $errorMessage = null;
 
         try {
-            $response = Http::timeout(4)->get($healthUrl);
+            $response = \App\Services\Hikvision\GatewayClient::http()->timeout(4)->get($healthPath);
             if ($response->successful()) {
                 $data = $response->json();
                 if (($data['status'] ?? null) === 'ok') {
@@ -84,7 +83,7 @@ class HikvisionHealthcheckCommand extends Command
             }
 
             // Sync online status of active devices
-            $this->checkDevicesStatus($devicesUrl);
+            $this->checkDevicesStatus();
             return 0;
         }
 
@@ -141,10 +140,10 @@ class HikvisionHealthcheckCommand extends Command
     /**
      * Check individual devices status from gateway API
      */
-    protected function checkDevicesStatus(string $devicesUrl): void
+    protected function checkDevicesStatus(): void
     {
         try {
-            $res = Http::timeout(3)->get($devicesUrl);
+            $res = \App\Services\Hikvision\GatewayClient::http()->timeout(3)->get('/api/devices');
             if (!$res->successful()) {
                 return;
             }

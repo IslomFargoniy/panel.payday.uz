@@ -80,7 +80,7 @@ class HikvisionSyncService
 
             // Route through ISUP Gateway if ISUP connection type or device_id is present
             if ($device->connection_type === 'isup' && !empty($device->device_id)) {
-                $isupRes = \Illuminate\Support\Facades\Http::timeout(6)->post($this->gatewayUrl(), [
+                $isupRes = GatewayClient::http()->timeout(6)->post('/api/isapi', [
                     'device_id' => $device->device_id,
                     'method' => 'POST',
                     'url' => 'POST /ISAPI/AccessControl/UserInfo/Record?format=json',
@@ -99,7 +99,7 @@ class HikvisionSyncService
                         'faceURL' => $faceUrl,
                     ];
 
-                    $faceRes = \Illuminate\Support\Facades\Http::timeout(10)->post($this->gatewayUrl(), [
+                    $faceRes = GatewayClient::http()->timeout(10)->post('/api/isapi', [
                         'device_id' => $device->device_id,
                         'method' => 'POST',
                         'url' => 'POST /ISAPI/Intelligent/FDLib/FaceDataRecord?format=json',
@@ -214,7 +214,7 @@ class HikvisionSyncService
                 $employeeNo = (string)($worker->employeeNoString ?: $worker->id);
 
                 if ($device->connection_type === 'isup' && !empty($device->device_id)) {
-                    $delRes = \Illuminate\Support\Facades\Http::timeout(6)->post($this->gatewayUrl(), [
+                    $delRes = GatewayClient::http()->timeout(6)->post('/api/isapi', [
                         'device_id' => $device->device_id,
                         'method' => 'PUT',
                         'url' => 'PUT /ISAPI/AccessControl/UserInfo/Delete?format=json',
@@ -300,7 +300,7 @@ class HikvisionSyncService
                     ]
                 ];
 
-                $res = \Illuminate\Support\Facades\Http::timeout(10)->post($this->gatewayUrl(), [
+                $res = GatewayClient::http()->timeout(10)->post('/api/isapi', [
                     'device_id' => $device->device_id,
                     'method' => 'POST',
                     'url' => 'POST /ISAPI/AccessControl/AcsEvent?format=json',
