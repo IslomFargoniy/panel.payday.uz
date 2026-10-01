@@ -5,17 +5,12 @@ use Inertia\Inertia;
 use App\Http\Controllers\Auth\GoogleAuthController;
 
 Route::get('/', function () {
-    return redirect()->route('login');
-    return Inertia::render('welcome');
+    return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
 })->name('home');
 
 Route::any('telegram/handle', [\App\Http\Controllers\TelegramController::class , 'handle']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    //    Route::get('dashboard', function () {
-//        return Inertia::render('dashboard');
-//    })->name('dashboard');
-
     Route::get('dashboard', [\App\Http\Controllers\HomeController::class , 'index'])->name('dashboard');
 
     Route::resource('user', \App\Http\Controllers\User\UserController::class);
@@ -23,7 +18,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('firm', \App\Http\Controllers\Firm\FirmController::class);
     Route::resource('firm_setting', \App\Http\Controllers\Firm\FirmSettingController::class);
     Route::resource('firm_holiday', \App\Http\Controllers\Firm\FirmHolidayController::class);
-    Route::resource('firm_setting', \App\Http\Controllers\Firm\FirmSettingController::class);
     Route::resource('branch', \App\Http\Controllers\Branch\BranchController::class);
     Route::resource('branch_holiday', \App\Http\Controllers\Branch\BranchHolidayController::class);
     Route::resource('branch_day', \App\Http\Controllers\Branch\BranchDayController::class);
@@ -56,24 +50,9 @@ Route::get('/lang/{locale}', function ($locale) {
         abort(400);
     }
     session(['locale' => $locale]);
+    cookie()->queue(cookie()->forever('locale', $locale));
     app()->setLocale($locale);
     return back();
-});
-
-
-//handle requests from payment system
-Route::any('/handle/{paysys}', function ($paysys) {
-    (new Goodoneuz\PayUz\PayUz)->driver($paysys)->handle();
-});
-
-//redirect to payment system or payment form
-Route::any('/pay/{paysys}/{key}/{amount}', function ($paysys, $key, $amount) {
-    $model = Goodoneuz\PayUz\Services\PaymentService::convertKeyToModel($key);
-    $url = request('redirect_url', '/'); // redirect url after payment completed
-    $pay_uz = new Goodoneuz\PayUz\PayUz;
-    $pay_uz
-        ->driver($paysys)
-        ->redirect($model, $amount, 860, $url);
 });
 
 Route::get('/bot/mini-app', function () {

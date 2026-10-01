@@ -33,16 +33,16 @@ Tizim ko'p tillilikni (i18n), xavfsiz autentifikatsiyani, ijtimoiy tarmoqlar orq
 
 🔐 **Xavfsizlik va Ruxsatlar (ACL)**
 - **Spatie Permissions**: Moslashuvchan rollar va ruxsatlar tizimi (Role-based access control).
-- **Sanctum API**: API orqali xavfsiz ulanish.
-- **Socialite Login**: Google, GitHub va boshqa tarmoqlar orqali oson avtorizatsiya.
+- **Sanctum API**: API orqali xavfsiz ulanish, alohida `panel` va `worker` token qobiliyatlari.
+- **Socialite Login**: Google orqali oson avtorizatsiya.
 
 🌍 **Ko'p Tillilik (i18n)**
-- 7 xil tilda ishlash imkoniyati: **O'zbekcha (Lotin va Kirill), Ruscha, Inglizcha, Italyancha, Ispancha, Nemischa**.
+- 3 xil to'liq mahalliylashtirilgan til: **O'zbekcha (uz), Ruscha (ru), Inglizcha (en)**.
 
-💳 **Kengaytirilgan To'lov va API**
-- Bir nechta to'lov provayderlari bilan integratsiya (*PayUz*).
-- **Swagger UI**: API end-pointlarni vizual tarzda ko'rish va sinash.
-- **Telegram Bot API**: Telegram botlari bilan ishlash uchun qulay SDK.
+📊 **Davomat va Hisobotlar**
+- **Hikvision ISUP 5.0 & HTTP Listening**: Terminallardan hodisalarni real-vaqtda yoki avtomatik sinxronizatsiya orqali qabul qilish.
+- **Ish jadvallari va bayramlar**: Haftalik ish kunlari, bayramlar va shaxsiy ta'tillarni hisobga oluvchi hisob-kitob.
+- **Telegram Bot & Mini App**: Telegram orqali xodimlarni ro'yxatga olish va davomatini belgilash.
 - Excel formatida ma'lumotlarni yuklash va eksport qilish.
 
 🚀 **Qo'shimcha Imkoniyatlar**
@@ -57,47 +57,9 @@ Tizim ko'p tillilikni (i18n), xavfsiz autentifikatsiyani, ijtimoiy tarmoqlar orq
 | :--- | :--- |
 | **Backend** | PHP 8.2+, Laravel 12.0, Sanctum, Socialite, Spatie Permissions |
 | **Frontend** | React 19, Inertia.js, Tailwind CSS 4, Shadcn UI (Radix UI) |
-| **Ma'lumotlar Bazasi** | MySQL / PostgreSQL |
-| **API & Hujjatlar** | L5-Swagger |
-| **To'lov Modullari** | Goodoneuz/Pay-uz |
+| **Ma'lumotlar Bazasi** | MySQL / SQLite |
+| **Qurilmalar Integratsiyasi** | Hikvision ISUP 5.0 (C++ Gateway), HTTP Listening |
 | **Kutubxonalar** | ApexCharts, ECharts, i18next, ExcelJS |
-
----
-
-## 🚀 Tezkor Boshlash
-
-Loyihani o'z kompyuteringizga o'rnatish va ishga tushirish uchun quyidagi qadamlarni bajaring:
-
-### 1️⃣ Talablar
-- PHP >= 8.2
-- Node.js >= 18
-- Composer
-- MySQL/PostgreSQL va Redis (ixtiyoriy, navbatlar uchun)
-
-### 2️⃣ O'rnatish qadamlari
-
-Loyihani yuklab oling va papkaga kiring:
-```bash
-git clone https://github.com/IslomFargoniy/panel.payday.git
-cd panel.payday
-```
-
-Kutubxonalar va qaramliklarni o'rnating:
-```bash
-composer install
-npm install
-```
-
-Muhit faylini sozlang va kalitni generatsiya qiling:
-```bash
-cp .env.example .env
-php artisan key:generate
-```
-
-Papkalar uchun ruxsatlarni to'g'rilab, storage havolasini unlang:
-```bash
-php artisan storage:link
-```
 
 ---
 
@@ -109,15 +71,15 @@ Boshqa serverlarga o‘rnatish va Hikvision terminallari bilan ishlash bo‘yich
 - 📹 **[Hikvision Terminallari Integratsiyasi](docs/hikvision-integration-guide.md)** — ISUP 5.0, HTTP Listening va tarmoq parametrlari.
 - ⚙️ **[Hikvision ISUP Gateway Servisi (C++)](docs/hikvision-gateway-service.md)** — C++ daemonni kompilyatsiya qilish va systemd xizmati.
 - 🛠️ **[Muammolarni Bartaraf Etish (FAQ)](docs/troubleshooting-and-faq.md)** — Offline holatlar, yuz rasmlari, vaqt mintaqasi va diagnostika.
+- 🚀 **[Ishga Tushirish va Rollout Qo'llanmasi](docs/rollout-and-operations-guide.md)** — Baza migratsiyalari, diagnostika va muhit sozlamalari.
 
 ---
 
-### 3️⃣ Ma'lumotlar bazasi va To'lov sozlamalari
+### 3️⃣ Ma'lumotlar bazasi sozlamalari
 
 Ma'lumotlar bazasini `.env` faylida sozlang va migratsiyalarni ishlating:
 ```bash
-php artisan migrate --seed
-php artisan db:seed --class="Goodoneuz\PayUz\database\seeds\PayUzSeeder"
+php artisan migrate --force
 ```
 
 > **🔑 Standart Kirish Ma'lumotlari:**
@@ -131,37 +93,6 @@ Barcha jarayonlarni (Backend, Frontend Vite serveri, Navbatlar va Loglar) bir va
 composer run dev
 ```
 Shundan so'ng ilova odatda `http://localhost:8000` manzilida ishga tushadi.
-
----
-
-## 💳 To'lov Integratsiyalari
-
-Loyiha O'zbekiston hamda xalqaro to'lov tizimlarini to'liq qo'llab quvvatlaydi:
-- 🟢 **Payme** (Merchant)
-- 🔵 **Click** (Merchant)
-- 🟠 **Oson** (Merchant)
-- 💳 **Uzcard** (Merchant)
-- 🏦 **Paynet** (Merchant)
-- 🌍 **Stripe** (Merchant & Subscribe)
-
-### To'lov So'rovlarini Qabul Qilish
-`routes/web.php` ichida to'lov tizimlaridan keladigan marshrutlar tayyor:
-```php
-// To'lov tizimidan kelgan so'rovlarni qabul qilish
-Route::any('/handle/{paysys}', function($paysys){
-    (new Goodoneuz\PayUz\PayUz)->driver($paysys)->handle();
-});
-
-// To'lov sahifasiga yo'naltirish
-Route::any('/pay/{paysys}/{key}/{amount}', function($paysys, $key, $amount){
-	$model = Goodoneuz\PayUz\Services\PaymentService::convertKeyToModel($key);
-    $url = request('redirect_url','/'); 
-    
-    (new Goodoneuz\PayUz\PayUz)
-    	->driver($paysys)
-    	->redirect($model, $amount, 860, $url);
-});
-```
 
 ---
 

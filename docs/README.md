@@ -12,6 +12,7 @@ Ushbu papka **PayDay** tizimini yangi serverga o‘rnatish, sozlash, xavfsizlik 
 | [2. Hikvision Terminallari Integratsiyasi](hikvision-integration-guide.md) | Hikvision qurilmalarini ISUP 5.0 va HTTP Listening orqali ulash, tarmoq sozlamalari va yuz rasmlari talablari |
 | [3. Hikvision ISUP Gateway Servisi](hikvision-gateway-service.md) | C++ ISUP Gateway daemonini kompilyatsiya qilish, systemd orqali xizmat sifatida ishga tushirish va monitoring |
 | [4. Muammolarni Bartaraf Etish (FAQ)](troubleshooting-and-faq.md) | Offline holatlar, yuz yuklanmaslik, portlar, vaqt (Timezone) va xatoliklarni bartaraf etish |
+| [5. Ishga Tushirish va Operatsiyalar (Rollout)](rollout-and-operations-guide.md) | Yangi versiyalar, migratsiyalar, tozalash buyruqlari, env kalitlari va orqaga qaytish (rollback) |
 
 ---
 

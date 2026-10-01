@@ -24,13 +24,12 @@ echo -e "${BLUE}======================================================${NC}"
 echo -e "${BLUE}🚀 PayDay Panel - Deployment boshlanmoqda...${NC}"
 echo -e "${BLUE}======================================================${NC}"
 
-# 1. Local Git status check and push
+# 1. Local Git status check
 if [[ -n $(git status -s) ]]; then
-    COMMIT_MSG="${1:-Deploy updates $(date +'%Y-%m-%d %H:%M:%S')}"
-    echo -e "${YELLOW}📦 Mahalliy o'zgarishlar Git-ga yuklanmoqda...${NC}"
-    git add .
-    git commit -m "$COMMIT_MSG"
-    echo -e "${GREEN}✔ Commit qilindi: $COMMIT_MSG${NC}"
+    echo -e "${RED}⚠️  Diqqat: Mahalliy repositoryda saqlanmagan o'zgarishlar mavjud!${NC}"
+    echo -e "${RED}Deploy qilishdan oldin o'zgarishlarni commit qiling yoki stash qiling.${NC}"
+    git status -s
+    exit 1
 fi
 
 echo -e "${YELLOW}⬆️  GitHub ga push qilinmoqda ($BRANCH)...${NC}"
@@ -46,18 +45,21 @@ set -e
 echo -e "${BLUE}--> Serverdagi papkaga o'tilmoqda: $SERVER_PATH${NC}"
 cd $SERVER_PATH
 
+# Keraksiz AppleDouble (._*) fayllarni tozalash
+find . -name "._*" -delete 2>/dev/null || true
+
 echo -e "${BLUE}--> Eng so'nggi kodlar tortib olinmoqda (git pull)...${NC}"
 sudo git checkout $BRANCH
 sudo git pull origin $BRANCH
 
 echo -e "${BLUE}--> Composer qaramliklari tekshirilmoqda...${NC}"
 if [ -f "composer.json" ]; then
-    sudo composer install --no-interaction --prefer-dist --optimize-autoloader || true
+    sudo composer install --no-interaction --prefer-dist --optimize-autoloader
 fi
 
 echo -e "${BLUE}--> Frontend aktivlari build qilinmoqda (npm run build)...${NC}"
 if [ -f "package.json" ]; then
-    sudo npm run build || true
+    sudo npm run build
 fi
 
 echo -e "${BLUE}--> Ma'lumotlar bazasi migratsiyalari ishga tushirilmoqda...${NC}"
@@ -65,12 +67,12 @@ sudo $PHP_BIN artisan migrate --force
 
 echo -e "${BLUE}--> Tizim keshlari tozalanmoqda va optimallashmoqda...${NC}"
 sudo $PHP_BIN artisan optimize:clear
-sudo $PHP_BIN artisan config:cache || true
-sudo $PHP_BIN artisan route:cache || true
+sudo $PHP_BIN artisan config:cache
+sudo $PHP_BIN artisan route:cache
 
 echo -e "${BLUE}--> Ruxsatlar (permissions) sozlanmoqda...${NC}"
 sudo chown -R panel_payday_usr:panel_payday_usr $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache
-sudo chmod -R 777 $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache
+sudo chmod -R 775 $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache
 
 echo -e "${BLUE}--> Queue workerlar va Supervisor qayta ishga tushirilmoqda...${NC}"
 sudo $PHP_BIN artisan queue:restart || true

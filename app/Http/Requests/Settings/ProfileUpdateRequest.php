@@ -18,7 +18,12 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'digits_between:9,12'],
+            'phone' => [
+                'nullable',
+                'string',
+                'digits_between:9,12',
+                Rule::unique(User::class, 'phone')->ignore($this->user()->id),
+            ],
 
             'email' => [
                 'nullable',
