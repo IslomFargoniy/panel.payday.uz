@@ -43,8 +43,7 @@ beforeEach(function () {
 
     // Create days 1..7
     for ($i = 1; $i <= 7; $i++) {
-        Day::firstOrCreate(['id' => $i], [
-            'index' => $i,
+        Day::firstOrCreate(['index' => $i], [
             'name' => 'Day ' . $i,
             'name_ru' => 'Day Ru ' . $i,
             'name_en' => 'Day En ' . $i,
@@ -194,9 +193,11 @@ test('Salary creation snapshots worker days, worker holidays and filters holiday
     ]);
 
     // 4. Create worker days
+    // id auto-increment bo'lgani uchun (MariaDB tranzaksiya rollbackida hisoblagichni qaytarmaydi) kun index bo'yicha olinadi
+    $mondayId = Day::where('index', 2)->value('id');
     WorkerDay::create([
         'worker_id' => $this->worker->id,
-        'day_id' => 2, // Monday
+        'day_id' => $mondayId, // Monday
     ]);
 
     // Store salary for 2026-05-01 to 2026-05-31
@@ -233,7 +234,7 @@ test('Salary creation snapshots worker days, worker holidays and filters holiday
     // Check snapshotted worker days
     $workerDays = SalaryWorkerDay::where('salary_id', $salary->id)->get();
     expect($workerDays)->toHaveCount(1);
-    expect($workerDays->first()->day_id)->toBe(2);
+    expect($workerDays->first()->day_id)->toBe($mondayId);
 });
 
 test('WorkerPortalApiController submitRequest does not auto-create WorkerHoliday', function () {
