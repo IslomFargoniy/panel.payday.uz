@@ -38,7 +38,44 @@ DB_STRICT=false                          # Standart: false (Production MariaDB 1
 
 ---
 
-## 🛠 2. Bosqichma-bosqich Rollout Jarayoni
+## 🚀 2. Deploy'dan Oldin va Keyin Bajariladigan Qadamlar
+
+### Deploy'dan oldin:
+1. **Alohida branch va Pull Request:**
+   Kodni to'g'ridan-to'g'ri `main` ga push qilmang. O'zgarishlarni alohida branch'ga push qiling (masalan `release/security-fixes`) va GitHub'da `main` ga Pull Request (PR) oching.
+2. **CI Tekshiruvlari:**
+   GitHub Actions'da avtomatik testlar (`tests.yml` va `lint.yml`) to'liq o'tishi kerak:
+   - SQLite testlari;
+   - MariaDB 10.6 testlari (`phpunit.mariadb.xml`);
+   - TypeScript turlari va ESLint tekshiruvlari.
+3. **Merge:**
+   Faqat barcha CI testlari muvaffaqiyatli yakunlangach, PR `main` branchiga merge qilinadi.
+4. **Server Git Remote URL ni yangilash (Tavsiya):**
+   Serverdagi git remote manzili `git@github.com:IslomFargoniy/panel.payday.git` bo'lishi mumkin, hozirgi to'g'ri repo esa `panel.payday.uz.git`. Serverda remote URL'ni to'g'rilash uchun quyidagi buyruqni qo'lda bajaring (faqat serverda, deploy.sh ichida emas):
+   ```bash
+   git remote set-url origin git@github.com:IslomFargoniy/panel.payday.uz.git
+   ```
+
+### Deploy'dan keyin (Serverda bajariladigan tekshiruvlar):
+1. **Attendance Smoke Test:**
+   ```bash
+   sudo -u panel_payday_usr /opt/php82/bin/php artisan attendance:smoke-test
+   ```
+   Barcha o'qish so'rovlari (dashboard, salary_report, monthly_attendance, attendance_grid, daily_attendance, mobile_myAttendance) "OK" holatda va qatorlar soni 0 dan katta ekanligiga ishonch hosil qiling.
+2. **Qurilmalar online oqimini tekshirish:**
+   4 ta online qurilmadan (AE7106709, GF0132950, GG8507033, branch14) yangi eventlar kelayotganini tekshiring:
+   ```bash
+   sudo -u panel_payday_usr /opt/php82/bin/php artisan hikvision:online-check
+   ```
+3. **Loglarda xatoliklar yo'qligini tekshirish:**
+   `storage/logs/laravel.log` faylida `Hikvision callback rejected` va `Hikvision Callback Error` yozuvlari yo'qligini tekshiring:
+   ```bash
+   tail -n 100 storage/logs/laravel.log | grep -E "Hikvision callback rejected|Hikvision Callback Error"
+   ```
+
+---
+
+## 🛠 3. Bosqichma-bosqich Rollout Jarayoni
 
 ### 1-qadam: Kodni tortib olish va paketlarni o'rnatish
 ```bash
@@ -93,7 +130,7 @@ sudo supervisorctl restart payday-worker:*
 
 ---
 
-## 📡 3. Jonli Qurilmalar Holati va Monitoring
+## 📡 4. Jonli Qurilmalar Holati va Monitoring
 
 Tizimdagi faol qurilmalar uzluksiz ishlashini ta'minlash uchun:
 - **ISUP Qurilma 20 (`branch14`)**: Gateway orqali port 7660/7662 da bog'langan.
@@ -121,10 +158,11 @@ Skript quyidagi qat'iy xavfsizlik zanjirida ishlaydi:
 
 ---
 
-## 🔄 4. Orqaga Qaytish Rejasi (Rollback Plan)
+## 🔄 5. Orqaga Qaytish Rejasi (Rollback Plan)
 
 Kutilmagan muammo yuzaga kelsa:
 1. `deploy.sh` da avtomatik tuzoq (`trap rollback ERR`) o'rnatilgan bo'lib, agar `git pull` dan keyin `composer install`, `npm ci`, `npm run build` yoki `artisan migrate` bosqichlarida xatolik yuz bersa, skript avtomatik tarzda `git reset --hard $PREV` qilib, oldingi barqaror holatga qaytaradi va keshni tozalaydi.
+   > ⚠️ **Muhim:** Migratsiyadan keyingi qadamlardan birida xatolik yuz berib kod rollback qilinsa ham, ma'lumotlar bazasi migratsiyalari avtomatik orqaga qaytarilmaydi. Rollbackdan so'ng `php artisan migrate:status` ni tekshirish shart.
 2. Qo'lda orqaga qaytarish uchun:
    ```bash
    git reset --hard <oldingi_barqaror_commit>
@@ -138,7 +176,7 @@ Kutilmagan muammo yuzaga kelsa:
 
 ---
 
-## 👤 5. Server Foydalanuvchilari, Crontab va Sudoers Sozlamalari
+## 👤 6. Server Foydalanuvchilari, Crontab va Sudoers Sozlamalari
 
 Serverdagi jarayonlar (php-fpm va queue worker) `panel_payday_usr` foydalanuvchisi sifatida ishlaydi. Fayl egaligi (`storage` va `bootstrap/cache`) `root` ga o'tib ketmasligi va permissions xatoliklari kelib chiqmasligi uchun quyidagi tizim sozlamalarini amalga oshirish zarur:
 

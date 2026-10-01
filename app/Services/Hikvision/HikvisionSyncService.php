@@ -13,15 +13,6 @@ use Illuminate\Support\Facades\Storage;
 class HikvisionSyncService
 {
     /**
-     * Get ISUP gateway API url
-     */
-    protected function gatewayUrl(string $path = '/api/isapi'): string
-    {
-        $base = rtrim(config('hikvision.gateway_url', 'http://127.0.0.1:7661'), '/');
-        return $base . '/' . ltrim($path, '/');
-    }
-
-    /**
      * Sync single worker (and face photo) to all devices in worker's branch
      */
     public function syncWorker(Worker $worker): array

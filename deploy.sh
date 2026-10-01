@@ -63,6 +63,7 @@ rollback() {
     sudo chown -R panel_payday_usr:panel_payday_usr $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache || true
     sudo chmod -R 775 $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache || true
     echo -e "${YELLOW}⚠️ Rollback yakunlandi.${NC}"
+    echo -e "${YELLOW}⚠️ Migratsiyalar orqaga qaytarilmadi — 'php artisan migrate:status' ni tekshiring.${NC}"
 }
 trap rollback ERR
 
