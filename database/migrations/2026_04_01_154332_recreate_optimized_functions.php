@@ -57,6 +57,26 @@ return new class extends Migration
                 RETURN working_days;
             END;
         ");
+
+        DB::unprepared("DROP FUNCTION IF EXISTS getBalance;");
+
+        DB::unprepared("
+            CREATE FUNCTION `getBalance`(worker_id_ INT) RETURNS DOUBLE
+                DETERMINISTIC
+                READS SQL DATA
+            BEGIN
+                DECLARE balance DOUBLE;
+
+                SELECT SUM(`history`.`amount`) INTO balance
+                FROM (
+                    SELECT amount FROM salaries WHERE worker_id = worker_id_
+                    UNION ALL
+                    SELECT -1 * amount FROM salary_payments WHERE worker_id = worker_id_
+                ) history;
+
+                RETURN COALESCE(balance, 0);
+            END;
+        ");
     }
 
     /**
