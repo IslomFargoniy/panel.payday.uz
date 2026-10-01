@@ -220,7 +220,8 @@ test('hikvision-callback accepts events from all 4 active production device iden
     $res20->assertStatus(200);
 });
 
-test('hikvision-callback rejects unrecognized or inactive device', function () {
+test('hikvision-callback returns 200 with success false for unrecognized or inactive device', function () {
+    // 1. Unrecognized device
     $res = $this->postJson('/api/hikvision-callback', [
         'macAddress' => 'aa:bb:cc:dd:ee:ff',
         'dateTime' => now()->toIso8601String(),
@@ -230,7 +231,36 @@ test('hikvision-callback rejects unrecognized or inactive device', function () {
         ],
     ]);
 
-    $res->assertStatus(403);
+    $res->assertStatus(200)
+        ->assertJson([
+            'success' => false,
+            'message' => 'Device not recognized',
+        ]);
+
+    // 2. Inactive device
+    BranchDevice::create([
+        'branch_id' => $this->branch->id,
+        'name' => 'Inactive Device',
+        'mac_address' => '11:22:33:44:55:66',
+        'device_id' => 'inactive_dev_1',
+        'connection_type' => 'http_listening',
+        'status' => 0,
+    ]);
+
+    $resInactive = $this->postJson('/api/hikvision-callback', [
+        'macAddress' => '11:22:33:44:55:66',
+        'dateTime' => now()->toIso8601String(),
+        'AccessControllerEvent' => [
+            'employeeNoString' => '9999',
+            'attendanceStatus' => 'checkIn',
+        ],
+    ]);
+
+    $resInactive->assertStatus(200)
+        ->assertJson([
+            'success' => false,
+            'message' => 'Device not recognized',
+        ]);
 });
 
 test('fill-default-keys command dry-run and force modes work correctly', function () {

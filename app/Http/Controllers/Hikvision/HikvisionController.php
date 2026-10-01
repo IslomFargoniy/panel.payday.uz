@@ -131,7 +131,10 @@ class HikvisionController extends Controller
                     'short_serial' => $shortSerial,
                     'serial_no' => $serialNo,
                 ]);
-                return response()->json(['error' => 'Device not recognized or inactive'], 403);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Device not recognized',
+                ], 200);
             }
 
             $shortSerial = $branchDevice->device_id ?: ($shortSerial ?: 'default');
@@ -313,7 +316,16 @@ class HikvisionController extends Controller
             return response()->json(['success' => true]);
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Hikvision Callback Error: ' . $e->getMessage() . ' line: ' . $e->getLine());
+            \Illuminate\Support\Facades\Log::error('Hikvision Callback Error: ' . $e->getMessage(), [
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'mac' => $rawMac ?? ($request->input('macAddress') ?? null),
+                'serial' => $shortSerial ?? ($request->input('shortSerialNumber') ?? null),
+                'employeeNoString' => (isset($accessEventData) && isset($accessEventData->employeeNoString))
+                    ? $accessEventData->employeeNoString
+                    : ($request->input('AccessControllerEvent.employeeNoString') ?? $request->input('employeeNoString')),
+                'dateTime' => $dateTimeStr ?? ($request->input('dateTime') ?? null),
+            ]);
             return response()->json(['error' => 'Server error occurred'], 500);
         }
     }
