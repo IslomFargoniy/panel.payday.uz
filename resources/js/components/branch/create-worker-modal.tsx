@@ -26,6 +26,7 @@ type FormData = {
     fine_price: number;
     name: string;
     phone: string;
+    password?: string;
     address: string;
     comment: string;
     avatar: File | null;
@@ -44,6 +45,7 @@ export default function CreateWorkerModal({ branch }: createWorker) {
         fine_price: branch.fine_price || 0,
         name: '',
         phone: '',
+        password: '',
         address: '',
         comment: '',
         avatar: null,
@@ -145,6 +147,21 @@ export default function CreateWorkerModal({ branch }: createWorker) {
                                     className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                                 />
                                 <InputError message={errors.phone} />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="password" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                    {t('mobile_password', 'Mobil ilova paroli')}
+                                </Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    value={data.password || ''}
+                                    onChange={(e) => setData('password', e.target.value)}
+                                    placeholder="••••••••"
+                                    className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
+                                />
+                                <InputError message={errors.password} />
                             </div>
 
                             <div className="sm:col-span-2 space-y-1.5">

@@ -41,6 +41,13 @@ class Worker extends Model
         'password',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'password' => 'hashed',
+        ];
+    }
+
     protected $with = [
         'branch'
     ];

@@ -43,6 +43,7 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
         hour_price: worker.hour_price,
         fine_price: worker.fine_price,
         phone: worker.phone || '',
+        password: '',
         address: worker.address || '',
         comment: worker.comment || '',
         status: worker.status,
@@ -60,6 +61,7 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
                 hour_price: worker.hour_price,
                 fine_price: worker.fine_price,
                 phone: worker.phone || '',
+                password: '',
                 address: worker.address || '',
                 comment: worker.comment || '',
                 status: worker.status,
@@ -154,6 +156,21 @@ export default function UpdateWorkerModal({ worker, open, setOpen }: Props) {
                                     className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
                                 />
                                 <InputError message={errors.phone} />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="password" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                    {t('mobile_password', 'Mobil ilova paroli')}
+                                </Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    value={data.password || ''}
+                                    onChange={(e) => setData('password', e.target.value)}
+                                    placeholder={t('leave_blank_if_unchanged', 'O‘zgartirmaslik uchun bo‘sh qoldiring')}
+                                    className="h-9.5 rounded-xl border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-800"
+                                />
+                                <InputError message={errors.password} />
                             </div>
 
                             <div className="sm:col-span-2 space-y-1.5">

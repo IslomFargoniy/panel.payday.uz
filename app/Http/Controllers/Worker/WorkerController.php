@@ -111,6 +111,11 @@ class WorkerController extends Controller
             $data['phone'] = !empty($data['phone']) ? trim($data['phone']) : null;
             $data['address'] = !empty($data['address']) ? trim($data['address']) : null;
             $data['comment'] = !empty($data['comment']) ? trim($data['comment']) : null;
+            if ($request->filled('password')) {
+                $data['password'] = $request->input('password');
+            } else {
+                unset($data['password']);
+            }
 
             if ($request->hasFile('avatar')) {
                 $data['avatar'] = $this->saveOptimizedAvatar($request->file('avatar'));
@@ -261,6 +266,11 @@ class WorkerController extends Controller
             $data['phone'] = !empty($data['phone']) ? trim($data['phone']) : null;
             $data['address'] = !empty($data['address']) ? trim($data['address']) : null;
             $data['comment'] = !empty($data['comment']) ? trim($data['comment']) : null;
+            if ($request->filled('password')) {
+                $data['password'] = $request->input('password');
+            } else {
+                unset($data['password']);
+            }
 
             if ($request->hasFile('avatar')) {
                 if ($worker->avatar && is_file(public_path('storage/' . $worker->avatar))) {
