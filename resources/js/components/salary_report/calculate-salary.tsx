@@ -3,11 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Report, SearchData } from '@/types';
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import React, { FormEventHandler, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Calculator } from 'lucide-react';
+import { AlertTriangle, Calculator, RefreshCw } from 'lucide-react';
+import { isSalaryPeriodMismatch, resolveNextSalaryStartDate } from '@/lib/salary-date';
 
 interface CalculateSalaryProps {
     report: Report;
@@ -23,27 +24,7 @@ const CalculateSalary = ({ report, search_data }: CalculateSalaryProps) => {
     const totalFine = ((report.late_minutes ?? 0) / 60) * (report?.fine_price ?? 0);
     const initialAmount = Math.max(0, Math.round(totalEarned - totalFine));
 
-    // Agar last_salary_date mavjud bo'lsa, keyingi davr (last_salary_date + 1 kun) dan boshlanishi kerak
-    const resolveInitialFrom = () => {
-        if (report?.last_salary_date) {
-            const parts = String(report.last_salary_date).split('-');
-            if (parts.length === 3) {
-                const year = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10) - 1;
-                const day = parseInt(parts[2], 10);
-                const nextDay = new Date(year, month, day + 1);
-                const nextYear = nextDay.getFullYear();
-                const nextMonth = String(nextDay.getMonth() + 1).padStart(2, '0');
-                const nextDate = String(nextDay.getDate()).padStart(2, '0');
-                const nextDayStr = `${nextYear}-${nextMonth}-${nextDate}`;
-
-                if (!report.from || nextDayStr > report.from) {
-                    return nextDayStr;
-                }
-            }
-        }
-        return report.from || '';
-    };
+    const initialFrom = resolveNextSalaryStartDate(report?.last_salary_date, report.from);
 
     const { data, setData, post, processing, reset, errors, clearErrors } = useForm({
         worker_id: search_data.worker_id,
@@ -51,10 +32,27 @@ const CalculateSalary = ({ report, search_data }: CalculateSalaryProps) => {
         worked_minute: report.worked_minutes,
         break_minute: 0,
         hour_price: report.hour_price,
-        from: resolveInitialFrom(),
+        from: initialFrom,
         to: report.to || '',
         comment: '',
     });
+
+    const isMismatch = isSalaryPeriodMismatch(report.from, report.to, data.from, data.to);
+
+    const handleRecalculate = () => {
+        router.get(
+            '/salary_report',
+            {
+                ...search_data,
+                from: data.from,
+                to: data.to,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            }
+        );
+    };
 
     // Raqamni "120 000" ko'rinishiga keltirish
     const formatNumber = (num: number | string) => {
@@ -71,6 +69,10 @@ const CalculateSalary = ({ report, search_data }: CalculateSalaryProps) => {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
+        if (isMismatch) {
+            toast.error("Tanlangan davr bo'yicha hisobotni qayta hisoblang.");
+            return;
+        }
         post(`/salary`, {
             preserveScroll: true,
             onSuccess: () => {
@@ -133,6 +135,28 @@ const CalculateSalary = ({ report, search_data }: CalculateSalaryProps) => {
                             <InputError message={errors.to} />
                         </div>
                     </div>
+
+                    {isMismatch && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300 space-y-2">
+                            <div className="flex items-start gap-2">
+                                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                                <span>
+                                    Tanlangan davr ({data.from} — {data.to}) hisobot davridan ({report.from} — {report.to}) farq qiladi. Summa va daqiqalar to'g'ri bo'lishi uchun hisobotni qayta hisoblang.
+                                </span>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleRecalculate}
+                                className="w-full h-8 border-amber-300 bg-amber-100/70 text-amber-900 hover:bg-amber-200/70 dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                            >
+                                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                                Shu oraliq bo'yicha qayta hisoblash
+                            </Button>
+                        </div>
+                    )}
+
                     <div className="space-y-1.5">
                         <Label htmlFor="amount" className="text-xs font-medium text-slate-700 dark:text-slate-300">
                             {t('amount')}
@@ -175,8 +199,8 @@ const CalculateSalary = ({ report, search_data }: CalculateSalaryProps) => {
                         </Button>
                         <Button
                             type="submit"
-                            disabled={processing}
-                            className="h-9 rounded-lg bg-indigo-600 px-4 text-xs font-medium text-white shadow-xs hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                            disabled={processing || isMismatch}
+                            className="h-9 rounded-lg bg-indigo-600 px-4 text-xs font-medium text-white shadow-xs hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-indigo-600 dark:hover:bg-indigo-500"
                         >
                             {t('save')}
                         </Button>

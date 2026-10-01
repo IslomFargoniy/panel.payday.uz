@@ -77,6 +77,19 @@ class StoreSalaryRequest extends FormRequest
                     $serverWorkedMinutes = (int) $pairedEvents->sum('worked_minutes');
                     $serverLateMinutes = (int) $pairedEvents->sum('late_minutes');
 
+                    $hasEventsInSystem = \App\Models\Hikvision\HikvisionAccessEvent::where('employeeNoString', $worker->employeeNoString)->exists();
+                    $clientWorkedMinutes = (int) $this->worked_minute;
+
+                    // Agar tizimda xodim eventlari mavjud bo'lsa yoki juftlangan eventlar bo'lsa,
+                    // klient yuborgan worked_minute server hisoblagan qiymatdan 5 daqiqadan ko'proq farq qilsa rad etiladi.
+                    // Izoh mavjudligi bu tekshiruvni chetlab o'tolmaydi.
+                    if (($pairedEvents->isNotEmpty() || $hasEventsInSystem) && abs($clientWorkedMinutes - $serverWorkedMinutes) > 5) {
+                        $validator->errors()->add(
+                            'worked_minute',
+                            'Ishlangan daqiqalar tanlangan davr bo\'yicha server hisoblagan qiymatdan (' . $serverWorkedMinutes . ' daqiqa) farq qiladi. Iltimos, hisobotni qayta hisoblang.'
+                        );
+                    }
+
                     $hourPrice = (float) ($this->hour_price ?: $worker->hour_price);
                     $finePrice = (float) ($worker->fine_price ?? 0);
 
@@ -84,9 +97,9 @@ class StoreSalaryRequest extends FormRequest
                     $penalty = ($serverLateMinutes / 60) * $finePrice;
                     $expectedAmount = (int) max(0, round($earned - $penalty));
 
-                    // Fallback to client worked_minute if no events in system (e.g. manual entry)
-                    if ($expectedAmount === 0 && (int)$this->worked_minute > 0) {
-                        $expectedAmount = (int) max(0, round(((int)$this->worked_minute * $hourPrice) / 60));
+                    // Fallback to client worked_minute only if no events in system (e.g. manual entry)
+                    if ($expectedAmount === 0 && !$hasEventsInSystem && $clientWorkedMinutes > 0) {
+                        $expectedAmount = (int) max(0, round(($clientWorkedMinutes * $hourPrice) / 60));
                     }
 
                     if ($expectedAmount > 0 && abs((int)$this->amount - $expectedAmount) > 100 && empty($this->comment)) {

@@ -256,3 +256,35 @@ test('WorkerPortalApiController submitRequest does not auto-create WorkerHoliday
     // Verify NO WorkerHoliday was created
     expect(WorkerHoliday::where('worker_id', $this->worker->id)->count())->toBe($initialCount);
 });
+
+test('StoreSalaryRequest rejects worked_minute deviating more than 5 minutes from server calculation even with comment', function () {
+    $this->worker->update(['employeeNoString' => 'EMP001']);
+
+    // Worker has an access event in system (e.g. from 1-15 period)
+    $access = \App\Models\Hikvision\HikvisionAccess::create([
+        'macAddress' => 'AA:BB:CC:11:22:33',
+        'dateTime' => '2026-03-05 09:00:00',
+        'shortSerialNumber' => 'DEV_01',
+    ]);
+    \App\Models\Hikvision\HikvisionAccessEvent::create([
+        'hikvision_access_id' => $access->id,
+        'employeeNoString' => 'EMP001',
+        'attendanceStatus' => 'checkIn',
+        'label' => 'Keldi',
+    ]);
+
+    // Period is shifted (from 16 to 30), but client submits worked_minute from 1-30 (e.g. 600) with a comment
+    $response = $this->actingAs($this->user)->postJson('/salary', [
+        'worker_id' => $this->worker->id,
+        'amount' => 500000,
+        'worked_minute' => 600,
+        'break_minute' => 0,
+        'hour_price' => 50000,
+        'from' => '2026-03-16',
+        'to' => '2026-03-30',
+        'comment' => 'Admin izoh qoldirdi',
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['worked_minute']);
+});

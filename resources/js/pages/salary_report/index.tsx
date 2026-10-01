@@ -17,6 +17,8 @@ import CalculateSalary from '@/components/salary_report/calculate-salary';
 import SearchForm from '@/components/search-form';
 import MobileSearchModal from '@/components/MobileSearchModal';
 
+import { resolveNextSalaryStartDate } from '@/lib/salary-date';
+
 export default function SalaryReport() {
     const {
         attendance, report,
@@ -68,13 +70,25 @@ export default function SalaryReport() {
             return value && value !== 'null' ? value.trim() : '';
         };
 
+        const workerId = Number(urlParams.get('worker_id')) || 0;
+        const fromParam = getTrimmed('from');
+
+        let initialFrom = fromParam;
+        if (!initialFrom) {
+            if (workerId && report?.last_salary_date) {
+                initialFrom = resolveNextSalaryStartDate(report.last_salary_date, defaultFrom);
+            } else {
+                initialFrom = defaultFrom;
+            }
+        }
+
         setData('search', getTrimmed('search'));
-        setData('worker_id', Number(urlParams.get('worker_id')) || 0);
+        setData('worker_id', workerId);
         setData('branch_id', Number(urlParams.get('branch_id')) || 0);
         setData('firm_id', Number(urlParams.get('firm_id')) || 0);
-        setData('from', getTrimmed('from') || defaultFrom);
+        setData('from', initialFrom);
         setData('to', getTrimmed('to') || defaultTo);
-    }, [location.search, setData]);
+    }, [location.search, setData, report?.last_salary_date, defaultFrom, defaultTo]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
