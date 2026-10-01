@@ -30,8 +30,26 @@ class AttendanceReportService
     public function getSalaryReportData(Request $request): array
     {
         $per_page = $request->per_page ? (int)$request->per_page : 15;
-        $from = $request->from ?: Carbon::now()->startOfMonth()->toDateString();
         $to = $request->to ?: Carbon::now()->toDateString();
+
+        $worker = $request->worker_id
+            ? Worker::without(['branch'])->find($request->worker_id)
+            : null;
+        $lastSalaryDate = $worker ? $worker->salaries()->max('to') : null;
+
+        // `from` berilmagan bo'lsa: oy boshi, lekin xodimning oxirgi maoshi shundan keyin tugagan bo'lsa,
+        // keyingi davr oxirgi maosh + 1 kundan boshlanadi (kesishuvchi maosh davrlarini oldini olish uchun).
+        // Agar bu sana `to` dan oshib ketsa (maosh allaqachon shu davrni qoplagan), oy boshi saqlanadi.
+        $from = $request->from;
+        if (!$from) {
+            $from = Carbon::now()->startOfMonth()->toDateString();
+            if ($lastSalaryDate) {
+                $nextAfterLastSalary = Carbon::parse($lastSalaryDate)->addDay()->toDateString();
+                if ($nextAfterLastSalary > $from && $nextAfterLastSalary <= $to) {
+                    $from = $nextAfterLastSalary;
+                }
+            }
+        }
         $request->merge(['from' => $from, 'to' => $to]);
 
         $days = $this->countWorkingDays($request);
@@ -81,15 +99,12 @@ class AttendanceReportService
         $report->late_minutes = (int) ($summary->late_minutes ?? 0);
         $report->late_days = (int) ($summary->late_days ?? 0);
 
-        if ($request->worker_id) {
-            $worker = Worker::without(['branch'])->find($request->worker_id);
-            if ($worker) {
-                $report->last_salary_date = $worker->salaries()->max('to');
-                $report->hour_price = $worker->hour_price;
-                $report->fine_price = $worker->fine_price;
-                $report->work_time = $worker->work_time;
-                $report->end_time = $worker->end_time;
-            }
+        if ($worker) {
+            $report->last_salary_date = $lastSalaryDate;
+            $report->hour_price = $worker->hour_price;
+            $report->fine_price = $worker->fine_price;
+            $report->work_time = $worker->work_time;
+            $report->end_time = $worker->end_time;
         }
         $report->from = $request->from;
         $report->to = $request->to;

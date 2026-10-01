@@ -1,10 +1,15 @@
 /**
  * Calculate the next salary period start date based on last salary date.
  * If previous salary ended on YYYY-MM-DD, next period starts on YYYY-MM-DD + 1 day.
+ *
+ * Server (AttendanceReportService::getSalaryReportData) bilan bir xil qoida:
+ * keyingi kun hisobot boshlanishidan (fallbackFrom) katta bo'lsa va hisobot oxirgi sanasidan (toDate)
+ * oshib ketmasa ishlatiladi, aks holda fallbackFrom saqlanadi.
  */
 export function resolveNextSalaryStartDate(
     lastSalaryDate?: string | null,
-    fallbackFrom?: string | null
+    fallbackFrom?: string | null,
+    toDate?: string | null
 ): string {
     if (lastSalaryDate) {
         const parts = String(lastSalaryDate).split('-');
@@ -21,6 +26,9 @@ export function resolveNextSalaryStartDate(
                 const nextDayStr = `${nextYear}-${nextMonth}-${nextDate}`;
 
                 if (!fallbackFrom || nextDayStr > fallbackFrom) {
+                    if (toDate && nextDayStr > toDate) {
+                        return fallbackFrom || '';
+                    }
                     return nextDayStr;
                 }
             }

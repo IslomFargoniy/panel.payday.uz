@@ -24,7 +24,7 @@ const CalculateSalary = ({ report, search_data }: CalculateSalaryProps) => {
     const totalFine = ((report.late_minutes ?? 0) / 60) * (report?.fine_price ?? 0);
     const initialAmount = Math.max(0, Math.round(totalEarned - totalFine));
 
-    const initialFrom = resolveNextSalaryStartDate(report?.last_salary_date, report.from);
+    const initialFrom = resolveNextSalaryStartDate(report?.last_salary_date, report.from, report.to);
 
     const { data, setData, post, processing, reset, errors, clearErrors } = useForm({
         worker_id: search_data.worker_id,
@@ -44,11 +44,14 @@ const CalculateSalary = ({ report, search_data }: CalculateSalaryProps) => {
             '/salary_report',
             {
                 ...search_data,
+                page: 1,
                 from: data.from,
                 to: data.to,
             },
             {
-                preserveState: true,
+                // preserveState: false — sahifa to'liq qayta yaratiladi, shunda forma (summa, daqiqalar, narx)
+                // yangi hisobot qiymatlari bilan qayta initsializatsiya qilinadi.
+                preserveState: false,
                 preserveScroll: true,
             }
         );

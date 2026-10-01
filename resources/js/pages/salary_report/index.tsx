@@ -17,8 +17,6 @@ import CalculateSalary from '@/components/salary_report/calculate-salary';
 import SearchForm from '@/components/search-form';
 import MobileSearchModal from '@/components/MobileSearchModal';
 
-import { resolveNextSalaryStartDate } from '@/lib/salary-date';
-
 export default function SalaryReport() {
     const {
         attendance, report,
@@ -32,6 +30,8 @@ export default function SalaryReport() {
         branches: Branch[];
         workers: Worker[];
     }>().props;
+    // Yuborilgan (submit qilingan) so'rov manzili: hisobot o'zgarganda CalculateSalary formasini qayta yaratish uchun kalit
+    const { url } = usePage();
     const { t } = useTranslation(); // Using the translation hook
 
     const defaultFrom = format(startOfMonth(new Date()), 'yyyy-MM-dd');
@@ -70,25 +70,17 @@ export default function SalaryReport() {
             return value && value !== 'null' ? value.trim() : '';
         };
 
-        const workerId = Number(urlParams.get('worker_id')) || 0;
-        const fromParam = getTrimmed('from');
-
-        let initialFrom = fromParam;
-        if (!initialFrom) {
-            if (workerId && report?.last_salary_date) {
-                initialFrom = resolveNextSalaryStartDate(report.last_salary_date, defaultFrom);
-            } else {
-                initialFrom = defaultFrom;
-            }
-        }
+        // URL'da `from` bo'lmasa, server tanlagan boshlanish sanasi (report.from) ishlatiladi:
+        // xodim tanlangan bo'lsa u oxirgi maosh + 1 kun (yoki oy boshi) bo'ladi.
+        const initialFrom = getTrimmed('from') || report?.from || defaultFrom;
 
         setData('search', getTrimmed('search'));
-        setData('worker_id', workerId);
+        setData('worker_id', Number(urlParams.get('worker_id')) || 0);
         setData('branch_id', Number(urlParams.get('branch_id')) || 0);
         setData('firm_id', Number(urlParams.get('firm_id')) || 0);
         setData('from', initialFrom);
-        setData('to', getTrimmed('to') || defaultTo);
-    }, [location.search, setData, report?.last_salary_date, defaultFrom, defaultTo]);
+        setData('to', getTrimmed('to') || report?.to || defaultTo);
+    }, [location.search, setData, report?.from, report?.to, defaultFrom, defaultTo]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -122,7 +114,11 @@ export default function SalaryReport() {
                         <div className="col-span-12 lg:col-span-3 space-y-6 min-w-0 max-w-full">
                             <RightBar {...report} />
                             {(data.worker_id && report.from && report.to)
-                                ? <CalculateSalary report={report} search_data={data} />
+                                ? <CalculateSalary
+                                    key={`${url}|${report.from}|${report.to}|${report.worked_minutes}`}
+                                    report={report}
+                                    search_data={data}
+                                />
                                 : null
                             }
                         </div>

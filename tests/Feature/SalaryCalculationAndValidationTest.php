@@ -288,3 +288,103 @@ test('StoreSalaryRequest rejects worked_minute deviating more than 5 minutes fro
     $response->assertStatus(422)
         ->assertJsonValidationErrors(['worked_minute']);
 });
+
+/**
+ * Maosh hisoboti: `from` berilmaganda standart boshlanish sanasi.
+ * Qoida: max(oy boshi, oxirgi maosh `to` + 1 kun); agar bu sana `to` dan oshsa, oy boshi saqlanadi.
+ */
+function salaryReportDefaultFrom(array $query): string
+{
+    $report = app(\App\Services\Attendance\AttendanceReportService::class)
+        ->getSalaryReportData(new \Illuminate\Http\Request($query))['report'];
+
+    return $report->from;
+}
+
+function createSalaryEndingOn($test, string $from, string $to): void
+{
+    Salary::create([
+        'worker_id' => $test->worker->id,
+        'user_id' => $test->user->id,
+        'amount' => 100000,
+        'worked_minute' => 120,
+        'break_minute' => 0,
+        'hour_price' => 50000,
+        'from' => $from,
+        'to' => $to,
+        'comment' => 'Oldingi maosh',
+    ]);
+}
+
+afterEach(function () {
+    Carbon::setTestNow();
+});
+
+test('salary report default from is last salary end + 1 day when it falls inside current month', function () {
+    Carbon::setTestNow('2026-09-20 12:00:00');
+    createSalaryEndingOn($this, '2026-09-01', '2026-09-15');
+
+    expect(salaryReportDefaultFrom(['worker_id' => $this->worker->id]))->toBe('2026-09-16');
+});
+
+test('salary report default from is month start when worker has no salary yet', function () {
+    Carbon::setTestNow('2026-09-20 12:00:00');
+
+    expect(salaryReportDefaultFrom(['worker_id' => $this->worker->id]))->toBe('2026-09-01');
+});
+
+test('salary report default from stays month start when last salary ended before this month', function () {
+    Carbon::setTestNow('2026-09-20 12:00:00');
+    createSalaryEndingOn($this, '2026-08-01', '2026-08-31');
+
+    // 2026-09-01 oy boshiga teng, oy boshidan katta emas: o'zgarmaydi
+    expect(salaryReportDefaultFrom(['worker_id' => $this->worker->id]))->toBe('2026-09-01');
+});
+
+test('salary report default from does not move past the report end date', function () {
+    Carbon::setTestNow('2026-09-20 12:00:00');
+    createSalaryEndingOn($this, '2026-09-01', '2026-09-20');
+
+    // keyingi kun (09-21) hisobot `to` (09-20) dan oshadi: oy boshi saqlanadi
+    expect(salaryReportDefaultFrom(['worker_id' => $this->worker->id]))->toBe('2026-09-01');
+});
+
+test('salary report keeps explicit from parameter untouched', function () {
+    Carbon::setTestNow('2026-09-20 12:00:00');
+    createSalaryEndingOn($this, '2026-09-01', '2026-09-15');
+
+    expect(salaryReportDefaultFrom(['worker_id' => $this->worker->id, 'from' => '2026-09-05']))->toBe('2026-09-05');
+});
+
+test('salary report default from is month start without worker_id', function () {
+    Carbon::setTestNow('2026-09-20 12:00:00');
+    createSalaryEndingOn($this, '2026-09-01', '2026-09-15');
+
+    expect(salaryReportDefaultFrom([]))->toBe('2026-09-01');
+});
+
+test('GET /salary_report exposes shifted default from to the page and the shifted period is accepted for saving', function () {
+    Carbon::setTestNow('2026-09-20 12:00:00');
+    createSalaryEndingOn($this, '2026-09-01', '2026-09-15');
+
+    $this->actingAs($this->user)
+        ->get('/salary_report?worker_id=' . $this->worker->id)
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('salary_report/index')
+            ->where('report.from', '2026-09-16')
+            ->where('report.to', '2026-09-20')
+            ->where('report.last_salary_date', '2026-09-15'));
+
+    // Hisobot ko'rsatgan davr (16–20) overlap xatosisiz saqlanishi kerak
+    $this->actingAs($this->user)->post('/salary', [
+        'worker_id' => $this->worker->id,
+        'amount' => 100000,
+        'worked_minute' => 0,
+        'break_minute' => 0,
+        'hour_price' => 50000,
+        'from' => '2026-09-16',
+        'to' => '2026-09-20',
+        'comment' => 'Standart davr',
+    ])->assertSessionDoesntHaveErrors(['from']);
+});
