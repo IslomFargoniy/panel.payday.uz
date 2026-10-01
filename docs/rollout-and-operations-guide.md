@@ -24,8 +24,17 @@ HIKVISION_DAS_ADDRESS="193.180.213.188"
 HIKVISION_TIMEOUT=10
 
 # --- Ma'lumotlar Bazasi ---
-DB_STRICT=true                          # ONLY_FULL_GROUP_BY va barcha strict qoidalar faol
+DB_STRICT=false                          # Standart: false (Production MariaDB 10.6 sql_mode bo'sh holati uchun)
 ```
+
+> ⚠️ **DIQQAT (Strict rejim bo'yicha ogohlantirish va o'tish rejasi):**
+> Production MariaDB muhitida `sql_mode` bo'sh (strict emas). `DB_STRICT=true` ni yoqishdan oldin jonli bazaning zaxira nusxasida (staging/test muhitida) barcha INSERT/UPDATE va hisobot so'rovlarini to'liq sinab ko'rish **shart**. Aks holda uzunlik yoki tip mos kelmasligi sababli qurilma callbacklari 500 xatolik berib, eventlar saqlanmay qolishi mumkin.
+>
+> **Strict rejimga o'tish rejasi:**
+> 1. Dastlabki deploy davrida `DB_STRICT=false` qoldiriladi.
+> 2. `php artisan attendance:smoke-test` orqali barcha so'rovlar muvaffaqiyatli o'tishi tekshiriladi.
+> 3. MariaDB 10.6 replikasida `DB_STRICT=true` yoqilib, kunlik eventlar oqimi sinovdan o'tkaziladi.
+> 4. Sinovlar 100% muvaffaqiyatli yakunlangach, serverda `DB_STRICT=true` qilib yoqiladi.
 
 ---
 

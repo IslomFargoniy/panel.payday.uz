@@ -62,6 +62,6 @@ test('profile update rejects duplicate phone of another user', function () {
     $response->assertSessionHasErrors(['phone']);
 });
 
-test('mysql connection has strict mode enabled in config', function () {
-    expect(config('database.connections.mysql.strict'))->toBeTrue();
+test('mysql connection strict config respects DB_STRICT env defaulting to false', function () {
+    expect(config('database.connections.mysql.strict'))->toBeFalse();
 });
