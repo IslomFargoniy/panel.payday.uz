@@ -108,7 +108,49 @@ Tizimdagi faol qurilmalar uzluksiz ishlashini ta'minlash uchun:
 ## 🔄 4. Orqaga Qaytish Rejasi (Rollback Plan)
 
 Kutilmagan muammo yuzaga kelsa:
-1. `git checkout <oldingi_commit_hash>`
-2. `php artisan optimize:clear && php artisan config:cache && php artisan route:cache`
-3. `php artisan queue:restart`
-4. Server ma'lumotlar bazasi `backup` nusxalari avtomatik saqlanib turishi tavsiya etiladi.
+1. `deploy.sh` da avtomatik tuzoq (`trap rollback ERR`) o'rnatilgan bo'lib, agar `git pull` dan keyin `composer install`, `npm ci`, `npm run build` yoki `artisan migrate` bosqichlarida xatolik yuz bersa, skript avtomatik tarzda `git reset --hard $PREV` qilib, oldingi barqaror holatga qaytaradi va keshni tozalaydi.
+2. Qo'lda orqaga qaytarish uchun:
+   ```bash
+   git reset --hard <oldingi_barqaror_commit>
+   sudo composer install --no-interaction --prefer-dist --optimize-autoloader
+   sudo -u panel_payday_usr /opt/php82/bin/php artisan optimize:clear
+   sudo -u panel_payday_usr /opt/php82/bin/php artisan config:cache
+   sudo -u panel_payday_usr /opt/php82/bin/php artisan route:cache
+   sudo -u panel_payday_usr /opt/php82/bin/php artisan queue:restart
+   ```
+3. Server ma'lumotlar bazasi `backup` nusxalari avtomatik saqlanib turishi tavsiya etiladi.
+
+---
+
+## 👤 5. Server Foydalanuvchilari, Crontab va Sudoers Sozlamalari
+
+Serverdagi jarayonlar (php-fpm va queue worker) `panel_payday_usr` foydalanuvchisi sifatida ishlaydi. Fayl egaligi (`storage` va `bootstrap/cache`) `root` ga o'tib ketmasligi va permissions xatoliklari kelib chiqmasligi uchun quyidagi tizim sozlamalarini amalga oshirish zarur:
+
+### 1. Laravel Scheduler-ni `panel_payday_usr` crontab-iga ko'chirish
+Hozirda `schedule:run` root crontab'ida turibdi. Uni `panel_payday_usr` ga ko'chirish:
+```bash
+# 1) Root crontab'dan schedule:run qatorini o'chirish:
+sudo crontab -e
+
+# 2) panel_payday_usr foydalanuvchisi crontab-iga qo'shish:
+sudo crontab -u panel_payday_usr -e
+```
+Qo'shiladigan qator:
+```cron
+* * * * * /opt/php82/bin/php /var/www/panel_payday_usr/data/www/panel.payday.uz/artisan schedule:run >> /dev/null 2>&1
+```
+
+### 2. Healthcheck servisini parolsiz qayta ishga tushirish uchun Sudoers qoidasi
+Gateway sog'lig'i tekshirilganda (`hikvision:healthcheck`) agar gateway to'xtab qolsa, artisan buyrug'i `systemctl restart hikvision-isup` ni chaqiradi. Buning uchun `panel_payday_usr` ga parolsiz restart huquqini berish zarur:
+```bash
+sudo visudo -f /etc/sudoers.d/panel_payday_usr
+```
+Fayl ichiga quyidagi qatorni yozing:
+```sudoers
+panel_payday_usr ALL=(root) NOPASSWD: /bin/systemctl restart hikvision-isup
+```
+Saqlang va huquqni tekshiring:
+```bash
+sudo chmod 0440 /etc/sudoers.d/panel_payday_usr
+```
+

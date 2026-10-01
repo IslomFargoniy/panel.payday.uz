@@ -48,6 +48,24 @@ cd $SERVER_PATH
 # Keraksiz AppleDouble (._*) fayllarni tozalash
 find . -name "._*" -delete 2>/dev/null || true
 
+PREV=\$(sudo git rev-parse HEAD)
+echo -e "${BLUE}--> Joriy commit (rollback uchun saqlandi): \$PREV${NC}"
+
+rollback() {
+    echo -e "${RED}❌ Xatolik yuz berdi! Avvalgi holatga qaytarilmoqda (\$PREV)...${NC}"
+    sudo git reset --hard "\$PREV"
+    if [ -f "composer.json" ]; then
+        sudo composer install --no-interaction --prefer-dist --optimize-autoloader || true
+    fi
+    sudo -u panel_payday_usr $PHP_BIN artisan optimize:clear || true
+    sudo -u panel_payday_usr $PHP_BIN artisan config:cache || true
+    sudo -u panel_payday_usr $PHP_BIN artisan route:cache || true
+    sudo chown -R panel_payday_usr:panel_payday_usr $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache || true
+    sudo chmod -R 775 $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache || true
+    echo -e "${YELLOW}⚠️ Rollback yakunlandi.${NC}"
+}
+trap rollback ERR
+
 echo -e "${BLUE}--> Eng so'nggi kodlar tortib olinmoqda (git pull)...${NC}"
 sudo git checkout $BRANCH
 sudo git pull origin $BRANCH
@@ -57,25 +75,29 @@ if [ -f "composer.json" ]; then
     sudo composer install --no-interaction --prefer-dist --optimize-autoloader
 fi
 
-echo -e "${BLUE}--> Frontend aktivlari build qilinmoqda (npm run build)...${NC}"
+echo -e "${BLUE}--> Frontend aktivlari build qilinmoqda (npm ci && npm run build)...${NC}"
 if [ -f "package.json" ]; then
+    sudo npm ci
     sudo npm run build
 fi
 
 echo -e "${BLUE}--> Ma'lumotlar bazasi migratsiyalari ishga tushirilmoqda...${NC}"
-sudo $PHP_BIN artisan migrate --force
+sudo -u panel_payday_usr $PHP_BIN artisan migrate --force
 
 echo -e "${BLUE}--> Tizim keshlari tozalanmoqda va optimallashmoqda...${NC}"
-sudo $PHP_BIN artisan optimize:clear
-sudo $PHP_BIN artisan config:cache
-sudo $PHP_BIN artisan route:cache
+sudo -u panel_payday_usr $PHP_BIN artisan optimize:clear
+sudo -u panel_payday_usr $PHP_BIN artisan config:cache
+sudo -u panel_payday_usr $PHP_BIN artisan route:cache
+
+# Muvaffaqiyatli yakunlanganda rollback tuzog'ini bekor qilish
+trap - ERR
 
 echo -e "${BLUE}--> Ruxsatlar (permissions) sozlanmoqda...${NC}"
 sudo chown -R panel_payday_usr:panel_payday_usr $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache
 sudo chmod -R 775 $SERVER_PATH/storage $SERVER_PATH/bootstrap/cache
 
 echo -e "${BLUE}--> Queue workerlar va Supervisor qayta ishga tushirilmoqda...${NC}"
-sudo $PHP_BIN artisan queue:restart || true
+sudo -u panel_payday_usr $PHP_BIN artisan queue:restart || true
 sudo supervisorctl reread || true
 sudo supervisorctl update || true
 sudo supervisorctl restart payday-worker:* || true
