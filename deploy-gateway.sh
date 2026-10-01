@@ -17,10 +17,18 @@ SERVER_PATH="/var/www/panel_payday_usr/data/www/panel.payday.uz"
 
 # Arguments
 SETUP_CONFIG=false
+DRY_RUN=false
 for arg in "$@"; do
     case "$arg" in
         --setup-config)
             SETUP_CONFIG=true
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            ;;
+        *)
+            echo "Noma'lum argument: $arg (mavjud: --setup-config, --dry-run)" >&2
+            exit 2
             ;;
     esac
 done
@@ -37,17 +45,22 @@ echo -e "${BLUE}📡 Hikvision ISUP Gateway - Deployment Boshlanmoqda${NC}"
 echo -e "${BLUE}======================================================${NC}"
 
 # Remote execution via SSH
-ssh "$SERVER_USER@$SERVER_HOST" bash -s -- "$SETUP_CONFIG" <<'EOF'
+ssh "$SERVER_USER@$SERVER_HOST" bash -s -- "$SETUP_CONFIG" "$DRY_RUN" <<'EOF'
 set -e
 
 SETUP_CONFIG="$1"
+DRY_RUN="$2"
 SERVER_PATH="/var/www/panel_payday_usr/data/www/panel.payday.uz"
 CONFIG_DIR="/etc/hikvision-gateway"
 CONFIG_FILE="$CONFIG_DIR/gateway_config.json"
 TARGET_BIN="/usr/local/bin/hikvision-gateway"
 NEW_BIN="/usr/local/bin/hikvision-gateway.new"
+KNOWN_GOOD="/usr/local/bin/hikvision-gateway.known-good"
 TIMESTAMP=$(date +%Y%m%d%H%M%S)
 BACKUP_BIN="/usr/local/bin/hikvision-gateway.bak.$TIMESTAMP"
+
+# Vaqtinchalik kompilyatsiya fayli har qanday holatda (xato yoki --dry-run) tozalansin
+trap 'sudo rm -f "$NEW_BIN"' EXIT
 
 GREEN="\033[0;32m"
 BLUE="\033[0;34m"
@@ -80,7 +93,9 @@ wait_for_health() {
 }
 
 # 0. --setup-config tekshiruvi
-if [ "$SETUP_CONFIG" = "true" ]; then
+if [ "$SETUP_CONFIG" = "true" ] && [ "$DRY_RUN" = "true" ]; then
+    echo -e "${YELLOW}ℹ️  --dry-run: --setup-config bosqichi o'tkazib yuborildi (fayllar yaratilmaydi).${NC}"
+elif [ "$SETUP_CONFIG" = "true" ]; then
     echo -e "${BLUE}--> Konfiguratsiya fayli tekshirilmoqda ($CONFIG_FILE)...${NC}"
     if [ ! -d "$CONFIG_DIR" ]; then
         echo -e "${YELLOW}Katalog yaratilmoqda: $CONFIG_DIR${NC}"
@@ -148,10 +163,69 @@ sudo chmod +x "$NEW_BIN"
 echo -e "${GREEN}✔ Yangi binary muvaffaqiyatli kompilyatsiya qilindi.${NC}"
 
 # 2. Joriy binary zaxira nusxasini olish
-if [ -f "$TARGET_BIN" ]; then
-    echo -e "${BLUE}--> 2. Joriy binary zaxira qilinmoqda ($BACKUP_BIN)...${NC}"
-    sudo cp "$TARGET_BIN" "$BACKUP_BIN"
-    echo -e "${GREEN}✔ Zaxira nusxasi yaratildi.${NC}"
+# Muhim: zaxira DISKDAGI fayldan emas, avvalo ISHLAB TURGAN jarayondan (/proc/<pid>/exe) olinadi.
+# Sababi: diskdagi fayl ishlab turgan versiyadan farq qilishi mumkin (masalan, oddiy deploy yangi
+# binary yozib, servisni restart qilmagan bo'lsa) va u hech qachon sinalmagan bo'lishi mumkin.
+PID=$(systemctl show -p MainPID --value hikvision-isup 2>/dev/null || echo 0)
+PID=${PID:-0}
+BACKUP_SRC=""
+BACKUP_FROM_PROC=false
+if [ "$PID" -gt 0 ] 2>/dev/null && sudo test -r "/proc/$PID/exe"; then
+    BACKUP_SRC="/proc/$PID/exe"
+    BACKUP_FROM_PROC=true
+    echo -e "${BLUE}--> 2. Zaxira manbasi: ishlab turgan jarayon (PID $PID, /proc/$PID/exe)${NC}"
+elif [ -f "$TARGET_BIN" ]; then
+    BACKUP_SRC="$TARGET_BIN"
+    echo -e "${YELLOW}⚠️ Ishlab turgan jarayon topilmadi. Zaxira diskdagi fayldan olinadi ($TARGET_BIN) — u sinalgan versiya bo'lmasligi mumkin!${NC}"
+else
+    echo -e "${YELLOW}⚠️ Zaxira olinadigan binary topilmadi: rollback imkonsiz bo'ladi.${NC}"
+fi
+
+# Checksum'lar (solishtirish oson bo'lishi uchun)
+sha_of() { sudo sha256sum "$1" 2>/dev/null | cut -c1-16; }
+echo -e "${BLUE}    Checksum (sha256, dastlabki 16 belgi):${NC}"
+if [ "$BACKUP_FROM_PROC" = "true" ]; then
+    echo "    ishlab turgan jarayon : $(sha_of "/proc/$PID/exe")"
+fi
+[ -f "$TARGET_BIN" ] && echo "    diskdagi $TARGET_BIN : $(sha_of "$TARGET_BIN")"
+echo "    yangi (kompilyatsiya) : $(sha_of "$NEW_BIN")"
+if [ "$BACKUP_FROM_PROC" = "true" ] && [ -f "$TARGET_BIN" ] && [ "$(sha_of "/proc/$PID/exe")" != "$(sha_of "$TARGET_BIN")" ]; then
+    echo -e "${YELLOW}    ⚠️ Diskdagi binary ishlab turgan versiyadan FARQ QILADI (ishlab turgani zaxiraga olinadi).${NC}"
+fi
+
+if [ "$DRY_RUN" = "true" ]; then
+    echo -e "\n${YELLOW}ℹ️  --dry-run: binary almashtirilmadi, servis restart qilinmadi, zaxira fayllar yozilmadi.${NC}"
+    if [ -n "$BACKUP_SRC" ]; then
+        echo -e "${YELLOW}    Haqiqiy ishga tushirishda zaxira manbasi: $BACKUP_SRC -> $BACKUP_BIN${NC}"
+    fi
+    if [ ! -f "$KNOWN_GOOD" ] && [ "$BACKUP_FROM_PROC" = "true" ]; then
+        echo -e "${YELLOW}    Birinchi marta: known-good nusxa yaratiladi ($KNOWN_GOOD).${NC}"
+    fi
+    exit 0
+fi
+
+if [ -n "$BACKUP_SRC" ]; then
+    echo -e "${BLUE}    Zaxira nusxa yaratilmoqda ($BACKUP_BIN)...${NC}"
+    sudo cp "$BACKUP_SRC" "$BACKUP_BIN"
+    sudo chmod +x "$BACKUP_BIN"
+    if [ "$BACKUP_FROM_PROC" = "true" ] && [ "$(sha_of "$BACKUP_BIN")" != "$(sha_of "/proc/$PID/exe")" ]; then
+        echo -e "${RED}❌ Zaxira checksum'i ishlab turgan binary'ga mos kelmadi. Hech narsa o'zgartirilmadi.${NC}"
+        sudo rm -f "$BACKUP_BIN"
+        exit 1
+    fi
+    echo -e "${GREEN}✔ Zaxira nusxasi yaratildi (checksum: $(sha_of "$BACKUP_BIN")).${NC}"
+
+    # Bir martalik "known-good" nusxa: faqat ishlab turgan jarayondan olinadi va hech qachon ustidan yozilmaydi
+    if [ ! -f "$KNOWN_GOOD" ] && [ "$BACKUP_FROM_PROC" = "true" ]; then
+        sudo cp "$BACKUP_BIN" "$KNOWN_GOOD"
+        sudo chmod 755 "$KNOWN_GOOD"
+        echo -e "${GREEN}✔ Known-good nusxa saqlandi: $KNOWN_GOOD (bu fayl hech qachon ustidan yozilmaydi).${NC}"
+    fi
+
+    # Eski zaxira nusxalardan faqat oxirgi 5 tasini qoldirish (known-good ga tegilmaydi)
+    ls -1t /usr/local/bin/hikvision-gateway.bak.* 2>/dev/null | tail -n +6 | while read -r old; do
+        sudo rm -f "$old"
+    done
 fi
 
 # 3. Atomik almashtirish
@@ -210,5 +284,9 @@ fi
 EOF
 
 echo -e "${GREEN}======================================================${NC}"
-echo -e "${GREEN}🎉 Gateway yangilanishi muvaffaqiyatli yakunlandi!${NC}"
+if [ "$DRY_RUN" = "true" ]; then
+    echo -e "${GREEN}✔ Dry-run yakunlandi: kompilyatsiya o'tdi, hech narsa o'zgartirilmadi.${NC}"
+else
+    echo -e "${GREEN}🎉 Gateway yangilanishi muvaffaqiyatli yakunlandi!${NC}"
+fi
 echo -e "${GREEN}======================================================${NC}"

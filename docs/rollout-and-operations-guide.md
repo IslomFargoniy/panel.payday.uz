@@ -143,18 +143,24 @@ Tizimdagi faol qurilmalar uzluksiz ishlashini ta'minlash uchun:
 ### ⚠️ Gateway yangilanishi (`deploy-gateway.sh`)
 ISUP Gateway dasturi veb-panelning umumiy `deploy.sh` skriptidan **butunlay ajratilgan** va har deploy paytida qayta kompilyatsiya qilinmaydi.
 Gateway kodiga o'zgartirish kiritilganda u faqat alohida skript orqali qo'lda yangilanadi:
+**Birinchi marta ishga tushirish tartibi:**
 ```bash
-./deploy-gateway.sh
-# yoki konfiguratsiya faylini tekshirish bilan:
+./deploy.sh                       # 1) veb-panel (gateway'ga tegmaydi)
+./deploy-gateway.sh --dry-run     # 2) compile + zaxira manbasi va checksum'lar, hech narsa o'zgarmaydi
+./deploy-gateway.sh               # 3) haqiqiy yangilash
+# konfiguratsiya faylini yaratish/tekshirish bilan:
 ./deploy-gateway.sh --setup-config
 ```
+> Serverdagi gateway jarayoni 19-sentabrdan beri **diskdan o'chirilgan** eski binary bilan ishlab turgan bo'lishi mumkin, diskdagi fayl esa boshqa (hech qachon sinalmagan) versiya. Shuning uchun zaxira diskdan emas, ishlab turgan jarayondan (`/proc/<pid>/exe`) olinadi va birinchi yangilashda bir martalik `hikvision-gateway.known-good` nusxasi saqlanadi. Batafsil: `docs/hikvision-gateway-service.md`, 4-bo'lim.
+
 Skript quyidagi qat'iy xavfsizlik zanjirida ishlaydi:
+0. Gateway tokeni config'dan PHP orqali o'qiladi (serverda `jq` yo'q); config yaroqsiz bo'lsa, hech narsa o'zgartirilmasdan to'xtaydi.
 1. Kod `/usr/local/bin/hikvision-gateway.new` vaqtinchalik manziliga kompilyatsiya qilinadi.
-2. Ishlab turgan joriy binary `/usr/local/bin/hikvision-gateway.bak.<timestamp>` sifatida saqlanadi.
-3. Yangi binary `mv` bilan atomik tarzda joyiga qo'yiladi.
+2. Ishlab turgan **jarayondan** zaxira olinadi: `/usr/local/bin/hikvision-gateway.bak.<timestamp>` (oxirgi 5 tasi saqlanadi), checksum solishtiriladi.
+3. Yangi binary vaqtinchalik faylga nusxalanib, `mv` bilan atomik tarzda joyiga qo'yiladi.
 4. `sudo systemctl restart hikvision-isup` bajariladi.
 5. 10 soniya ichida `/health` (token bilan) va `/api/devices` tekshiriladi.
-6. Agar healthcheck o'tmasa, zaxira nusxa joyiga qaytariladi, servis restart qilinadi va xatolik beriladi (avtomatik rollback).
+6. Agar healthcheck o'tmasa, zaxira nusxa xuddi shu xavfsiz usulda qaytariladi, servis restart qilinadi, health check **qayta** tekshiriladi va natija (`Rollback OK` yoki `ROLLBACK HAM MUVAFFAQIYATSIZ`) chop etiladi.
 
 ---
 

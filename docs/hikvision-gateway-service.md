@@ -126,20 +126,39 @@ sudo systemctl status hikvision-isup
 
 ### Ishga tushirish:
 ```bash
-# Oddiy yangilash:
+# 1) AVVAL har doim dry-run: compile qiladi va zaxira manbasi hamda checksum'larni ko'rsatadi,
+#    lekin binary'ni almashtirmaydi, servisni restart qilmaydi va zaxira fayllarni yozmaydi.
+./deploy-gateway.sh --dry-run
+
+# 2) Haqiqiy yangilash:
 ./deploy-gateway.sh
 
-# Konfiguratsiya faylini sozlash bilan birga:
+# Konfiguratsiya faylini sozlash bilan birga (dry-run bilan birga ishlatilsa, fayllar yaratilmaydi):
 ./deploy-gateway.sh --setup-config
 ```
 
+> ⚠️ **Birinchi ishga tushirishdan oldin** albatta `./deploy-gateway.sh --dry-run` qiling. Natijada
+> "Diskdagi binary ishlab turgan versiyadan FARQ QILADI" ogohlantirishi chiqsa, bu normal holat:
+> zaxira diskdagi fayldan emas, ishlab turgan jarayondan olinadi (pastga qarang).
+
 ### Skript bajaradigan bosqichlar:
-1. **Compile:** Yangi binary avval `/usr/local/bin/hikvision-gateway.new` vaqtinchalik manziliga kompilyatsiya qilinadi. Xatolik bo'lsa, jarayon to'xtaydi.
-2. **Backup:** Ishlab turgan joriy binary `/usr/local/bin/hikvision-gateway.bak.<timestamp>` qilib saqlanadi.
-3. **Almashtirish:** `.new` fayli `mv` yordamida atomik tarzda joyiga qo'yiladi.
+0. **Token:** `gateway_token` `/etc/hikvision-gateway/gateway_config.json` dan PHP orqali o'qiladi (serverda `jq` yo'q). Config mavjud-u, yaroqsiz JSON bo'lsa, skript **hech narsa o'zgartirmasdan** to'xtaydi. Tokenning o'zi hech qachon chop etilmaydi.
+1. **Compile:** Yangi binary avval `/usr/local/bin/hikvision-gateway.new` vaqtinchalik manziliga kompilyatsiya qilinadi. Xatolik bo'lsa, jarayon to'xtaydi. Vaqtinchalik fayl har holda o'chiriladi.
+2. **Backup:** Zaxira **ishlab turgan jarayondan** (`/proc/<pid>/exe`) olinadi va `/usr/local/bin/hikvision-gateway.bak.<timestamp>` sifatida saqlanadi. Diskdagi fayl ishlab turgan versiyadan farq qilishi mumkin (u hech qachon sinalmagan bo'lishi ham mumkin), shuning uchun zaxira manbai sifatida faqat jarayon topilmaganda ishlatiladi (ogohlantirish bilan). Zaxiraning checksum'i ishlab turgan binary bilan solishtiriladi; mos kelmasa, hech narsa o'zgartirilmasdan to'xtaydi. Faqat oxirgi 5 ta `.bak.*` nusxa saqlanadi.
+3. **Almashtirish:** Binary vaqtinchalik faylga nusxalanib, keyin `mv` bilan atomik tarzda joyiga qo'yiladi. (Oddiy `cp` ishlab turgan binary ustiga yozishda "Text file busy" xatosi beradi.)
 4. **Restart:** `sudo systemctl restart hikvision-isup` bajariladi.
 5. **Health check:** 10 soniya davomida `curl -fsS http://127.0.0.1:7661/health` (sozlangan bo'lsa `X-Gateway-Token` bilan) tekshiriladi va `/api/devices` dan qurilmalar olinadi.
-6. **Rollback:** Agar 10 soniya ichida healthcheck javob bermasa, avtomatik ravishda zaxiradagi eski binary joyiga qaytariladi va servis qayta ishga tushiriladi (`exit 1`).
+6. **Rollback:** Agar healthcheck javob bermasa, zaxira binary xuddi shu xavfsiz usulda (`cp` + `mv`) qaytariladi, servis restart qilinadi va **health check qayta tekshiriladi**. Natija aniq chop etiladi: `Rollback OK` yoki `ROLLBACK HAM MUVAFFAQIYATSIZ — qo'lda aralashuv kerak` (shu holatda `systemctl status` chiqishi ham ko'rsatiladi). Skript har holda `exit 1` bilan tugaydi.
+
+### `known-good` nusxa
+Birinchi haqiqiy yangilashda, ishlab turgan jarayondan olingan zaxira bir martalik **`/usr/local/bin/hikvision-gateway.known-good`** nomi bilan ham saqlanadi. Bu "ishlab turgani aniq bo'lgan" binary'ning kafolatlangan nusxasi:
+- u faqat **bir marta** yaratiladi va skript uni hech qachon **ustidan yozmaydi** va o'chirmaydi (`.bak.*` tozalashga kirmaydi);
+- barcha avtomatik zaxiralar buzilib qolsa, qo'lda tiklash uchun ishlatiladi:
+  ```bash
+  sudo cp /usr/local/bin/hikvision-gateway.known-good /usr/local/bin/hikvision-gateway.tmp
+  sudo mv -f /usr/local/bin/hikvision-gateway.tmp /usr/local/bin/hikvision-gateway
+  sudo systemctl restart hikvision-isup
+  ```
 
 ---
 
