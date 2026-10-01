@@ -85,6 +85,28 @@ if [ "$SETUP_CONFIG" = "true" ]; then
     echo -e "------------------------------------------------------------------"
 fi
 
+# Gateway tokenini config'dan o'qish (serverda jq yo'q, shuning uchun PHP ishlatiladi).
+# Binary almashtirilishidan OLDIN o'qiladi: config buzuq bo'lsa, hech narsa o'zgarmasdan to'xtaydi.
+GW_TOKEN=""
+if [ -f "$CONFIG_FILE" ]; then
+    if ! GW_TOKEN=$(sudo /opt/php82/bin/php -r '$c = json_decode((string) @file_get_contents($argv[1]), true); if (!is_array($c)) { fwrite(STDERR, "INVALID_JSON\n"); exit(2); } echo (string) ($c["gateway_token"] ?? "");' "$CONFIG_FILE"); then
+        echo -e "${RED}❌ Xatolik: $CONFIG_FILE o'qilmadi yoki yaroqsiz JSON. Hech narsa o'zgartirilmadi.${NC}"
+        exit 1
+    fi
+    if [ -n "$GW_TOKEN" ]; then
+        echo -e "${GREEN}✔ Gateway tokeni config'dan o'qildi (health check X-Gateway-Token bilan bajariladi).${NC}"
+    else
+        echo -e "${YELLOW}ℹ️  Config'da gateway_token bo'sh: health check tokensiz bajariladi.${NC}"
+    fi
+else
+    echo -e "${YELLOW}ℹ️  $CONFIG_FILE topilmadi: health check tokensiz bajariladi.${NC}"
+fi
+
+HEADER_FLAG=()
+if [ -n "$GW_TOKEN" ]; then
+    HEADER_FLAG=(-H "X-Gateway-Token: $GW_TOKEN")
+fi
+
 # 1. SDK mavjudligini tekshirish
 if [ ! -d "/opt/ip-camera-ehome-server/thirdparty/HCISUPSDK/linux64/include" ]; then
     echo -e "${RED}❌ Xatolik: HCISUP SDK topilmadi (/opt/ip-camera-ehome-server/thirdparty/HCISUPSDK/linux64/include).${NC}"
@@ -120,17 +142,7 @@ sudo systemctl restart hikvision-isup
 # 5. Sog'ligini tekshirish (Health check)
 echo -e "${BLUE}--> 5. Gateway sog'lig'i tekshirilmoqda (10 soniya ichida)...${NC}"
 
-# Tokenni aniqlash
-GW_TOKEN=""
-if [ -f "$CONFIG_FILE" ]; then
-    GW_TOKEN=$(sudo jq -r '.gateway_token // empty' "$CONFIG_FILE" 2>/dev/null || true)
-fi
-
-HEADER_FLAG=()
-if [ -n "$GW_TOKEN" ]; then
-    HEADER_FLAG=(-H "X-Gateway-Token: $GW_TOKEN")
-fi
-
+# Token 1-qadamdan oldin aniqlangan (GW_TOKEN, HEADER_FLAG)
 HEALTH_OK=false
 for i in {1..10}; do
     echo -n "Kutilmoqda ($i/10s)... "
