@@ -26,8 +26,10 @@ struct GatewayConfig {
     int cms_port = 7660;
     int alarm_port = 7200;
     int api_port = 7661;
+    std::string api_bind = "127.0.0.1";
     std::string das_address = "193.180.213.188";
     int das_port = 7660;
+    std::string gateway_token = "";
 };
 
 static GatewayConfig g_config;
@@ -48,8 +50,10 @@ void loadConfig(const std::string& configPath) {
         if (j.contains("cms_port")) g_config.cms_port = j["cms_port"].get<int>();
         if (j.contains("alarm_port")) g_config.alarm_port = j["alarm_port"].get<int>();
         if (j.contains("api_port")) g_config.api_port = j["api_port"].get<int>();
+        if (j.contains("api_bind")) g_config.api_bind = j["api_bind"].get<std::string>();
         if (j.contains("das_address")) g_config.das_address = j["das_address"].get<std::string>();
         if (j.contains("das_port")) g_config.das_port = j["das_port"].get<int>();
+        if (j.contains("gateway_token")) g_config.gateway_token = j["gateway_token"].get<std::string>();
         std::cout << "[CONFIG] Loaded successfully from " << configPath << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "[CONFIG ERROR] " << e.what() << ", using defaults." << std::endl;
@@ -86,6 +90,9 @@ void notifyLaravelDeviceStatus(const std::string& device_id, const std::string& 
             cli.set_connection_timeout(std::chrono::seconds(3));
             cli.set_read_timeout(std::chrono::seconds(3));
             httplib::Headers headers = {{"Host", g_config.server_host}};
+            if (!g_config.gateway_token.empty()) {
+                headers.emplace("X-Gateway-Token", g_config.gateway_token);
+            }
             json payload = {
                 {"device_id", device_id},
                 {"status", status},
@@ -111,6 +118,9 @@ std::string fetchDeviceKey(const std::string& device_id) {
         cli.set_connection_timeout(std::chrono::seconds(2));
         cli.set_read_timeout(std::chrono::seconds(2));
         httplib::Headers headers = {{"Host", g_config.server_host}};
+        if (!g_config.gateway_token.empty()) {
+            headers.emplace("X-Gateway-Token", g_config.gateway_token);
+        }
         auto res = cli.Get(("/api/hikvision-device-key?device_id=" + device_id).c_str(), headers);
         if (res && res->status == 200) {
             auto j = json::parse(res->body);
@@ -121,9 +131,12 @@ std::string fetchDeviceKey(const std::string& device_id) {
                 return key;
             }
         }
+    } catch (const std::exception& e) {
+        std::cerr << "[KEY FETCH EXCEPTION] " << e.what() << " for device: " << device_id << std::endl;
     } catch (...) {}
 
-    return "PayDay14!2026";
+    std::cerr << "[KEY ERROR] Failed to fetch device key from Laravel for device: " << device_id << std::endl;
+    return "";
 }
 
 void forwardAlarmToLaravel(const std::string& serial, DWORD alarmType, const std::string& rawPayload, const std::string& savedPicFilename) {
@@ -133,6 +146,9 @@ void forwardAlarmToLaravel(const std::string& serial, DWORD alarmType, const std
             cli.set_connection_timeout(std::chrono::seconds(4));
             cli.set_read_timeout(std::chrono::seconds(4));
             httplib::Headers headers = {{"Host", g_config.server_host}};
+            if (!g_config.gateway_token.empty()) {
+                headers.emplace("X-Gateway-Token", g_config.gateway_token);
+            }
 
             json postObj;
             try {
@@ -249,9 +265,13 @@ BOOL CALLBACK RegistrationCallBack(LONG lUserID, DWORD dwDataType, void* pOutBuf
             std::cout << "[ISUP AUTH] Device: " << device_id << " IP: " << ip << std::endl;
 
             std::string key = fetchDeviceKey(device_id);
+            if (key.empty()) {
+                std::cerr << "[ISUP AUTH ERROR] No encryption key found for device: " << device_id << ". Authentication rejected." << std::endl;
+                return FALSE;
+            }
             strncpy((char*)pInBuffer, key.c_str(), dwInLen - 1);
             ((char*)pInBuffer)[dwInLen - 1] = '\0';
-            std::cout << "[ISUP AUTH] Sent Key for: " << device_id << " (Key: " << key << ")" << std::endl;
+            std::cout << "[ISUP AUTH] Sent Key for: " << device_id << std::endl;
         }
     } else if (dwDataType == ENUM_DEV_SESSIONKEY) {
         auto* pDevInfo = (NET_EHOME_DEV_REG_INFO_V12*)pOutBuffer;
@@ -350,11 +370,39 @@ BOOL CALLBACK RegistrationCallBack(LONG lUserID, DWORD dwDataType, void* pOutBuf
 }
 
 int main(int argc, char* argv[]) {
-    std::string configPath = "gateway_config.json";
-    if (argc > 1) {
-        configPath = argv[1];
+    std::string configPath = "";
+    std::vector<std::string> searchPaths;
+
+    if (argc > 1 && argv[1] != nullptr && strlen(argv[1]) > 0) {
+        searchPaths.push_back(argv[1]);
     }
-    loadConfig(configPath);
+    const char* envConfig = std::getenv("HIKVISION_GATEWAY_CONFIG");
+    if (envConfig && strlen(envConfig) > 0) {
+        searchPaths.push_back(envConfig);
+    }
+    std::string binaryPath = argv[0];
+    size_t lastSlash = binaryPath.find_last_of("/\\");
+    if (lastSlash != std::string::npos) {
+        searchPaths.push_back(binaryPath.substr(0, lastSlash + 1) + "gateway_config.json");
+    } else {
+        searchPaths.push_back("gateway_config.json");
+    }
+    searchPaths.push_back("/etc/hikvision-gateway/gateway_config.json");
+
+    for (const auto& p : searchPaths) {
+        std::ifstream testF(p);
+        if (testF.good()) {
+            configPath = p;
+            break;
+        }
+    }
+
+    if (!configPath.empty()) {
+        std::cout << "[CONFIG] Loading configuration from: " << configPath << std::endl;
+        loadConfig(configPath);
+    } else {
+        std::cout << "[CONFIG] No config file found in search paths, using default values." << std::endl;
+    }
 
     std::cout << "Starting Hikvision ISUP 5.0 Gateway Server..." << std::endl;
 
@@ -542,8 +590,20 @@ int main(int argc, char* argv[]) {
         }
     });
 
-    std::cout << "✔ HTTP REST API listening on 0.0.0.0:" << g_config.api_port << std::endl;
-    svr.listen("0.0.0.0", g_config.api_port);
+    if (!g_config.gateway_token.empty()) {
+        svr.set_pre_routing_handler([](const httplib::Request& req, httplib::Response& res) {
+            auto token_hdr = req.get_header_value("X-Gateway-Token");
+            if (token_hdr != g_config.gateway_token) {
+                res.status = 401;
+                res.set_content("{\"error\": \"Unauthorized: Invalid or missing X-Gateway-Token\"}", "application/json");
+                return httplib::Server::HandlerResponse::Handled;
+            }
+            return httplib::Server::HandlerResponse::Unhandled;
+        });
+    }
+
+    std::cout << "✔ HTTP REST API listening on " << g_config.api_bind << ":" << g_config.api_port << std::endl;
+    svr.listen(g_config.api_bind.c_str(), g_config.api_port);
 
     if (alarmHandle >= 0) {
         NET_EALARM_StopListen(alarmHandle);

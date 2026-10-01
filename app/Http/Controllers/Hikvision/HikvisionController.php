@@ -259,8 +259,75 @@ class HikvisionController extends Controller
                 'files' => array_keys($request->allFiles())
             ]);
 
-            $rawEvent = $request->AccessControllerEvent ?? $request->event_log ?? $request->all();
-            $eventData = is_string($rawEvent) ? json_decode($rawEvent) : json_decode(json_encode($rawEvent));
+            // Normalize incoming payload
+            if ($request->has('AccessControllerEvent') && is_string($request->AccessControllerEvent)) {
+                $decoded = json_decode($request->AccessControllerEvent);
+                if (isset($decoded->AccessControllerEvent)) {
+                    $eventData = $decoded;
+                } else {
+                    $eventData = json_decode(json_encode($request->all()));
+                    $eventData->AccessControllerEvent = $decoded;
+                }
+            } elseif ($request->has('event_log') && is_string($request->event_log)) {
+                $decoded = json_decode($request->event_log);
+                if (isset($decoded->AccessControllerEvent)) {
+                    $eventData = $decoded;
+                } else {
+                    $eventData = json_decode(json_encode($request->all()));
+                    $eventData->AccessControllerEvent = $decoded;
+                }
+            } else {
+                $eventData = json_decode(json_encode($request->all()));
+            }
+
+            if (!isset($eventData->AccessControllerEvent) && isset($eventData->employeeNoString)) {
+                $eventData->AccessControllerEvent = clone $eventData;
+            }
+
+            $rawMac = $eventData->macAddress ?? ($eventData->AccessControllerEvent->macAddress ?? $request->input('macAddress'));
+            $deviceId = $eventData->device_id ?? ($eventData->AccessControllerEvent->device_id ?? $request->input('device_id'));
+            $shortSerial = $eventData->shortSerialNumber ?? ($eventData->AccessControllerEvent->shortSerialNumber ?? $request->input('shortSerialNumber'));
+            $serialNo = $eventData->AccessControllerEvent->serialNo ?? ($eventData->serialNo ?? $request->input('serialNo'));
+
+            $macAddress = $rawMac ? strtolower(str_replace(['-', ' '], ':', trim($rawMac))) : null;
+
+            // Resolve matching BranchDevice with status = 1
+            $branchDevice = null;
+            if ($macAddress || $shortSerial || $deviceId || $serialNo) {
+                $branchDevice = \App\Models\Branch\BranchDevice::where('status', 1)
+                    ->where(function ($q) use ($macAddress, $shortSerial, $deviceId, $serialNo) {
+                        if ($macAddress) {
+                            $q->orWhereRaw("LOWER(REPLACE(mac_address, '-', ':')) = ?", [$macAddress]);
+                        }
+                        if ($shortSerial && $shortSerial !== 'default') {
+                            $q->orWhere('device_id', '=', $shortSerial);
+                        }
+                        if ($deviceId) {
+                            $q->orWhere('device_id', '=', $deviceId);
+                        }
+                        if ($serialNo && $serialNo !== 'default') {
+                            $q->orWhere('device_id', '=', $serialNo);
+                        }
+                    })->first();
+            }
+
+            if (!$branchDevice) {
+                \Illuminate\Support\Facades\Log::warning('Hikvision callback rejected: No active BranchDevice matched', [
+                    'ip' => $request->ip(),
+                    'mac' => $rawMac,
+                    'norm_mac' => $macAddress,
+                    'device_id' => $deviceId,
+                    'short_serial' => $shortSerial,
+                    'serial_no' => $serialNo,
+                ]);
+                return response()->json(['error' => 'Device not recognized or inactive'], 403);
+            }
+
+            $shortSerial = $branchDevice->device_id ?: ($shortSerial ?: 'default');
+            $branchDevice->update([
+                'is_online' => true,
+                'last_seen_at' => now(),
+            ]);
 
             if (isset($eventData->AccessControllerEvent)) {
                 if (!isset($eventData->AccessControllerEvent->attendanceStatus) || $eventData->AccessControllerEvent->attendanceStatus === 'undefined' || $eventData->AccessControllerEvent->attendanceStatus === 'CheckIn') {
@@ -269,61 +336,26 @@ class HikvisionController extends Controller
                         $eventData->AccessControllerEvent->label = 'Keldi';
                     }
                 }
-                $macAddress = $eventData->macAddress ?? ($eventData->AccessControllerEvent->macAddress ?? null);
-                $deviceId = $eventData->device_id ?? null;
-                $shortSerial = $eventData->shortSerialNumber ?? null;
-
-                // Resolve matching BranchDevice
-                $branchDevice = null;
-                if ($macAddress || $shortSerial || $deviceId) {
-                    $branchDevice = \App\Models\Branch\BranchDevice::where('status', 1)
-                        ->where(function ($q) use ($macAddress, $shortSerial, $deviceId) {
-                            if ($macAddress) {
-                                $q->orWhere('mac_address', '=', $macAddress);
-                            }
-                            if ($shortSerial && $shortSerial !== 'default') {
-                                $q->orWhere('device_id', '=', $shortSerial);
-                            }
-                            if ($deviceId) {
-                                $q->orWhere('device_id', '=', $deviceId);
-                            }
-                        })->first();
-                }
-
-                if ($branchDevice) {
-                    $shortSerial = $branchDevice->device_id ?: ($shortSerial ?: 'default');
-                    $branchDevice->update([
-                        'is_online' => true,
-                        'last_seen_at' => now(),
-                    ]);
-                } elseif (empty($shortSerial) || $shortSerial === 'default') {
-                    $shortSerial = $eventData->AccessControllerEvent->serialNo ?? 'default';
-                }
 
                 $accessEventData = $eventData->AccessControllerEvent;
 
                 $filename = '';
-                if ($request->hasFile('Picture')) {
-                    $picture = $request->file('Picture');
-                    $filename = time() . '_' . rand(1, 50) . '_' . $picture->getClientOriginalName();
-                    $savedPath = $picture->storeAs("hikvision/$shortSerial", $filename, 'public');
-
-                    $caption = 'Foydalanuvchi: ' . ($accessEventData->name ?? 'Noma\'lum') .
-                        "\nHolati: " . ($accessEventData->attendanceStatus ?? 'Noma\'lum') .
-                        "\nPath : $savedPath" .
-                        "\nEmployeeNo : " . ($accessEventData->employeeNoString ?? 'yo\'q');
-
-                    telegramlog($caption);
-                } elseif ($request->hasFile('picture')) {
-                    $picture = $request->file('picture');
-                    $filename = time() . '_' . rand(1, 50) . '_' . $picture->getClientOriginalName();
-                    $picture->storeAs("hikvision/$shortSerial", $filename, 'public');
-                } elseif ($request->filled('picture')) {
-                    $filename = $request->input('picture');
-                } elseif (!empty($eventData->picture)) {
-                    $filename = $eventData->picture;
-                } elseif (!empty($accessEventData->picture)) {
-                    $filename = $accessEventData->picture;
+                $cleanSerial = preg_replace('/[^a-zA-Z0-9_\-]/', '', $shortSerial) ?: 'default';
+                if ($request->hasFile('Picture') || $request->hasFile('picture')) {
+                    $picture = $request->file('Picture') ?? $request->file('picture');
+                    $ext = strtolower($picture->getClientOriginalExtension());
+                    if (!in_array($ext, ['jpg', 'jpeg', 'png'])) {
+                        $ext = 'jpg';
+                    }
+                    $filename = \Illuminate\Support\Str::uuid()->toString() . '.' . $ext;
+                    $picture->storeAs("hikvision/{$cleanSerial}", $filename, 'public');
+                } elseif ($request->filled('picture') || !empty($eventData->picture) || !empty($accessEventData->picture)) {
+                    $rawPic = (string) ($request->input('picture') ?: ($eventData->picture ?? $accessEventData->picture));
+                    $basePic = basename($rawPic);
+                    $ext = strtolower(pathinfo($basePic, PATHINFO_EXTENSION));
+                    if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
+                        $filename = $basePic;
+                    }
                 }
 
                 if (empty($accessEventData->employeeNoString)) {
@@ -468,10 +500,7 @@ class HikvisionController extends Controller
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Hikvision Callback Error: ' . $e->getMessage() . ' line: ' . $e->getLine());
-            if ($request->hasFile('Picture')) {
-                telegramlog('Xatolik: ' . $e->getMessage() . ' line: ' . $e->getLine());
-            }
-            return response()->json(['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Server error occurred'], 500);
         }
     }
 
@@ -518,12 +547,7 @@ class HikvisionController extends Controller
             ]);
         }
 
-        // Fallback default format PayDay{branch_id}2026 or PayDay142026
-        return response()->json([
-            'success' => true,
-            'device_id' => $deviceId,
-            'encryption_key' => 'PayDay142026',
-        ]);
+        return response()->json(['error' => 'Device not found or encryption key not set'], 404);
     }
 
     public function updateDeviceStatus(Request $request)
@@ -538,7 +562,6 @@ class HikvisionController extends Controller
             if ($device) {
                 $device->update([
                     'is_online' => ($status === 'online'),
-                    'status' => 1,
                     'last_seen_at' => now(),
                 ]);
             }

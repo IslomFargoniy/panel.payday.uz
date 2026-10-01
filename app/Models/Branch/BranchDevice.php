@@ -29,6 +29,10 @@ class BranchDevice extends Model
         'last_seen_at' => 'datetime',
     ];
 
+    protected $hidden = [
+        'encryption_key',
+    ];
+
     public function branch(){
         return $this->belongsTo(Branch::class , 'branch_id');
     }

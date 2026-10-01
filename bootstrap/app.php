@@ -34,6 +34,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'telegram/handle'
         ]);
 
+        $middleware->alias([
+            'verify.gateway.token' => \App\Http\Middleware\VerifyGatewayToken::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

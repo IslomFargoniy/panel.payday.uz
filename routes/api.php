@@ -61,9 +61,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Legacy and External Device Callbacks
 Route::any('/hikvision-callback', [HikvisionController::class, 'store']);
-Route::get('/hikvision-device-key', [HikvisionController::class, 'getDeviceKey']);
-Route::post('/hikvision-device-status', [HikvisionController::class, 'updateDeviceStatus']);
-Route::post('/branch-device/{device}/sync-events', [HikvisionController::class, 'syncDeviceEvents']);
+Route::get('/hikvision-device-key', [HikvisionController::class, 'getDeviceKey'])->middleware('verify.gateway.token');
+Route::post('/hikvision-device-status', [HikvisionController::class, 'updateDeviceStatus'])->middleware('verify.gateway.token');
+Route::post('/branch-device/{device}/sync-events', [HikvisionController::class, 'syncDeviceEvents'])->middleware('verify.gateway.token');
 Route::get('/worker/show_history/{worker}', [WorkerController::class, 'show_history']);
 Route::post('/bot/auth', [TelegramBotController::class, 'authenticate']);
 Route::post('/bot/attendance', [TelegramBotController::class, 'recordAttendance']);

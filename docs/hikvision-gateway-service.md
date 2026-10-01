@@ -101,11 +101,12 @@ After=network.target nginx.service mysql.service
 Type=simple
 User=root
 WorkingDirectory=/var/www/panel_payday_usr/data/www/panel.payday.uz
-ExecStart=/usr/local/bin/hikvision-gateway /var/www/panel_payday_usr/data/www/panel.payday.uz/gateway_config.json
+ExecStart=/usr/local/bin/hikvision-gateway /etc/hikvision-gateway/gateway_config.json
 Restart=always
 RestartSec=5
 LimitNOFILE=65535
 Environment="LD_LIBRARY_PATH=/opt/ip-camera-ehome-server/thirdparty/HCISUPSDK/linux64/lib"
+Environment="HIKVISION_GATEWAY_CONFIG=/etc/hikvision-gateway/gateway_config.json"
 
 StandardOutput=append:/var/log/hikvision-gateway.log
 StandardError=append:/var/log/hikvision-gateway-error.log
@@ -114,11 +115,17 @@ StandardError=append:/var/log/hikvision-gateway-error.log
 WantedBy=multi-user.target
 ```
 
+Config qidirish tartibi:
+1. `argv[1]` (masalan: `/usr/local/bin/hikvision-gateway /etc/hikvision-gateway/gateway_config.json`)
+2. `HIKVISION_GATEWAY_CONFIG` environment o'zgaruvchisi
+3. Binary yonidagi `gateway_config.json`
+4. `/etc/hikvision-gateway/gateway_config.json`
+
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable hikvision-gateway
-sudo systemctl start hikvision-gateway
-sudo systemctl status hikvision-gateway
+sudo systemctl enable hikvision-isup
+sudo systemctl restart hikvision-isup
+sudo systemctl status hikvision-isup
 ```
 
 ---

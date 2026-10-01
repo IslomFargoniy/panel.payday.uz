@@ -6,6 +6,8 @@
   "cms_port": 7660,
   "alarm_port": 7200,
   "api_port": 7661,
+  "api_bind": "127.0.0.1",
   "das_address": "193.180.213.188",
-  "das_port": 7660
+  "das_port": 7660,
+  "gateway_token": ""
 }

@@ -20,4 +20,12 @@ return [
     'alarm_port' => (int) env('HIKVISION_ALARM_PORT', 7200),
 
     'timeout' => (int) env('HIKVISION_TIMEOUT', 10),
+
+    'gateway_token' => env('HIKVISION_GATEWAY_TOKEN', ''),
+
+    'gateway_token_required' => (bool) env('HIKVISION_GATEWAY_TOKEN_REQUIRED', false),
+
+    'use_device_time' => (bool) env('HIKVISION_USE_DEVICE_TIME', false),
+
+    'restart_command' => env('HIKVISION_RESTART_COMMAND', 'sudo systemctl restart hikvision-isup'),
 ];

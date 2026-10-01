@@ -4,7 +4,7 @@ if (!function_exists('telegramlog')) {
     function telegramlog($text)
     {
         $token = config('services.telegram.bot_token') ?: env('TELEGRAM_BOT_TOKEN');
-        $chat_id = config('services.telegram.log_chat_id') ?: env('TELEGRAM_LOG_CHAT_ID', '531110501');
+        $chat_id = config('services.telegram.log_chat_id') ?: env('TELEGRAM_LOG_CHAT_ID');
 
         if (!$token || !$chat_id) {
             return null;
