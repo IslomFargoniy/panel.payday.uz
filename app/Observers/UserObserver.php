@@ -20,11 +20,12 @@ class UserObserver
      */
     public function updating(User $user): void
     {
-        $authUser = Auth::user();
-
-        if ($authUser && $authUser->id != $user->id) {
-            if (!$authUser->hasRole('Admin')) {
-                throw new \Exception('You are not allowed to access this page');
+        if (Auth::check()) {
+            $authUser = Auth::user();
+            if ($authUser instanceof User && $authUser->id !== $user->id) {
+                if (!$authUser->hasRole('Admin')) {
+                    throw new \Exception('You are not allowed to access this page');
+                }
             }
         }
     }
@@ -34,12 +35,14 @@ class UserObserver
      */
     public function deleting(User $user): void
     {
-        if (!Auth::user()->hasRole('Admin')) {
-            throw new \Exception('You are not allowed to access this page');
+        if (Auth::check()) {
+            $authUser = Auth::user();
+            if ($authUser instanceof User && !$authUser->hasRole('Admin') && $authUser->id !== $user->id) {
+                throw new \Exception('You are not allowed to access this page');
+            }
         }
 
         $user->user_firms()->delete();
-
     }
 
     /**

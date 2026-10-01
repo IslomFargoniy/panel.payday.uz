@@ -20,7 +20,7 @@ class FormValidationAndEmptyFieldsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Role::create(['name' => 'Admin']);
+        Role::findOrCreate('Admin');
     }
 
     public function test_worker_can_be_created_with_empty_optional_fields(): void
