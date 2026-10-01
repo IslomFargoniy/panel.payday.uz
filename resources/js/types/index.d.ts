@@ -318,6 +318,27 @@ export interface WorkerPaginate {
     links: Link[];
 }
 
+export interface PairedEvent {
+    id?: number | string;
+    to_id?: number | string | null;
+    employeeNoString?: string;
+    worker?: string;
+    branch?: string;
+    branch_id?: number;
+    firm_id?: number;
+    firm?: string;
+    work_time?: string;
+    from_time?: string;
+    to_time?: string | null;
+    status_from?: string;
+    status_to?: string | null;
+    status?: string;
+    late_minutes?: number;
+    worked_minutes?: number;
+    label_from?: string;
+    label_to?: string | null;
+}
+
 export interface Worker {
     id: number;
     branch_id: number;
@@ -337,6 +358,7 @@ export interface Worker {
     worker_holidays?: WorkerHoliday[];
     salary_payments?: SalaryPayment[];
     hikvision_access_events?: HikvisionAccessEvent[];
+    paired_events?: PairedEvent[];
     status?: number;
     balance?: number;
     worked_minutes?: number;
