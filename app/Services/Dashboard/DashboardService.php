@@ -58,24 +58,37 @@ class DashboardService
         $todayEnd = Carbon::today()->endOfDay()->toDateTimeString();
 
         // 2. Today's First Event (On Time vs Late) - Grouped strictly by employeeNoString
+        // Respects day_first_check_in rule (TIME >= 05:00:00 OR work_time < 06:00:00)
+        // and snapshot COALESCE(hae.work_time, w.work_time)
         $todayFirstEvents = DB::table('hikvision_access_events as hae')
+            ->join('workers as w', 'w.employeeNoString', '=', 'hae.employeeNoString')
             ->select(
                 'hae.employeeNoString',
-                DB::raw('MIN(hae.created_at) as first_created_at')
+                'hae.created_at as first_created_at',
+                DB::raw('COALESCE(hae.work_time, w.work_time) as effective_work_time'),
+                DB::raw("ROW_NUMBER() OVER (
+                    PARTITION BY hae.employeeNoString 
+                    ORDER BY hae.created_at ASC
+                ) as rn")
             )
             ->whereNull('hae.deleted_at')
+            ->whereNull('w.deleted_at')
             ->whereBetween('hae.created_at', [$todayStart, $todayEnd])
             ->whereIn('hae.attendanceStatus', AttendanceStatus::inValues())
-            ->groupBy('hae.employeeNoString');
+            ->whereRaw("(TIME(hae.created_at) >= '05:00:00' OR COALESCE(hae.work_time, w.work_time) < '06:00:00')");
+
+        $firstEventsSub = DB::table(DB::raw("({$todayFirstEvents->toSql()}) as tfe"))
+            ->mergeBindings($todayFirstEvents)
+            ->where('tfe.rn', 1);
 
         $result = (clone $workersQuery)
-            ->joinSub($todayFirstEvents, 'first_event', function ($join) {
+            ->joinSub($firstEventsSub, 'first_event', function ($join) {
                 $join->on('workers.employeeNoString', '=', 'first_event.employeeNoString');
             })
             ->whereNotNull('first_event.first_created_at')
             ->selectRaw('
-                COALESCE(SUM(CASE WHEN TIME(first_event.first_created_at) <= TIME(workers.work_time) THEN 1 ELSE 0 END), 0) AS on_time,
-                COALESCE(SUM(CASE WHEN TIME(first_event.first_created_at) > TIME(workers.work_time) THEN 1 ELSE 0 END), 0) AS late
+                COALESCE(SUM(CASE WHEN TIME(first_event.first_created_at) <= TIME(first_event.effective_work_time) THEN 1 ELSE 0 END), 0) AS on_time,
+                COALESCE(SUM(CASE WHEN TIME(first_event.first_created_at) > TIME(first_event.effective_work_time) THEN 1 ELSE 0 END), 0) AS late
             ')
             ->first();
 
