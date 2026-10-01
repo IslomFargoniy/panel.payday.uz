@@ -54,6 +54,7 @@ class AttendancePairingService
             ->join('branches as b', 'w.branch_id', '=', 'b.id')
             ->join('firms as f', 'b.firm_id', '=', 'f.id')
             ->whereNull('hae.deleted_at')
+            ->whereNull('w.deleted_at')
             ->whereBetween('hae.created_at', [$from, $to . " 23:59:59"]);
 
         if ($request->worker_id) {

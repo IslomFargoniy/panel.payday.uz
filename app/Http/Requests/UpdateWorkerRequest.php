@@ -38,7 +38,7 @@ class UpdateWorkerRequest extends FormRequest
             'hour_price' => 'nullable|numeric|min:0',
             'fine_price' => 'nullable|numeric|min:0',
             'name' => 'required|string|max:255',
-            'phone' => ['nullable', 'string', \Illuminate\Validation\Rule::unique('workers', 'phone')->ignore($this->route('worker') ?? $this->route('id'))],
+            'phone' => ['nullable', 'string', \Illuminate\Validation\Rule::unique('workers', 'phone')->ignore($this->route('worker') ?? $this->route('id'))->whereNull('deleted_at')],
             'password' => 'nullable|string|min:4|max:255',
             'address' => 'nullable|string|max:255',
             'comment' => 'nullable|string|max:1000',

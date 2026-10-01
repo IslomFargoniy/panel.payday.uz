@@ -59,8 +59,11 @@ class AuthController extends Controller
         ]));
 
         $worker = Worker::with('branch')
-            ->whereIn('phone', $phoneCandidates)
-            ->orWhere('employeeNoString', $login)
+            ->where(function ($query) use ($phoneCandidates, $login) {
+                $query->whereIn('phone', $phoneCandidates)
+                    ->orWhere('employeeNoString', $login);
+            })
+            ->where('status', 1)
             ->first();
 
         if ($worker && !empty($worker->password) && Hash::check($password, $worker->password)) {
