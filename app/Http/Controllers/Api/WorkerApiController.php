@@ -3,22 +3,30 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreWorkerRequest;
+use App\Http\Requests\UpdateWorkerRequest;
 use App\Models\Worker\Worker;
-use App\Models\Worker\WorkerDay;
-use App\Models\Worker\WorkerHoliday;
+use App\Services\Worker\AvatarService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class WorkerApiController extends Controller
 {
+    protected AvatarService $avatarService;
+
+    public function __construct(AvatarService $avatarService)
+    {
+        $this->avatarService = $avatarService;
+    }
+
     public function index(Request $request): JsonResponse
     {
+        /** @var \App\Models\User\User $user */
         $user = Auth::user();
         $isAdmin = $user->hasRole('Admin');
 
-        $query = Worker::with(['branch.firm', 'days', 'holidays']);
+        $query = Worker::with(['branch.firm', 'worker_days', 'worker_holidays']);
 
         if (!$isAdmin) {
             $query->whereHas('branch.firm.user_firms', function ($q) use ($user) {
@@ -44,7 +52,7 @@ class WorkerApiController extends Controller
             $query->where('branch_id', $request->branch_id);
         }
 
-        $perPage = $request->input('per_page', 15);
+        $perPage = (int) $request->input('per_page', 15);
         $workers = $query->latest('id')->paginate($perPage);
 
         return response()->json([
@@ -55,11 +63,14 @@ class WorkerApiController extends Controller
 
     public function show(int $id): JsonResponse
     {
+        /** @var \App\Models\User\User $user */
+        $user = Auth::user();
+
         $worker = Worker::with([
             'branch.firm',
-            'days',
-            'holidays',
-            'hikvision_access_events' => function ($q) {
+            'worker_days',
+            'worker_holidays',
+            'HikvisionAccessEvents' => function ($q) {
                 $q->latest()->limit(50);
             },
             'salaries' => function ($q) {
@@ -77,29 +88,36 @@ class WorkerApiController extends Controller
             ], 404);
         }
 
+        if (!$user->hasRole('Admin') && !$user->hasWorkerAccess($worker)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ruxsat berilmagan.',
+            ], 403);
+        }
+
         return response()->json([
             'success' => true,
             'data' => $worker,
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreWorkerRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'branch_id' => 'required|exists:branches,id',
-            'phone' => 'nullable|string|max:20|unique:workers,phone',
-            'work_time' => 'nullable|string',
-            'end_time' => 'nullable|string',
-            'hour_price' => 'nullable|numeric|min:0',
-            'fine_price' => 'nullable|numeric|min:0',
-            'salary_type' => 'nullable|string',
-            'comment' => 'nullable|string',
-            'status' => 'nullable|integer',
-        ]);
+        /** @var \App\Models\User\User $user */
+        $user = Auth::user();
 
-        $validated['hour_price'] = $validated['hour_price'] ?? 0;
-        $validated['fine_price'] = $validated['fine_price'] ?? 0;
+        $validated = $request->validated();
+
+        if (!$user->hasRole('Admin') && !$user->hasBranchAccess($validated['branch_id'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ruxsat berilmagan.',
+            ], 403);
+        }
+
+        if ($request->hasFile('avatar')) {
+            $validated['avatar'] = $this->avatarService->saveOptimizedAvatar($request->file('avatar'));
+        }
 
         $worker = Worker::create($validated);
 
@@ -110,28 +128,35 @@ class WorkerApiController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateWorkerRequest $request, int $id): JsonResponse
     {
-        $worker = Worker::find($id);
+        /** @var \App\Models\User\User $user */
+        $user = Auth::user();
+
+        $worker = Worker::with('branch')->find($id);
         if (!$worker) {
             return response()->json(['success' => false, 'message' => 'Xodim topilmadi.'], 404);
         }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'branch_id' => 'required|exists:branches,id',
-            'phone' => 'nullable|string|max:20|unique:workers,phone,' . $id,
-            'work_time' => 'nullable|string',
-            'end_time' => 'nullable|string',
-            'hour_price' => 'nullable|numeric|min:0',
-            'fine_price' => 'nullable|numeric|min:0',
-            'salary_type' => 'nullable|string',
-            'comment' => 'nullable|string',
-            'status' => 'nullable|integer',
-        ]);
+        if (!$user->hasRole('Admin') && !$user->hasWorkerAccess($worker)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ruxsat berilmagan.',
+            ], 403);
+        }
 
-        $validated['hour_price'] = $validated['hour_price'] ?? 0;
-        $validated['fine_price'] = $validated['fine_price'] ?? 0;
+        $validated = $request->validated();
+
+        if (isset($validated['branch_id']) && !$user->hasRole('Admin') && !$user->hasBranchAccess($validated['branch_id'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ruxsat berilmagan.',
+            ], 403);
+        }
+
+        if ($request->hasFile('avatar')) {
+            $validated['avatar'] = $this->avatarService->saveOptimizedAvatar($request->file('avatar'));
+        }
 
         $worker->update($validated);
 
@@ -144,9 +169,19 @@ class WorkerApiController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
-        $worker = Worker::find($id);
+        /** @var \App\Models\User\User $user */
+        $user = Auth::user();
+
+        $worker = Worker::with('branch')->find($id);
         if (!$worker) {
             return response()->json(['success' => false, 'message' => 'Xodim topilmadi.'], 404);
+        }
+
+        if (!$user->hasRole('Admin') && !$user->hasWorkerAccess($worker)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ruxsat berilmagan.',
+            ], 403);
         }
 
         $worker->delete();
@@ -159,18 +194,28 @@ class WorkerApiController extends Controller
 
     public function uploadAvatar(Request $request, int $id): JsonResponse
     {
-        $worker = Worker::find($id);
+        /** @var \App\Models\User\User $user */
+        $user = Auth::user();
+
+        $worker = Worker::with('branch')->find($id);
         if (!$worker) {
             return response()->json(['success' => false, 'message' => 'Xodim topilmadi.'], 404);
         }
 
+        if (!$user->hasRole('Admin') && !$user->hasWorkerAccess($worker)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ruxsat berilmagan.',
+            ], 403);
+        }
+
         $request->validate([
-            'avatar' => 'required|image|max:10240', // max 10MB
+            'avatar' => 'required|image|max:10240',
         ]);
 
         if ($request->hasFile('avatar')) {
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $worker->update(['avatar' => '/storage/' . $path]);
+            $path = $this->avatarService->saveOptimizedAvatar($request->file('avatar'));
+            $worker->update(['avatar' => $path]);
 
             return response()->json([
                 'success' => true,

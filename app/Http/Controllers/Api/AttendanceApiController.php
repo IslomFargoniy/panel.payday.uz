@@ -27,9 +27,19 @@ class AttendanceApiController extends Controller
      */
     public function dailyAttendance(Request $request, ?int $branchId = null): JsonResponse
     {
-        $branch = $branchId ? Branch::with('firm')->find($branchId) : Branch::with('firm')->first();
+        /** @var \App\Models\User\User $user */
+        $user = $request->user();
+        $branchQuery = Branch::with('firm');
+
+        if (!$user->hasRole('Admin')) {
+            $branchQuery->whereHas('firm.user_firms', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
+
+        $branch = $branchId ? (clone $branchQuery)->find($branchId) : (clone $branchQuery)->first();
         if (!$branch) {
-            return response()->json(['success' => false, 'message' => 'Filial topilmadi.'], 404);
+            return response()->json(['success' => false, 'message' => 'Filial topilmadi yoki ruxsat yo‘q.'], 404);
         }
 
         $hikvisionController = new HikvisionController();

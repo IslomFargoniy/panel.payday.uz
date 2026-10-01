@@ -28,9 +28,12 @@ class WorkerPortalApiController extends Controller
             return $user;
         }
 
-        // If admin is viewing as worker
-        if ($request->filled('worker_id')) {
-            return Worker::find($request->worker_id);
+        // If admin or permitted user is viewing as worker
+        if ($user instanceof \App\Models\User\User && $request->filled('worker_id')) {
+            $worker = Worker::with('branch')->find($request->worker_id);
+            if ($worker && $user->hasWorkerAccess($worker)) {
+                return $worker;
+            }
         }
 
         return null;

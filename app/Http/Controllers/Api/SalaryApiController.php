@@ -61,6 +61,9 @@ class SalaryApiController extends Controller
 
     public function calculateSalary(Request $request): JsonResponse
     {
+        /** @var \App\Models\User\User $user */
+        $user = Auth::user();
+
         $validated = $request->validate([
             'worker_id' => 'required|exists:workers,id',
             'amount' => 'required|numeric|min:0',
@@ -72,7 +75,11 @@ class SalaryApiController extends Controller
             'date' => 'nullable|date',
         ]);
 
-        $validated['user_id'] = Auth::id();
+        if (!$user->hasRole('Admin') && !$user->hasWorkerAccess($validated['worker_id'])) {
+            return response()->json(['success' => false, 'message' => 'Ruxsat berilmagan.'], 403);
+        }
+
+        $validated['user_id'] = $user->id;
         $validated['date'] = $validated['date'] ?? date('Y-m-d');
 
         $salary = Salary::create($validated);
@@ -110,6 +117,9 @@ class SalaryApiController extends Controller
 
     public function storePayment(Request $request): JsonResponse
     {
+        /** @var \App\Models\User\User $user */
+        $user = Auth::user();
+
         $validated = $request->validate([
             'worker_id' => 'required|exists:workers,id',
             'amount' => 'required|numeric|min:0',
@@ -117,7 +127,11 @@ class SalaryApiController extends Controller
             'comment' => 'nullable|string',
         ]);
 
-        $validated['user_id'] = Auth::id();
+        if (!$user->hasRole('Admin') && !$user->hasWorkerAccess($validated['worker_id'])) {
+            return response()->json(['success' => false, 'message' => 'Ruxsat berilmagan.'], 403);
+        }
+
+        $validated['user_id'] = $user->id;
 
         $payment = SalaryPayment::create($validated);
 

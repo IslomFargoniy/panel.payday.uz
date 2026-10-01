@@ -38,8 +38,9 @@ class FirmApiController extends Controller
 
     public function branches(Request $request): JsonResponse
     {
+        /** @var \App\Models\User\User $user */
         $user = Auth::user();
-        $query = Branch::with(['firm', 'devices', 'days', 'holidays']);
+        $query = Branch::with(['firm', 'branch_devices', 'branch_days', 'branch_holidays']);
 
         if (!$user->hasRole('Admin')) {
             $query->whereHas('firm.user_firms', function ($q) use ($user) {
@@ -66,7 +67,15 @@ class FirmApiController extends Controller
 
     public function devices(Request $request): JsonResponse
     {
+        /** @var \App\Models\User\User $user */
+        $user = Auth::user();
         $query = BranchDevice::with(['branch.firm']);
+
+        if (!$user->hasRole('Admin')) {
+            $query->whereHas('branch.firm.user_firms', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
 
         if ($request->filled('branch_id')) {
             $query->where('branch_id', $request->branch_id);
