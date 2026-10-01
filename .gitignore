@@ -33,5 +33,6 @@ android/*.iml
 builds/
 *.apk
 *.aab
-
-
+# macOS
+.DS_Store
+._*
