@@ -10,14 +10,11 @@ import { format } from 'date-fns';
 import {
     Users,
     UserCheck,
-    ClockAlert,
     UserX,
     Building2,
     GitBranch,
     ArrowRight,
-    TrendingUp,
-    Calendar,
-    Sparkles
+    Calendar
 } from 'lucide-react';
 
 interface PageProps {
@@ -29,7 +26,7 @@ interface PageProps {
 }
 
 export default function Dashboard() {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
 
     const breadcrumbs: BreadcrumbItem[] = [
         {

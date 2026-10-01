@@ -39,29 +39,6 @@ const ReportFilterForm = ({
         setData('search', e.target.value);
     };
 
-    const handlePerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('per_page', parseInt(e.target.value, 10));
-        shouldAutoSubmitRef.current = true;
-    };
-
-    const handleFirmChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('firm_id', e.target.value ? parseInt(e.target.value, 10) : undefined);
-        if (data.branch_id) {
-            setData('branch_id', undefined);
-        }
-        shouldAutoSubmitRef.current = true;
-    };
-
-    const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('branch_id', e.target.value ? parseInt(e.target.value, 10) : undefined);
-        shouldAutoSubmitRef.current = true;
-    };
-
-    const handleWorkerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('worker_id', e.target.value ? parseInt(e.target.value, 10) : undefined);
-        shouldAutoSubmitRef.current = true;
-    };
-
     React.useEffect(() => {
         if (shouldAutoSubmitRef.current) {
             shouldAutoSubmitRef.current = false;

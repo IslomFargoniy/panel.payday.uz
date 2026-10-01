@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TrashIcon, Copy, Check, ScanFace, Wifi, ShieldCheck, HardDrive, Radio, Network } from 'lucide-react';
+import { TrashIcon, Copy, Check, ScanFace, Wifi, Radio, Network } from 'lucide-react';
 import { useForm } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
 import { Branch, BranchDevice } from '@/types';

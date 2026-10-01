@@ -41,37 +41,6 @@ const SearchForm = ({ handleSubmit, setData, data, workers, firms, branches, cla
         setData('month', e.target.value);
     };
 
-    const handlePerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('per_page', parseInt(e.target.value, 10)); // parse as number
-        shouldAutoSubmitRef.current = true;
-    };
-
-    const handleWorkerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('worker_id', parseInt(e.target.value, 10)); // parse as number
-        shouldAutoSubmitRef.current = true;
-    };
-
-    const handleFirmChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const firm_id = parseInt(e.target.value, 10); // parse as number
-        setData('firm_id', firm_id); // parse as number
-
-        if (firm_id) {
-            setBranches(branches?.filter((branch) => branch.firm_id === firm_id));
-        } else {
-            setBranches(branches);
-        }
-
-        if (data.branch_id) {
-            setData('branch_id', 0);
-        }
-        shouldAutoSubmitRef.current = true;
-    };
-
-    const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setData('branch_id', parseInt(e.target.value, 10)); // parse as number
-        shouldAutoSubmitRef.current = true;
-    };
-
     useEffect(() => {
         if (data.firm_id) {
             setBranches(branches?.filter((branch) => branch.firm_id === data.firm_id));

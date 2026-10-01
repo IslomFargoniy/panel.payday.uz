@@ -44,10 +44,16 @@ function LocationMarker({ lat, lng, onChange }: { lat: number; lng: number; onCh
     return <Marker position={[lat, lng]} />;
 }
 
+interface SearchResult {
+    lat: string;
+    lon: string;
+    display_name: string;
+}
+
 export default function LocationPicker({ latitude, longitude, onChange }: LocationPickerProps) {
     const [isLocating, setIsLocating] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showResults, setShowResults] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
@@ -89,7 +95,7 @@ export default function LocationPicker({ latitude, longitude, onChange }: Locati
         }
     };
 
-    const handleSelectResult = (result: any) => {
+    const handleSelectResult = (result: SearchResult) => {
         onChange(result.lat, result.lon);
         setSearchQuery(result.display_name);
         setShowResults(false);

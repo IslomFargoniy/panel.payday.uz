@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, ChangeEvent } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Head } from '@inertiajs/react';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
@@ -6,13 +6,49 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, MapPin, CheckCircle2, XCircle, Camera } from 'lucide-react';
 import * as faceapi from 'face-api.js';
 
+interface TelegramWebApp {
+    initData?: string;
+    initDataUnsafe?: {
+        user?: {
+            id: number;
+            first_name?: string;
+            last_name?: string;
+            username?: string;
+        };
+    };
+    showAlert?: (message: string) => void;
+    ready?: () => void;
+    expand?: () => void;
+    close?: () => void;
+    platform?: string;
+    requestFullscreen?: () => void;
+}
+
 // Extend window for Telegram WebApp
 declare global {
     interface Window {
         Telegram?: {
-            WebApp?: any;
+            WebApp?: TelegramWebApp;
         }
     }
+}
+
+interface BotWorker {
+    id: number;
+    name: string;
+    telegram_id?: number;
+    phone?: string;
+    avatar?: string;
+    branch?: { name: string; latitude?: number; longitude?: number; radius?: number };
+    [key: string]: unknown;
+}
+
+interface BotStatus {
+    has_checked_in: boolean;
+    has_checked_out: boolean;
+    check_in_time?: string;
+    check_out_time?: string;
+    [key: string]: unknown;
 }
 
 type LivenessAction = 'togri_qarang' | 'chapga_qarang' | 'ongga_qarang';
@@ -25,8 +61,8 @@ const ACTION_LABELS: Record<LivenessAction, string> = {
 export default function MiniApp() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [worker, setWorker] = useState<any>(null);
-    const [status, setStatus] = useState<any>(null);
+    const [worker, setWorker] = useState<BotWorker | null>(null);
+    const [status, setStatus] = useState<BotStatus | null>(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [pendingAction, setPendingAction] = useState<'checkIn' | 'checkOut' | null>(null);
@@ -55,11 +91,11 @@ export default function MiniApp() {
         const initTelegram = () => {
             if (window.Telegram && window.Telegram.WebApp) {
                 const WebApp = window.Telegram.WebApp;
-                WebApp.ready();
-                WebApp.expand();
+                WebApp.ready?.();
+                WebApp.expand?.();
 
                 if (WebApp.platform === "web" || WebApp.platform === "tdesktop") {
-                    WebApp.requestFullscreen();
+                    WebApp.requestFullscreen?.();
                 }
 
                 const user = WebApp.initDataUnsafe?.user;
@@ -105,14 +141,15 @@ export default function MiniApp() {
                 await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
                 setAiStatusMessage("Tayyor!");
                 if (isMounted) setModelsLoaded(true);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 if (isMounted) {
-                    setAiStatusMessage("Xatolik: " + err.message);
+                    const errMsg = err instanceof Error ? err.message : String(err);
+                    setAiStatusMessage("Xatolik: " + errMsg);
                     console.error("Modellarni yuklashda xatolik:", err);
                     if (window.Telegram?.WebApp?.showAlert) {
-                        window.Telegram.WebApp.showAlert("AI Modellarini yuklashda xatolik: " + (err.message || String(err)));
+                        window.Telegram.WebApp.showAlert("AI Modellarini yuklashda xatolik: " + errMsg);
                     } else alert("AI modellarni yuklashda xatolik yuz berdi");
-                    setError("AI Modellarni yuklashda xato: " + (err.message || String(err)));
+                    setError("AI Modellarni yuklashda xato: " + errMsg);
                     setLoading(false);
                 }
             }
@@ -125,20 +162,20 @@ export default function MiniApp() {
             if (loopRef.current) cancelAnimationFrame(loopRef.current);
             stopCamera();
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const authenticateWorker = async (telegramId: number) => {
         try {
-            const res = await axios.post('/api/bot/auth', { telegram_id: telegramId });
+            const initData = window.Telegram?.WebApp?.initData || '';
+            const res = await axios.post('/api/bot/auth', { telegram_id: telegramId, initData });
             if (res.data.success) {
                 setWorker(res.data.worker);
                 setStatus(res.data.status);
             } else {
                 setError(res.data.message);
             }
-        } catch (err: any) {
-            if (err.response && err.response.data && err.response.data.message) {
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err) && err.response?.data?.message) {
                 setError(err.response.data.message);
             } else {
                 setError("Tizimga kirishda xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.");
@@ -218,7 +255,7 @@ export default function MiniApp() {
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
             if (window.Telegram?.WebApp?.showAlert) {
                 window.Telegram.WebApp.showAlert("Kamerani ochishda xatolik yuz berdi. Ruxsatlarni tekshiring.");
@@ -239,19 +276,11 @@ export default function MiniApp() {
                 const nose = landmarks[30];
                 const leftJaw = landmarks[0];
                 const rightJaw = landmarks[16];
-                const chin = landmarks[8];
-                const leftEye = landmarks[36];
-                const rightEye = landmarks[45];
 
                 // Use Euclidean distance (hypot) instead of raw X coordinates! 
                 // This makes the measurement rotation-invariant (immune to head tilting / phone tilting).
                 const leftSideDist = Math.hypot(nose.x - leftJaw.x, nose.y - leftJaw.y);
                 const rightSideDist = Math.hypot(rightJaw.x - nose.x, rightJaw.y - nose.y);
-
-                const eyeMidY = (leftEye.y + rightEye.y) / 2;
-                const eyeMidX = (leftEye.x + rightEye.x) / 2;
-                const topNoseDist = Math.hypot(nose.x - eyeMidX, nose.y - eyeMidY);
-                const bottomNoseDist = Math.hypot(chin.x - nose.x, chin.y - nose.y);
 
                 const currentAct = livenessQueueRef.current[actionIndexRef.current];
 
@@ -407,7 +436,11 @@ export default function MiniApp() {
         setActionLoading(true);
         try {
             const formData = new FormData();
-            formData.append('telegram_id', worker.telegram_id.toString());
+            const initData = window.Telegram?.WebApp?.initData || '';
+            formData.append('initData', initData);
+            if (worker?.telegram_id) {
+                formData.append('telegram_id', String(worker.telegram_id));
+            }
             if (pendingAction) formData.append('type', pendingAction);
             formData.append('picture', file);
 
@@ -421,8 +454,8 @@ export default function MiniApp() {
             });
 
             if (res.data.success) {
-                setStatus((prev: any) => ({
-                    ...prev,
+                setStatus((prev) => ({
+                    ...(prev || { has_checked_in: false, has_checked_out: false }),
                     [pendingAction === 'checkIn' ? 'has_checked_in' : 'has_checked_out']: true,
                     [pendingAction === 'checkIn' ? 'check_in_time' : 'check_out_time']: res.data.time
                 }));
@@ -433,8 +466,8 @@ export default function MiniApp() {
                     alert(res.data.message);
                 }
             }
-        } catch (err: any) {
-            const msg = err.response?.data?.message || "Davomatni saqlashda tarmoq xatosi yuz berdi.";
+        } catch (err: unknown) {
+            const msg = (axios.isAxiosError(err) && err.response?.data?.message) || "Davomatni saqlashda tarmoq xatosi yuz berdi.";
             if (window.Telegram?.WebApp?.showAlert) {
                 window.Telegram.WebApp.showAlert(msg);
             } else {

@@ -11,7 +11,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { BookOpen, Check, Copy, HelpCircle, Network, ShieldCheck, Zap } from 'lucide-react';
+import { BookOpen, Check, Copy, HelpCircle, Network, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DeviceConnectionGuideModalProps {

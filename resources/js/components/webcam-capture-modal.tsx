@@ -39,7 +39,7 @@ export default function WebcamCaptureModal({ open, onOpenChange, onCapture }: We
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
             }
-        } catch (err: any) {
+        } catch {
             setError(t('camera_permission_denied', 'Kameraga ulanishda xatolik. Brauzerda kamera ruxsatini yoqing.'));
         }
     };

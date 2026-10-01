@@ -13,8 +13,6 @@ import {
 import { Auth, type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
-    BookOpen,
-    Folder,
     LayoutGrid,
     Briefcase,
     Clock,
@@ -24,8 +22,7 @@ import {
     Github,
     Send,
     Users,
-    Building2,
-    Calendar
+    Building2
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { usePage } from '@inertiajs/react';

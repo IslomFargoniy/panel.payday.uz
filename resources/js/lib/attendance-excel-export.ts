@@ -1,5 +1,5 @@
 import { SearchData, WorkerPaginate } from '@/types';
-import { differenceInSeconds, format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
@@ -30,7 +30,9 @@ const calculateWorkedTime = (startTime?: string | null, endTime?: string | null,
     return minutesToHHMM(Math.round(diff));
 };
 
-type TranslationFn = (key: string, fallbackOrOptions?: any) => string;
+import type { TFunction } from 'i18next';
+
+type TranslationFn = TFunction;
 
 export const exportMonthlyAttendanceToExcel = async (
     worker: WorkerPaginate,
