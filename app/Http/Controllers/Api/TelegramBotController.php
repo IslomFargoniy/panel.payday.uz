@@ -98,13 +98,13 @@ class TelegramBotController extends Controller
              
             $todayCheckIn = HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
                 ->whereDate('created_at', $todayStr)
-                ->whereIn('attendanceStatus', ['checkIn', 'keldi', 'entered'])
+                ->whereIn('attendanceStatus', \App\Enums\AttendanceStatus::inValues())
                 ->orderBy('created_at', 'asc')
                 ->first();
                  
             $todayCheckOut = HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
                 ->whereDate('created_at', $todayStr)
-                ->whereIn('attendanceStatus', ['checkOut', 'ketdi', 'exited'])
+                ->whereIn('attendanceStatus', \App\Enums\AttendanceStatus::outValues())
                 ->orderBy('created_at', 'desc')
                 ->first();
 
@@ -208,27 +208,27 @@ class TelegramBotController extends Controller
                 ], 400);
             }
 
+            $status = \App\Enums\AttendanceStatus::normalize($request->type);
+            if (!$status) {
+                return response()->json(['success' => false, 'message' => 'Noto\'g\'ri holat.'], 400);
+            }
+
             // 3. Sequential Status Validation (mirroring HikvisionController)
             $lastHikvisionAccessEvent = \App\Models\Hikvision\HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
                 ->whereDate('created_at', Carbon::today())
-                ->latest()
+                ->latest('id')
                 ->first();
 
-            $lastStatus = $lastHikvisionAccessEvent ? $lastHikvisionAccessEvent->attendanceStatus : null;
+            $lastStatus = $lastHikvisionAccessEvent ? \App\Enums\AttendanceStatus::normalize($lastHikvisionAccessEvent->attendanceStatus) : null;
 
-            switch ($status) {
-                case 'checkIn':
-                    if (!is_null($lastStatus) && $lastStatus !== 'checkOut') {
-                        return response()->json(['success' => false, 'message' => 'Siz allaqachon ishga kelgansiz.'], 400);
-                    }
-                    break;
-                case 'checkOut':
-                    if ($lastStatus !== 'checkIn') {
-                        return response()->json(['success' => false, 'message' => 'Siz hali ishga kelmagansiz.'], 400);
-                    }
-                    break;
-                default:
-                    return response()->json(['success' => false, 'message' => 'Noto\'g\'ri holat.'], 400);
+            if ($status === \App\Enums\AttendanceStatus::IN->value) {
+                if (!is_null($lastStatus) && $lastStatus !== \App\Enums\AttendanceStatus::OUT->value) {
+                    return response()->json(['success' => false, 'message' => 'Siz allaqachon ishga kelgansiz.'], 400);
+                }
+            } elseif ($status === \App\Enums\AttendanceStatus::OUT->value) {
+                if ($lastStatus !== \App\Enums\AttendanceStatus::IN->value) {
+                    return response()->json(['success' => false, 'message' => 'Siz hali ishga kelmagansiz.'], 400);
+                }
             }
 
             // 4. Handle Picture Upload (Store in hikvision/telegram folder)

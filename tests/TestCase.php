@@ -41,8 +41,13 @@ abstract class TestCase extends BaseTestCase
             $pdo->sqliteCreateFunction('TIME', function ($datetime) {
                 return $datetime ? date('H:i:s', strtotime($datetime)) : null;
             });
-            $pdo->sqliteCreateFunction('DATE', function ($datetime) {
-                return $datetime ? date('Y-m-d', strtotime($datetime)) : null;
+            $pdo->sqliteCreateFunction('DATE', function ($datetime, $modifier = null) {
+                if (!$datetime) return null;
+                $ts = strtotime($datetime);
+                if ($modifier) {
+                    $ts = strtotime($modifier, $ts);
+                }
+                return date('Y-m-d', $ts);
             });
             $pdo->sqliteCreateFunction('TIMESTAMP', function ($date, $time = null) {
                 return $time ? "$date $time" : $date;

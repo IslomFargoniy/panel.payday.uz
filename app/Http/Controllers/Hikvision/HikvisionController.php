@@ -52,7 +52,7 @@ class HikvisionController extends Controller
         $workers = Worker::with([
             'HikvisionAccessEvents' => function ($query) use ($monthStart, $monthEnd) {
                 $query->whereBetween('created_at', [$monthStart, $monthEnd])
-                    ->whereIn('attendanceStatus', ["checkIn", "keldi", "CheckIn", "entered"]);
+                    ->whereIn('attendanceStatus', \App\Enums\AttendanceStatus::inValues());
             }
         ]);
 
@@ -113,7 +113,7 @@ class HikvisionController extends Controller
         $workers = Worker::with([
             'HikvisionAccessEvents' => function ($query) use ($date) {
                 $query->whereBetween('created_at', ["{$date} 00:00:00", "{$date} 23:59:59"])
-                    ->whereIn('attendanceStatus', ["checkIn", "checkOut", "keldi", "ketdi", "entered", "exited"]);
+                    ->whereIn('attendanceStatus', \App\Enums\AttendanceStatus::allValues());
             }
         ])
             ->where('branch_id', '=', $branch->id);
@@ -127,22 +127,25 @@ class HikvisionController extends Controller
 
         $workers = $workers->paginate($per_page);
 
-        // Standardize calculation with salary_report and monthly_attendance via ReportController
-        $reportController = new \App\Http\Controllers\ReportController();
+        // Standardize calculation with salary_report and monthly_attendance via AttendancePairingService
         $subReq = clone $request;
+        $nextDay = Carbon::parse($date)->addDay()->format('Y-m-d');
         $subReq->merge([
             'branch_id' => $branch->id,
             'from' => $date,
-            'to' => $date,
+            'to' => $nextDay,
         ]);
-        $pairedEvents = $reportController->buildPairedEventsQuery($subReq, $date, $date)->get();
+        $pairedEvents = app(\App\Services\Attendance\AttendancePairingService::class)
+            ->buildPairedEventsQuery($subReq, $date, $nextDay)
+            ->whereRaw("DATE(pe.from_time) = ?", [$date])
+            ->get();
         $pairedByWorker = $pairedEvents->groupBy('worker_id');
 
         foreach ($workers as $worker) {
             $workerPairs = $pairedByWorker->get($worker->id, collect());
             $worker->paired_events = $workerPairs->values()->toArray();
             $worker->worked_minutes = (int) $workerPairs->sum('worked_minutes');
-            $worker->late_minutes = (int) ($workerPairs->first()->late_minutes ?? 0);
+            $worker->late_minutes = (int) ($workerPairs->max('late_minutes') ?? 0);
         }
 
         return Inertia::render('daily_attendance/index', [
@@ -255,11 +258,13 @@ class HikvisionController extends Controller
             ]);
 
             if (isset($eventData->AccessControllerEvent)) {
-                if (!isset($eventData->AccessControllerEvent->attendanceStatus) || $eventData->AccessControllerEvent->attendanceStatus === 'undefined' || $eventData->AccessControllerEvent->attendanceStatus === 'CheckIn') {
-                    $eventData->AccessControllerEvent->attendanceStatus = 'checkIn';
-                    if (empty($eventData->AccessControllerEvent->label)) {
-                        $eventData->AccessControllerEvent->label = 'Keldi';
-                    }
+                $rawStatus = $eventData->AccessControllerEvent->attendanceStatus ?? null;
+                $normalized = \App\Enums\AttendanceStatus::normalize($rawStatus);
+                if ($normalized) {
+                    $eventData->AccessControllerEvent->attendanceStatus = $normalized;
+                    $eventData->AccessControllerEvent->label = \App\Enums\AttendanceStatus::label($normalized);
+                } else {
+                    $eventData->AccessControllerEvent->attendanceStatus = null;
                 }
 
                 $accessEventData = $eventData->AccessControllerEvent;
@@ -318,22 +323,26 @@ class HikvisionController extends Controller
                         ? Carbon::parse($eventData->dateTime)->timezone('Asia/Tashkent')->format('Y-m-d H:i:s')
                         : date('Y-m-d H:i:s');
 
-                    $lastHikvisionAccessEvent = HikvisionAccessEvent::with([])
-                        ->where('employeeNoString', '=', $accessEventData->employeeNoString)
-                        ->whereHas('hikvisionAccess', function ($query) {
-                            $query->whereRaw("date(dateTime) = current_date");
-                        })
-                        ->latest('id')
-                        ->first();
+                    $rawStatus = $accessEventData->attendanceStatus ?? null;
+                    $status = \App\Enums\AttendanceStatus::normalize($rawStatus);
 
-                    $lastStatus = $lastHikvisionAccessEvent ? $lastHikvisionAccessEvent->attendanceStatus : null;
+                    if (empty($status)) {
+                        $lastHikvisionAccessEvent = HikvisionAccessEvent::where('employeeNoString', '=', $accessEventData->employeeNoString)
+                            ->whereHas('hikvisionAccess', function ($query) use ($dateTimeStr) {
+                                $query->where('dateTime', '<', $dateTimeStr);
+                            })
+                            ->join('hikvision_accesses', 'hikvision_access_events.hikvision_access_id', '=', 'hikvision_accesses.id')
+                            ->orderBy('hikvision_accesses.dateTime', 'desc')
+                            ->select('hikvision_access_events.*')
+                            ->first();
 
-                    $status = $accessEventData->attendanceStatus ?? null;
-                    if (empty($status) || $status === 'undefined') {
-                        $status = ($lastStatus === 'checkIn') ? 'checkOut' : 'checkIn';
+                        $lastStatus = $lastHikvisionAccessEvent ? \App\Enums\AttendanceStatus::normalize($lastHikvisionAccessEvent->attendanceStatus) : null;
+                        $status = ($lastStatus === \App\Enums\AttendanceStatus::IN->value)
+                            ? \App\Enums\AttendanceStatus::OUT->value
+                            : \App\Enums\AttendanceStatus::IN->value;
                     }
 
-                    $label = ($status === 'checkIn') ? 'Keldi' : 'Ketdi';
+                    $label = \App\Enums\AttendanceStatus::label($status);
 
                     // Check if an event already exists at this exact second (e.g. from ISUP sync or soft-deleted)
                     $existingEvent = HikvisionAccessEvent::withTrashed()

@@ -54,14 +54,14 @@ class WorkerPortalApiController extends Controller
 
         $checkIn = HikvisionAccessEvent::where('employeeNoString', $worker->employeeNoString)
             ->whereDate('created_at', $today)
-            ->whereIn('attendanceStatus', ['checkIn', 'keldi', 'entered'])
+            ->whereIn('attendanceStatus', \App\Enums\AttendanceStatus::inValues())
             ->whereNull('deleted_at')
             ->orderBy('created_at', 'asc')
             ->first();
 
         $checkOut = HikvisionAccessEvent::where('employeeNoString', $worker->employeeNoString)
             ->whereDate('created_at', $today)
-            ->whereIn('attendanceStatus', ['checkOut', 'ketdi', 'exited'])
+            ->whereIn('attendanceStatus', \App\Enums\AttendanceStatus::outValues())
             ->whereNull('deleted_at')
             ->orderBy('created_at', 'desc')
             ->first();
@@ -173,8 +173,8 @@ class WorkerPortalApiController extends Controller
             $dateStr = $date->toDateString();
             $dayEvents = $events->get($dateStr, collect());
 
-            $dayCheckIn = $dayEvents->first(fn($e) => in_array($e->attendanceStatus, ['checkIn', 'keldi', 'entered']));
-            $dayCheckOut = $dayEvents->last(fn($e) => in_array($e->attendanceStatus, ['checkOut', 'ketdi', 'exited']));
+            $dayCheckIn = $dayEvents->first(fn($e) => in_array($e->attendanceStatus, \App\Enums\AttendanceStatus::inValues(), true));
+            $dayCheckOut = $dayEvents->last(fn($e) => in_array($e->attendanceStatus, \App\Enums\AttendanceStatus::outValues(), true));
 
             $dayIdx = \App\Services\Attendance\WorkScheduleService::dayIndex($date);
             $isWeekend = !in_array($dayIdx, $workingDayIndexes, true);

@@ -349,20 +349,25 @@ class HikvisionSyncService
                     }
 
                     // Determine attendance status & label (use device value if provided, else toggle)
-                    $attendanceStatus = $event['attendanceStatus'] ?? null;
-                    if (empty($attendanceStatus) || $attendanceStatus === 'undefined') {
+                    $rawStatus = $event['attendanceStatus'] ?? null;
+                    $attendanceStatus = \App\Enums\AttendanceStatus::normalize($rawStatus);
+                    if (empty($attendanceStatus)) {
                         $lastEvent = \App\Models\Hikvision\HikvisionAccessEvent::where('employeeNoString', $employeeNo)
-                            ->whereHas('hikvisionAccess', function ($q) use ($eventDateTime) {
-                                $q->whereDate('dateTime', $eventDateTime->format('Y-m-d'));
+                            ->whereHas('hikvisionAccess', function ($q) use ($eventDateStr) {
+                                $q->where('dateTime', '<', $eventDateStr);
                             })
-                            ->latest('id')
+                            ->join('hikvision_accesses', 'hikvision_access_events.hikvision_access_id', '=', 'hikvision_accesses.id')
+                            ->orderBy('hikvision_accesses.dateTime', 'desc')
+                            ->select('hikvision_access_events.*')
                             ->first();
 
-                        $lastStatus = $lastEvent ? $lastEvent->attendanceStatus : null;
-                        $attendanceStatus = ($lastStatus === 'checkIn') ? 'checkOut' : 'checkIn';
+                        $lastStatus = $lastEvent ? \App\Enums\AttendanceStatus::normalize($lastEvent->attendanceStatus) : null;
+                        $attendanceStatus = ($lastStatus === \App\Enums\AttendanceStatus::IN->value)
+                            ? \App\Enums\AttendanceStatus::OUT->value
+                            : \App\Enums\AttendanceStatus::IN->value;
                     }
 
-                    $label = ($attendanceStatus === 'checkIn') ? 'Keldi' : 'Ketdi';
+                    $label = \App\Enums\AttendanceStatus::label($attendanceStatus);
 
                     $access = \App\Models\Hikvision\HikvisionAccess::create([
                         'ipAddress' => $device->ip_address,
