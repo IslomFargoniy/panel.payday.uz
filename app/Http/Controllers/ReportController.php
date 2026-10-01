@@ -272,94 +272,19 @@ class ReportController extends Controller
     {
         $workerId = $request->worker_id > 0 ? (int)$request->worker_id : null;
         $branchId = $request->branch_id > 0 ? (int)$request->branch_id : null;
-        $firmId = $request->firm_id > 0 ? (int)$request->firm_id : null;
         $from = Carbon::parse($request->from)->startOfDay();
         $to = Carbon::parse($request->to)->startOfDay();
 
-        $worker = $workerId ? Worker::without(['branch'])->find($workerId) : null;
-        $effectiveBranchId = $branchId ?? $worker?->branch_id;
-        $effectiveFirmId = $firmId;
-        if (!$effectiveFirmId && $effectiveBranchId) {
-            $effectiveFirmId = Branch::without(['firm'])->where('id', $effectiveBranchId)->value('firm_id');
-        }
+        $scheduleService = new \App\Services\Attendance\WorkScheduleService();
 
-        // 1. Fetch working day indexes (prioritize worker_days then branch_days)
-        $workingDayIndexes = range(1, 7);
         if ($workerId) {
-            $workerDays = WorkerDay::where('worker_id', $workerId)->with('day')->get();
-            if ($workerDays->isNotEmpty()) {
-                $workingDayIndexes = $workerDays->pluck('day.index')->filter()->toArray();
-            } elseif ($effectiveBranchId) {
-                $branchDays = BranchDay::where('branch_id', $effectiveBranchId)->with('day')->get();
-                if ($branchDays->isNotEmpty()) {
-                    $workingDayIndexes = $branchDays->pluck('day.index')->filter()->toArray();
-                }
-            }
-        } elseif ($effectiveBranchId) {
-            $branchDays = BranchDay::where('branch_id', $effectiveBranchId)->with('day')->get();
-            if ($branchDays->isNotEmpty()) {
-                $workingDayIndexes = $branchDays->pluck('day.index')->filter()->toArray();
+            $worker = Worker::with(['branch'])->find($workerId);
+            if ($worker) {
+                return $scheduleService->countWorkingDays($worker, $from, $to);
             }
         }
 
-        // 2. Pre-fetch holidays once in batch (3 fast queries max)
-        $workerHolidays = [];
-        if ($workerId) {
-            $workerHolidays = WorkerHoliday::where('worker_id', $workerId)
-                ->where('from', '<=', $to->toDateString())
-                ->where('to', '>=', $from->toDateString())
-                ->get(['from', 'to']);
-        }
-
-        $branchHolidayDates = [];
-        if ($effectiveBranchId) {
-            $branchHolidayDates = BranchHoliday::where('branch_id', $effectiveBranchId)
-                ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
-                ->pluck('date')
-                ->map(fn($d) => Carbon::parse($d)->toDateString())
-                ->flip()
-                ->toArray();
-        }
-
-        $firmHolidayDates = [];
-        if ($effectiveFirmId) {
-            $firmHolidayDates = FirmHoliday::where('firm_id', $effectiveFirmId)
-                ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
-                ->pluck('date')
-                ->map(fn($d) => Carbon::parse($d)->toDateString())
-                ->flip()
-                ->toArray();
-        }
-
-        // 3. Count in pure memory
-        $count = 0;
-        foreach (CarbonPeriod::create($from, $to) as $date) {
-            $dayOfWeek = $date->dayOfWeekIso;
-            if (!in_array($dayOfWeek, $workingDayIndexes)) {
-                continue;
-            }
-
-            $dateStr = $date->toDateString();
-
-            if (isset($branchHolidayDates[$dateStr]) || isset($firmHolidayDates[$dateStr])) {
-                continue;
-            }
-
-            $isWorkerHoliday = false;
-            foreach ($workerHolidays as $wh) {
-                if ($dateStr >= $wh->from && $dateStr <= $wh->to) {
-                    $isWorkerHoliday = true;
-                    break;
-                }
-            }
-            if ($isWorkerHoliday) {
-                continue;
-            }
-
-            $count++;
-        }
-
-        return $count;
+        return $scheduleService->countWorkingDaysForBranch($branchId, $from, $to);
     }
 
     public function monthly_attendance(Request $request)
@@ -458,88 +383,6 @@ class ReportController extends Controller
 
     private function batchCalculateWorkingDays(array $workers, string $fromStr, string $toStr): array
     {
-        if (empty($workers)) {
-            return [];
-        }
-
-        $from = Carbon::parse($fromStr)->startOfDay();
-        $to = Carbon::parse($toStr)->startOfDay();
-        $workerIds = array_map(fn($w) => $w->id, $workers);
-        $branchIds = array_values(array_filter(array_unique(array_map(fn($w) => $w->branch_id, $workers))));
-        $firmIds = array_values(array_filter(array_unique(array_map(fn($w) => $w->branch?->firm_id, $workers))));
-
-        // 1. Worker days & Branch days
-        $workerDaysMap = WorkerDay::whereIn('worker_id', $workerIds)
-            ->with('day')
-            ->get()
-            ->groupBy('worker_id')
-            ->map(fn($days) => $days->pluck('day.index')->filter()->toArray());
-
-        $branchDaysMap = BranchDay::whereIn('branch_id', $branchIds)
-            ->with('day')
-            ->get()
-            ->groupBy('branch_id')
-            ->map(fn($days) => $days->pluck('day.index')->filter()->toArray());
-
-        // 2. Holidays
-        $workerHolidaysMap = WorkerHoliday::whereIn('worker_id', $workerIds)
-            ->where('from', '<=', $to->toDateString())
-            ->where('to', '>=', $from->toDateString())
-            ->get(['worker_id', 'from', 'to'])
-            ->groupBy('worker_id');
-
-        $branchHolidaysMap = BranchHoliday::whereIn('branch_id', $branchIds)
-            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
-            ->get(['branch_id', 'date'])
-            ->groupBy('branch_id')
-            ->map(fn($items) => $items->pluck('date')->map(fn($d) => Carbon::parse($d)->toDateString())->flip()->toArray());
-
-        $firmHolidaysMap = FirmHoliday::whereIn('firm_id', $firmIds)
-            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
-            ->get(['firm_id', 'date'])
-            ->groupBy('firm_id')
-            ->map(fn($items) => $items->pluck('date')->map(fn($d) => Carbon::parse($d)->toDateString())->flip()->toArray());
-
-        // 3. Calculate for each worker
-        $result = [];
-        $dates = iterator_to_array(CarbonPeriod::create($from, $to));
-
-        foreach ($workers as $worker) {
-            $workingDayIndexes = $workerDaysMap->get($worker->id)
-                ?? $branchDaysMap->get($worker->branch_id)
-                ?? range(1, 7);
-
-            $wHolidays = $workerHolidaysMap->get($worker->id) ?? collect();
-            $bHolidays = $branchHolidaysMap->get($worker->branch_id) ?? [];
-            $fHolidays = $firmHolidaysMap->get($worker->branch?->firm_id) ?? [];
-
-            $count = 0;
-            foreach ($dates as $date) {
-                if (!in_array($date->dayOfWeekIso, $workingDayIndexes)) {
-                    continue;
-                }
-
-                $dateStr = $date->toDateString();
-                if (isset($bHolidays[$dateStr]) || isset($fHolidays[$dateStr])) {
-                    continue;
-                }
-
-                $isWHoliday = false;
-                foreach ($wHolidays as $wh) {
-                    if ($dateStr >= $wh->from && $dateStr <= $wh->to) {
-                        $isWHoliday = true;
-                        break;
-                    }
-                }
-                if ($isWHoliday) {
-                    continue;
-                }
-
-                $count++;
-            }
-            $result[$worker->id] = $count;
-        }
-
-        return $result;
+        return (new \App\Services\Attendance\WorkScheduleService())->batchCalculateWorkingDays($workers, $fromStr, $toStr);
     }
 }
