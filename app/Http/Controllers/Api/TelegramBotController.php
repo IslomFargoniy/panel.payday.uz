@@ -12,39 +12,117 @@ use Illuminate\Support\Facades\Log;
 class TelegramBotController extends Controller
 {
     /**
+     * Validate Telegram WebApp initData signature using HMAC-SHA256
+     */
+    public static function validateInitData(?string $initData): ?array
+    {
+        if (empty($initData)) {
+            return null;
+        }
+
+        $botToken = config('services.telegram.bot_token') ?: env('TELEGRAM_BOT_TOKEN');
+        if (empty($botToken)) {
+            Log::warning('Telegram initData validation failed: TELEGRAM_BOT_TOKEN is not configured');
+            return null;
+        }
+
+        parse_str($initData, $data);
+        if (!isset($data['hash'])) {
+            return null;
+        }
+
+        $receivedHash = $data['hash'];
+        unset($data['hash']);
+
+        // auth_date must be within 24 hours (86400 seconds)
+        if (!isset($data['auth_date']) || (time() - (int)$data['auth_date'] > 86400)) {
+            Log::warning('Telegram initData validation failed: auth_date expired or missing', [
+                'auth_date' => $data['auth_date'] ?? null
+            ]);
+            return null;
+        }
+
+        ksort($data);
+
+        $dataCheckArr = [];
+        foreach ($data as $key => $value) {
+            $dataCheckArr[] = "{$key}={$value}";
+        }
+        $dataCheckString = implode("\n", $dataCheckArr);
+
+        $secretKey = hash_hmac('sha256', $botToken, 'WebAppData', true);
+        $calculatedHash = hash_hmac('sha256', $dataCheckString, $secretKey);
+
+        if (!hash_equals($calculatedHash, $receivedHash)) {
+            Log::warning('Telegram initData signature verification failed');
+            return null;
+        }
+
+        if (isset($data['user'])) {
+            $userData = is_string($data['user']) ? json_decode($data['user'], true) : $data['user'];
+            $data['user_data'] = $userData;
+            $data['telegram_id'] = $userData['id'] ?? null;
+        }
+
+        return $data;
+    }
+
+    /**
      * Auth via Telegram Web App initData
      */
     public function authenticate(Request $request)
     {
         try {
-            $telegram_id = $request->input('telegram_id');
+            $initData = $request->input('initData');
+            $validatedData = self::validateInitData($initData);
+
+            if (!$validatedData || empty($validatedData['telegram_id'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Telegram avtorizatsiyasi tasdiqlanmadi (initData yaroqsiz).'
+                ], 401);
+            }
+
+            $telegram_id = (int) $validatedData['telegram_id'];
             $worker = Worker::where('telegram_id', '=', $telegram_id)->first();
  
-             if (!$worker) {
-                 return response()->json([
-                     'success' => false,
-                     'message' => 'Sizning Telegram profilingiz xodimlar ro\'yxatidan topilmadi. Iltimos, adminstratorga murojaat qiling.'
-                 ], 404);
-             }
+            if (!$worker) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sizning Telegram profilingiz xodimlar ro\'yxatidan topilmadi. Iltimos, adminstratorga murojaat qiling.'
+                ], 404);
+            }
  
-             // Return worker details and their current status for today
-             $todayStr = Carbon::now()->toDateString();
+            // Return worker details and their current status for today
+            $todayStr = Carbon::now()->toDateString();
              
-             $todayCheckIn = HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
-                 ->whereDate('created_at', $todayStr)
-                 ->whereIn('attendanceStatus', ['checkIn', 'keldi', 'entered'])
-                 ->orderBy('created_at', 'asc')
-                 ->first();
+            $todayCheckIn = HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
+                ->whereDate('created_at', $todayStr)
+                ->whereIn('attendanceStatus', ['checkIn', 'keldi', 'entered'])
+                ->orderBy('created_at', 'asc')
+                ->first();
                  
-             $todayCheckOut = HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
-                 ->whereDate('created_at', $todayStr)
-                 ->whereIn('attendanceStatus', ['checkOut', 'ketdi', 'exited'])
-                 ->orderBy('created_at', 'desc')
-                 ->first();
+            $todayCheckOut = HikvisionAccessEvent::where('employeeNoString', '=', $worker->employeeNoString)
+                ->whereDate('created_at', $todayStr)
+                ->whereIn('attendanceStatus', ['checkOut', 'ketdi', 'exited'])
+                ->orderBy('created_at', 'desc')
+                ->first();
 
             return response()->json([
                 'success' => true,
-                'worker' => $worker,
+                'worker' => [
+                    'id' => $worker->id,
+                    'name' => $worker->name,
+                    'telegram_id' => $worker->telegram_id,
+                    'avatar' => $worker->avatar,
+                    'employeeNoString' => $worker->employeeNoString,
+                    'branch' => $worker->branch ? [
+                        'id' => $worker->branch->id,
+                        'name' => $worker->branch->name,
+                        'latitude' => $worker->branch->latitude,
+                        'longitude' => $worker->branch->longitude,
+                    ] : null,
+                ],
                 'status' => [
                     'has_checked_in' => !!$todayCheckIn,
                     'has_checked_out' => !!$todayCheckOut,
@@ -53,12 +131,10 @@ class TelegramBotController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            if (function_exists('telegramlog')) {
-                telegramlog("Auth xatosi: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
-            }
+            Log::error("Telegram auth error: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
             return response()->json([
                 'success' => false,
-                'message' => 'Xatolik: ' . $e->getMessage()
+                'message' => 'Tizimda xatolik yuz berdi'
             ], 500);
         }
     }
@@ -70,14 +146,24 @@ class TelegramBotController extends Controller
     {
         try {
             $request->validate([
-                'telegram_id' => 'required|numeric',
+                'initData' => 'required|string',
                 'type' => 'required|in:checkIn,checkOut',
                 'latitude' => 'required|numeric',
                 'longitude' => 'required|numeric',
                 'picture' => 'required|image|max:5120', 
             ]);
 
-            $telegram_id = $request->input('telegram_id');
+            $initData = $request->input('initData');
+            $validatedData = self::validateInitData($initData);
+
+            if (!$validatedData || empty($validatedData['telegram_id'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Telegram avtorizatsiyasi tasdiqlanmadi (initData yaroqsiz).'
+                ], 401);
+            }
+
+            $telegram_id = (int) $validatedData['telegram_id'];
             $status = $request->input('type');
 
             // 1. Validate Worker AND Firm validity (mirroring HikvisionController)
@@ -214,14 +300,15 @@ class TelegramBotController extends Controller
                 'time' => $event->created_at->format('H:i')
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
         } catch (\Exception $e) {
             $errorMsg = "Telegram attendance error: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine();
             Log::error($errorMsg);
-            if (function_exists('telegramlog')) telegramlog($errorMsg);
-            
+
             return response()->json([
                 'success' => false,
-                'message' => 'Xatolik yuz berdi: ' . $e->getMessage()
+                'message' => 'Xatolik yuz berdi'
             ], 500);
         }
     }

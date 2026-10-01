@@ -41,6 +41,7 @@ return [
     ],
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
-        'log_chat_id' => env('TELEGRAM_LOG_CHAT_ID', '531110501'),
+        'log_chat_id' => env('TELEGRAM_LOG_CHAT_ID'),
+        'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
     ],
 ];

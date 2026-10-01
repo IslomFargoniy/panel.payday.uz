@@ -10,12 +10,14 @@ use Telegram\Bot\Keyboard\Keyboard;
 
 class TelegramService
 {
-    protected Api $telegram;
+    protected ?Api $telegram = null;
 
-    public function __construct()
+    public function __construct(?string $token = null)
     {
-        $token = config('services.telegram.bot_token') ?: env('TELEGRAM_BOT_TOKEN');
-        $this->telegram = new Api($token);
+        $token = $token ?: (config('services.telegram.bot_token') ?: env('TELEGRAM_BOT_TOKEN'));
+        if (!empty($token)) {
+            $this->telegram = new Api($token);
+        }
     }
 
     public function handleUpdate(array $update): void
@@ -227,6 +229,10 @@ class TelegramService
      */
     protected function sendUnknownCommand(int|string $chatId): void
     {
+        if (!$this->telegram) {
+            return;
+        }
+
         try {
             $text = "Noma'lum buyruq.\n";
             $text .= "Agar siz tizimga kirmoqchi bo'lsangiz, iltimos /start buyrug'ini bosing.\n\n";
@@ -248,6 +254,10 @@ class TelegramService
      */
     protected function sendSafeMessage(int|string $chatId, string $text, Keyboard $keyboard = null): void
     {
+        if (!$this->telegram) {
+            return;
+        }
+
         try {
             $params = [
                 'chat_id' => $chatId,
