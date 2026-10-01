@@ -359,25 +359,13 @@ class HikvisionSyncService
                         continue;
                     }
 
-                    // Determine attendance status & label (use device value if provided, else toggle)
+                    // Determine attendance status & label (use device value if provided, else resolve scoped to day)
                     $rawStatus = $event['attendanceStatus'] ?? null;
-                    $attendanceStatus = \App\Enums\AttendanceStatus::normalize($rawStatus);
-                    if (empty($attendanceStatus)) {
-                        $lastEvent = \App\Models\Hikvision\HikvisionAccessEvent::where('employeeNoString', $employeeNo)
-                            ->whereHas('hikvisionAccess', function ($q) use ($eventDateStr) {
-                                $q->where('dateTime', '<', $eventDateStr);
-                            })
-                            ->join('hikvision_accesses', 'hikvision_access_events.hikvision_access_id', '=', 'hikvision_accesses.id')
-                            ->orderBy('hikvision_accesses.dateTime', 'desc')
-                            ->select('hikvision_access_events.*')
-                            ->first();
-
-                        $lastStatus = $lastEvent ? \App\Enums\AttendanceStatus::normalize($lastEvent->attendanceStatus) : null;
-                        $attendanceStatus = ($lastStatus === \App\Enums\AttendanceStatus::IN->value)
-                            ? \App\Enums\AttendanceStatus::OUT->value
-                            : \App\Enums\AttendanceStatus::IN->value;
-                    }
-
+                    $attendanceStatus = \App\Services\Hikvision\AttendanceStatusResolver::resolve(
+                        $rawStatus,
+                        $employeeNo,
+                        $eventDateStr
+                    );
                     $label = \App\Enums\AttendanceStatus::label($attendanceStatus);
 
                     $access = \App\Models\Hikvision\HikvisionAccess::create([

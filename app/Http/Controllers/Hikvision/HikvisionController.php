@@ -207,24 +207,11 @@ class HikvisionController extends Controller
                         : date('Y-m-d H:i:s');
 
                     $rawStatus = $accessEventData->attendanceStatus ?? null;
-                    $status = \App\Enums\AttendanceStatus::normalize($rawStatus);
-
-                    if (empty($status)) {
-                        $lastHikvisionAccessEvent = HikvisionAccessEvent::where('employeeNoString', '=', $accessEventData->employeeNoString)
-                            ->whereHas('hikvisionAccess', function ($query) use ($dateTimeStr) {
-                                $query->where('dateTime', '<', $dateTimeStr);
-                            })
-                            ->join('hikvision_accesses', 'hikvision_access_events.hikvision_access_id', '=', 'hikvision_accesses.id')
-                            ->orderBy('hikvision_accesses.dateTime', 'desc')
-                            ->select('hikvision_access_events.*')
-                            ->first();
-
-                        $lastStatus = $lastHikvisionAccessEvent ? \App\Enums\AttendanceStatus::normalize($lastHikvisionAccessEvent->attendanceStatus) : null;
-                        $status = ($lastStatus === \App\Enums\AttendanceStatus::IN->value)
-                            ? \App\Enums\AttendanceStatus::OUT->value
-                            : \App\Enums\AttendanceStatus::IN->value;
-                    }
-
+                    $status = \App\Services\Hikvision\AttendanceStatusResolver::resolve(
+                        $rawStatus,
+                        (string) $accessEventData->employeeNoString,
+                        $dateTimeStr
+                    );
                     $label = \App\Enums\AttendanceStatus::label($status);
 
                     // Check if an event already exists at this exact second (e.g. from ISUP sync or soft-deleted)
