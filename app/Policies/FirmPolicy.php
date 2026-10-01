@@ -8,56 +8,47 @@ use App\Models\User\User;
 class FirmPolicy
 {
     /**
-     * Determine whether the user can view any models.
+     * Perform pre-authorization checks.
      */
+    public function before(User $user, string $ability): ?bool
+    {
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        return null;
+    }
+
     public function viewAny(User $user): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Firm $firm): bool
     {
-        return false;
+        return $user->hasFirmAccess($firm);
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return false; // Only Admin can create firms
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Firm $firm): bool
     {
-        return false;
+        return false; // Only Admin can edit firm settings/details
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Firm $firm): bool
     {
-        return false;
+        return false; // Only Admin can delete firms
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
     public function restore(User $user, Firm $firm): bool
     {
         return false;
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
     public function forceDelete(User $user, Firm $firm): bool
     {
         return false;

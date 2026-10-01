@@ -13,10 +13,13 @@ class FirmHolidayObserver
     public function creating(FirmHoliday $firmHoliday): void
     {
         // Non-admin users must be part of the firm
-        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $firmHoliday->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $firmHoliday->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
     }
 
@@ -33,12 +36,13 @@ class FirmHolidayObserver
      */
     public function deleting(FirmHoliday $firmHoliday): void
     {
-        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-            $firmHoliday->whereHas('firm', function ($query) {
-                $query->whereHas('user_firms', function ($query) {
-                    $query->where('user_id', Auth::id());
-                });
-            })->firstOrFail();
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $firmHoliday->firm_id)
+                    ->firstOrFail();
+            }
         }
     }
 

@@ -32,9 +32,15 @@ class WorkerDayController extends Controller
 
     public function store(StoreWorkerDayRequest $request)
     {
-        try {
-            $validated = $request->validated();
+        $validated = $request->validated();
 
+        /** @var \App\Models\User\User $user */
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user && !$user->hasRole('Admin') && !$user->hasWorkerAccess($validated['worker_id'])) {
+            abort(403, 'Unauthorized access to worker.');
+        }
+
+        try {
             $worker = WorkerDay::where([
                 'worker_id' => $validated['worker_id']
             ])
@@ -54,7 +60,9 @@ class WorkerDayController extends Controller
 
             return back()->with('success', 'WorkerDay created successfully.');
         } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+            throw ValidationException::withMessages([
+                'error' => [$e->getMessage()],
+            ]);
         }
     }
 
@@ -88,6 +96,12 @@ class WorkerDayController extends Controller
      */
     public function destroy(WorkerDay $workerDay)
     {
+        /** @var \App\Models\User\User $user */
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user && !$user->hasRole('Admin') && !$user->hasWorkerAccess($workerDay->worker_id)) {
+            abort(403, 'Unauthorized access to worker.');
+        }
+
         try {
             $workerDay->delete();
             return back()->with('success', 'WorkerDay deleted successfully.');

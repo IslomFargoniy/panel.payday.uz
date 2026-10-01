@@ -13,10 +13,13 @@ class BranchDayObserver
     public function creating(BranchDay $branchDay): void
     {
         // Non-admin users must be part of the firm
-        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $branchDay->branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $branchDay->branch->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
     }
 
@@ -34,10 +37,13 @@ class BranchDayObserver
     public function deleting(BranchDay $branchDay): void
     {
         // Non-admin users must be part of the firm
-        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $branchDay->branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $branchDay->branch->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
     }
 

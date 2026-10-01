@@ -101,6 +101,12 @@ class HikvisionController extends Controller
 
     public function daily_attendance(Request $request, Branch $branch)
     {
+        /** @var \App\Models\User\User $user */
+        $user = Auth::user();
+        if ($user && !$user->hasRole('Admin') && !$user->hasBranchAccess($branch)) {
+            abort(403, 'Unauthorized access to this branch.');
+        }
+
         $per_page = $request->per_page ? (int)$request->per_page : 15;
         $date = $request->date ?: date('Y-m-d');
 

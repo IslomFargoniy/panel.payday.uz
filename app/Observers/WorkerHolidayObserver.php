@@ -13,14 +13,19 @@ class WorkerHolidayObserver
     public function creating(WorkerHoliday $workerHoliday): void
     {
         // Non-admin users must be part of the firm
-        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $workerHoliday->worker->branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
-        }
-
         if (Auth::check()) {
-            $workerHoliday->user_id = Auth::user()->id;
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $worker = $workerHoliday->worker ?? \App\Models\Worker\Worker::with('branch')->find($workerHoliday->worker_id);
+                $firmId = $worker?->branch?->firm_id;
+                if (!$firmId || !$user->hasFirmAccess($firmId)) {
+                    throw new \Exception('Unauthorized access to firm.');
+                }
+            }
+
+            if ($user instanceof \App\Models\User\User) {
+                $workerHoliday->user_id = $user->id;
+            }
         }
     }
 
@@ -38,10 +43,15 @@ class WorkerHolidayObserver
     public function deleting(WorkerHoliday $workerHoliday): void
     {
         // Non-admin users must be part of the firm
-        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $workerHoliday->worker->branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $worker = $workerHoliday->worker ?? \App\Models\Worker\Worker::with('branch')->find($workerHoliday->worker_id);
+                $firmId = $worker?->branch?->firm_id;
+                if (!$firmId || !$user->hasFirmAccess($firmId)) {
+                    throw new \Exception('Unauthorized access to firm.');
+                }
+            }
         }
     }
 

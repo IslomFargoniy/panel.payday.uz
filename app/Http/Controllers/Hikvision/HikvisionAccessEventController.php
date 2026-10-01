@@ -64,7 +64,11 @@ class HikvisionAccessEventController extends Controller
     public function destroy(HikvisionAccessEvent $hikvisionAccessEvent)
     {
         $user = auth()->user();
-        if ($user && !$user->hasRole('Admin')) {
+        if (!$user) {
+            abort(401);
+        }
+
+        if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
             $userFirmIds = $user->user_firms()->pluck('firm_id')->toArray();
             $eventFirmId = $hikvisionAccessEvent->worker?->branch?->firm_id;
             if (!$eventFirmId || !in_array($eventFirmId, $userFirmIds)) {

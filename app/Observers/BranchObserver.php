@@ -13,10 +13,13 @@ class BranchObserver
     public function creating(Branch $branch): void
     {
         // Non-admin users must be part of the firm
-        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $branch->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
     }
 
@@ -26,10 +29,13 @@ class BranchObserver
     public function updating(Branch $branch): void
     {
         // Non-admin users must be part of the firm
-        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $branch->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
     }
 
@@ -39,10 +45,13 @@ class BranchObserver
     public function deleting(Branch $branch): void
     {
         // Non-admin users must be part of the firm
-        if (Auth::check() && !Auth::user()->hasRole('Admin')) {
-            Auth::user()->user_firms()
-                ->where('firm_id', $branch->firm_id)
-                ->firstOrFail(); // Throws if unauthorized
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user instanceof \App\Models\User\User && !$user->hasRole('Admin')) {
+                $user->user_firms()
+                    ->where('firm_id', $branch->firm_id)
+                    ->firstOrFail(); // Throws if unauthorized
+            }
         }
     }
 
