@@ -19,7 +19,7 @@ return new class extends Migration
         DB::unprepared("DROP FUNCTION IF EXISTS count_working_days;");
 
         DB::unprepared("
-            CREATE DEFINER=`$dbUsername`@`localhost` FUNCTION `count_working_days`(workerId INT, from_ DATE, to_ DATE) RETURNS INT
+            CREATE FUNCTION `count_working_days`(workerId INT, from_ DATE, to_ DATE) RETURNS INT
                 READS SQL DATA
             BEGIN
                 DECLARE working_days INT DEFAULT 0;
