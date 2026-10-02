@@ -167,3 +167,26 @@ test('scheduled hikvision commands are skipped while the deploy flag file exists
         @unlink($flag);
     }
 });
+
+test('catch-up job splits a long gap into day windows and keeps timeout below queue retry_after', function () {
+    $device = makeIsupDevice($this->branch->id, true, '2026-10-02 11:29:00');
+    fakeGatewayOnline();
+
+    (new \App\Jobs\CatchUpDeviceEventsJob($device->id, '2026-09-26 18:00:00'))
+        ->handle(app(\App\Services\Hikvision\HikvisionSyncService::class));
+
+    $starts = collect(Http::recorded())
+        ->filter(fn ($pair) => str_contains($pair[0]->url(), '/api/isapi'))
+        ->map(fn ($pair) => json_decode($pair[0]['body'], true)['AcsEventCond']['startTime'])
+        ->values()->all();
+
+    expect($starts)->toBe([
+        '2026-09-26T00:00:00+05:00',
+        '2026-09-28T00:00:00+05:00',
+        '2026-09-30T00:00:00+05:00',
+        '2026-10-02T00:00:00+05:00',
+    ]);
+
+    $retryAfter = (int) config('queue.connections.database.retry_after', 90);
+    expect((new \App\Jobs\CatchUpDeviceEventsJob(1, 'x'))->timeout)->toBeLessThan($retryAfter);
+});
