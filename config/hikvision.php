@@ -31,5 +31,9 @@ return [
     // (kechikib yetkazilgan event) qurilma vaqti ishlatiladi. 0 — o'chirish.
     'late_delivery_seconds' => (int) env('HIKVISION_LATE_DELIVERY_SECONDS', 600),
 
+    // Kechikib kelgan event uchun qurilma vaqtiga ishonish mumkin bo'lgan eng katta yosh (kun).
+    // Undan eski bo'lsa (masalan qurilma soati reset bo'lgan) server vaqti ishlatiladi.
+    'late_delivery_max_age_days' => (int) env('HIKVISION_LATE_DELIVERY_MAX_AGE_DAYS', 45),
+
     'restart_command' => env('HIKVISION_RESTART_COMMAND', 'sudo systemctl restart hikvision-isup'),
 ];

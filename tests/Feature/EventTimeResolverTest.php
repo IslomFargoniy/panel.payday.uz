@@ -82,8 +82,12 @@ test('EventTimeResolver uses device time for late-delivered callback events (off
     $nearServer = Carbon::parse('2026-10-01 08:08:00', 'Asia/Tashkent'); // 590s
     expect($resolver->resolve(Carbon::parse('2026-10-01 07:58:10', 'Asia/Tashkent'), $nearServer, 'branch14')->toDateTimeString())->toBe('2026-10-01 08:08:00');
 
-    // 7 kundan eski: server vaqti
-    $tooOld = Carbon::parse('2026-09-20 08:00:00', 'Asia/Tashkent');
+    // 10 kunlik backlog (7 kundan eski, lekin 45 kun ichida): qurilma vaqti
+    $tenDays = Carbon::parse('2026-09-22 08:00:00', 'Asia/Tashkent');
+    expect($resolver->resolve($tenDays, $serverTime, 'branch14')->toDateTimeString())->toBe('2026-09-22 08:00:00');
+
+    // 60 kunlik: server vaqti
+    $tooOld = Carbon::parse('2026-08-03 08:00:00', 'Asia/Tashkent');
     expect($resolver->resolve($tooOld, $serverTime, 'branch14')->toDateTimeString())->toBe('2026-10-02 11:29:32');
 
     // Qoida o'chirilgan (0): eski xatti-harakat

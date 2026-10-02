@@ -75,8 +75,7 @@ class EventTimeResolver
 
             // Kechikib yetkazilgan event (masalan internet uzilib, qurilma xotirasidan keyin yuborgan):
             // server vaqti noto'g'ri kunga yozib yuboradi, shuning uchun qurilma vaqti olinadi.
-            $lateDeliverySeconds = (int) config('hikvision.late_delivery_seconds', 600);
-            if ($lateDeliverySeconds > 0 && -$diffSeconds > $lateDeliverySeconds && !$deviceTooOld) {
+            if ($this->isLateDelivery($diffSeconds, $device, $server, $identifier)) {
                 return $device;
             }
 
@@ -89,5 +88,38 @@ class EventTimeResolver
         }
 
         return $device;
+    }
+
+    /**
+     * Event kechikib yetkazilganmi (qurilma vaqti serverdan late_delivery_seconds dan ko'p orqada)
+     * va qurilma vaqti ishonchli oraliqda (late_delivery_max_age_days dan eski emas)mi.
+     */
+    protected function isLateDelivery(int $diffSeconds, Carbon $device, Carbon $server, ?string $identifier): bool
+    {
+        $lateSeconds = (int) config('hikvision.late_delivery_seconds', 600);
+        if ($lateSeconds <= 0 || -$diffSeconds <= $lateSeconds) {
+            return false;
+        }
+
+        $maxAgeDays = (int) config('hikvision.late_delivery_max_age_days', 45);
+        if (-$diffSeconds > $maxAgeDays * 86400) {
+            // Qurilma soati reset bo'lgan yoki juda eski event: ishonib bo'lmaydi
+            Log::warning('EventTimeResolver: device time older than late_delivery_max_age_days, server time used', [
+                'device' => $identifier,
+                'device_time' => $device->toDateTimeString(),
+                'server_time' => $server->toDateTimeString(),
+                'lag_seconds' => -$diffSeconds,
+            ]);
+            return false;
+        }
+
+        Log::info('EventTimeResolver: late delivery, device time used', [
+            'device' => $identifier,
+            'device_time' => $device->toDateTimeString(),
+            'server_time' => $server->toDateTimeString(),
+            'lag_seconds' => -$diffSeconds,
+        ]);
+
+        return true;
     }
 }
