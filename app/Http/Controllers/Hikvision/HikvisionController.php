@@ -138,10 +138,7 @@ class HikvisionController extends Controller
             }
 
             $shortSerial = $branchDevice->device_id ?: ($shortSerial ?: 'default');
-            $branchDevice->update([
-                'is_online' => true,
-                'last_seen_at' => now(),
-            ]);
+            $branchDevice->markSeen();
 
             if (isset($eventData->AccessControllerEvent)) {
                 $rawStatus = $eventData->AccessControllerEvent->attendanceStatus ?? null;

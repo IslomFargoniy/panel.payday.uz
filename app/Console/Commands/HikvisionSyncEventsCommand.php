@@ -13,7 +13,7 @@ class HikvisionSyncEventsCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'hikvision:sync-events {--device_id= : Specific ISUP device ID to sync} {--days=1 : Number of past days to query}';
+    protected $signature = 'hikvision:sync-events {--device_id= : Specific ISUP device ID to sync} {--days=1 : Number of past days to query} {--from= : Start date (Y-m-d), overrides --days} {--to= : End date (Y-m-d)}';
 
     /**
      * The console command description.
@@ -32,6 +32,13 @@ class HikvisionSyncEventsCommand extends Command
 
         $startTime = now()->subDays($days)->format('Y-m-d\T00:00:00+05:00');
         $endTime = now()->addHours(1)->format('Y-m-d\T23:59:59+05:00');
+
+        if ($this->option('from')) {
+            $startTime = \Carbon\Carbon::parse($this->option('from'))->format('Y-m-d\T00:00:00+05:00');
+        }
+        if ($this->option('to')) {
+            $endTime = \Carbon\Carbon::parse($this->option('to'))->format('Y-m-d\T23:59:59+05:00');
+        }
 
         $query = BranchDevice::where('connection_type', 'isup')
             ->where('status', 1)

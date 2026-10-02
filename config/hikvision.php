@@ -35,5 +35,8 @@ return [
     // Undan eski bo'lsa (masalan qurilma soati reset bo'lgan) server vaqti ishlatiladi.
     'late_delivery_max_age_days' => (int) env('HIKVISION_LATE_DELIVERY_MAX_AGE_DAYS', 45),
 
+    // ISUP qurilma shuncha daqiqadan ko'p aloqasiz bo'lib qayta ulansa, offline davri qayta sinxronlanadi. 0 — o'chirish.
+    'catchup_gap_minutes' => (int) env('HIKVISION_CATCHUP_GAP_MINUTES', 30),
+
     'restart_command' => env('HIKVISION_RESTART_COMMAND', 'sudo systemctl restart hikvision-isup'),
 ];
