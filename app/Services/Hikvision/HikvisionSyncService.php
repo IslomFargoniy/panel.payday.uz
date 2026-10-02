@@ -274,6 +274,7 @@ class HikvisionSyncService
             $device->loadMissing('branch.workers.branch.firm.firm_setting');
 
             $syncedCount = 0;
+            $correctedCount = 0;
             $position = 0;
             $maxPerReq = 100;
             $totalMatches = 1;
@@ -344,9 +345,13 @@ class HikvisionSyncService
                         ->whereHas('hikvisionAccess', function ($q) use ($eventDateStr) {
                             $q->withTrashed()->where('dateTime', $eventDateStr);
                         })
-                        ->exists();
+                        ->first();
 
                     if ($existing) {
+                        // Callback kechikib yetkazilgan eventni server vaqti bilan yozgan bo'lishi mumkin: created_at ni tuzatamiz
+                        if (app(\App\Services\Hikvision\EventTimeResolver::class)->correctIfLate($existing, $eventDateTime, $device->device_id)) {
+                            $correctedCount++;
+                        }
                         continue;
                     }
 
@@ -426,8 +431,8 @@ class HikvisionSyncService
                 }
             }
 
-            Log::info("HikvisionSync [ISUP Events]: Device {$device->device_id} synced {$syncedCount} events.");
-            return ['success' => true, 'synced_count' => $syncedCount];
+            Log::info("HikvisionSync [ISUP Events]: Device {$device->device_id} synced {$syncedCount} events, corrected {$correctedCount}.");
+            return ['success' => true, 'synced_count' => $syncedCount, 'corrected_count' => $correctedCount];
 
         } catch (\Exception $e) {
             Log::warning("HikvisionSync: Event sync failed for device {$device->id}: " . $e->getMessage());

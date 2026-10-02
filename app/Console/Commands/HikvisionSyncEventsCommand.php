@@ -55,7 +55,7 @@ class HikvisionSyncEventsCommand extends Command
             $res = $syncService->syncEventsFromDevice($device, $startTime, $endTime);
 
             if ($res['success'] ?? false) {
-                $this->info("✔ Device {$device->device_id}: {$res['synced_count']} new event(s) synced.");
+                $this->info("✔ Device {$device->device_id}: {$res['synced_count']} new event(s) synced, " . ($res['corrected_count'] ?? 0) . " corrected.");
             } else {
                 $this->error("✖ Device {$device->device_id} sync failed: " . ($res['error'] ?? $res['message'] ?? 'Unknown error'));
             }

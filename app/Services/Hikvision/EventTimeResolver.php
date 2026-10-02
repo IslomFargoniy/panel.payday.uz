@@ -3,6 +3,7 @@
 namespace App\Services\Hikvision;
 
 use Carbon\Carbon;
+use App\Models\Hikvision\HikvisionAccessEvent;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Log;
 
@@ -118,6 +119,49 @@ class EventTimeResolver
             'device_time' => $device->toDateTimeString(),
             'server_time' => $server->toDateTimeString(),
             'lag_seconds' => -$diffSeconds,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Allaqachon yozilgan event kechikib yetkazilgan vaqt (server qabul qilgan vaqt) bilan saqlangan bo'lsa,
+     * created_at ni qurilma vaqtiga tuzatadi. Qurilma soati oldinda bo'lgan (created_at < dateTime) eventga tegmaydi.
+     *
+     * @return bool created_at o'zgartirildimi
+     */
+    public function correctIfLate(HikvisionAccessEvent $event, CarbonInterface|string $deviceTime, ?string $identifier = null): bool
+    {
+        $lateSeconds = (int) config('hikvision.late_delivery_seconds', 600);
+        if ($lateSeconds <= 0 || $event->trashed() || !$event->created_at) {
+            return false;
+        }
+
+        $device = Carbon::parse($deviceTime instanceof CarbonInterface ? $deviceTime->toDateTimeString() : $deviceTime, 'Asia/Tashkent');
+        $recorded = Carbon::parse($event->created_at->format('Y-m-d H:i:s'), 'Asia/Tashkent');
+        $lag = $recorded->timestamp - $device->timestamp;
+
+        if ($lag <= $lateSeconds) {
+            return false;
+        }
+
+        $maxAgeDays = (int) config('hikvision.late_delivery_max_age_days', 45);
+        if (Carbon::now('Asia/Tashkent')->timestamp - $device->timestamp > $maxAgeDays * 86400) {
+            return false;
+        }
+
+        $new = $device->format('Y-m-d H:i:s');
+        HikvisionAccessEvent::withTrashed()->whereKey($event->id)->update([
+            'created_at' => $new,
+            'updated_at' => $new,
+        ]);
+
+        Log::info('EventTimeResolver: late event created_at corrected to device time', [
+            'event_id' => $event->id,
+            'device' => $identifier,
+            'old_created_at' => $recorded->toDateTimeString(),
+            'new_created_at' => $new,
+            'lag_seconds' => $lag,
         ]);
 
         return true;

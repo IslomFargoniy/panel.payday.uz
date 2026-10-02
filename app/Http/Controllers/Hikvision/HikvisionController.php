@@ -226,6 +226,13 @@ class HikvisionController extends Controller
                         ->first();
 
                     if ($existingEvent) {
+                        // Oldin kechikib yetkazilib server vaqti bilan yozilgan bo'lsa, created_at ni qurilma vaqtiga tuzatamiz
+                        app(\App\Services\Hikvision\EventTimeResolver::class)->correctIfLate(
+                            $existingEvent,
+                            $dateTimeStr,
+                            $shortSerial ?: ($macAddress ?: $deviceId)
+                        );
+
                         // If existing event is not soft-deleted and has no picture, attach the picture now!
                         if (!$existingEvent->trashed() && !empty($filename) && empty($existingEvent->picture)) {
                             $existingEvent->picture = $filename;
