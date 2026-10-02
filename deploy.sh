@@ -45,6 +45,10 @@ set -e
 echo -e "${BLUE}--> Serverdagi papkaga o'tilmoqda: $SERVER_PATH${NC}"
 cd $SERVER_PATH
 
+# Deploy davomida scheduler (hikvision:sync-events, healthcheck) to'xtab turadi: kod yangi, sxema eski bo'lgan oraliqda xatolik chiqmasligi uchun
+DEPLOY_FLAG=$SERVER_PATH/storage/framework/deploying
+sudo touch \$DEPLOY_FLAG
+
 # Keraksiz AppleDouble (._*) fayllarni tozalash
 find . -name "._*" -delete 2>/dev/null || true
 
@@ -53,6 +57,7 @@ echo -e "${BLUE}--> Joriy commit (rollback uchun saqlandi): \$PREV${NC}"
 
 rollback() {
     echo -e "${RED}❌ Xatolik yuz berdi! Avvalgi holatga qaytarilmoqda (\$PREV)...${NC}"
+    sudo rm -f \$DEPLOY_FLAG || true
     sudo git reset --hard "\$PREV"
     if [ -f "composer.json" ]; then
         sudo composer install --no-interaction --prefer-dist --optimize-autoloader || true
@@ -76,14 +81,14 @@ if [ -f "composer.json" ]; then
     sudo composer install --no-interaction --prefer-dist --optimize-autoloader
 fi
 
+echo -e "${BLUE}--> Ma'lumotlar bazasi migratsiyalari ishga tushirilmoqda...${NC}"
+sudo -u panel_payday_usr $PHP_BIN artisan migrate --force
+
 echo -e "${BLUE}--> Frontend aktivlari build qilinmoqda (npm ci && npm run build)...${NC}"
 if [ -f "package.json" ]; then
     sudo npm ci
     sudo npm run build
 fi
-
-echo -e "${BLUE}--> Ma'lumotlar bazasi migratsiyalari ishga tushirilmoqda...${NC}"
-sudo -u panel_payday_usr $PHP_BIN artisan migrate --force
 
 echo -e "${BLUE}--> Tizim keshlari tozalanmoqda va optimallashmoqda...${NC}"
 sudo -u panel_payday_usr $PHP_BIN artisan optimize:clear
@@ -102,6 +107,8 @@ sudo -u panel_payday_usr $PHP_BIN artisan queue:restart || true
 sudo supervisorctl reread || true
 sudo supervisorctl update || true
 sudo supervisorctl restart payday-worker:* || true
+
+sudo rm -f \$DEPLOY_FLAG
 
 
 

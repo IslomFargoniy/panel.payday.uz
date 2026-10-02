@@ -139,3 +139,31 @@ test('long offline device raises a one-time alert that is cleared on reconnect',
     $this->artisan('hikvision:healthcheck')->assertSuccessful();
     expect(Cache::has("hikvision_device_down_alert:{$device->id}"))->toBeFalse();
 });
+
+test('scheduled hikvision commands are skipped while the deploy flag file exists', function () {
+    $flag = storage_path('framework/deploying');
+    @unlink($flag);
+
+    $events = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())
+        ->filter(fn ($e) => str_contains($e->command ?? '', 'hikvision:'));
+    expect($events)->not->toBeEmpty();
+
+    foreach ($events as $e) {
+        expect($e->filtersPass(app()))->toBeTrue();
+    }
+
+    touch($flag);
+    try {
+        foreach ($events as $e) {
+            expect($e->filtersPass(app()))->toBeFalse();
+        }
+
+        // Eskirgan (15 daqiqadan eski) bayroq e'tiborga olinmaydi
+        touch($flag, time() - 1200);
+        foreach ($events as $e) {
+            expect($e->filtersPass(app()))->toBeTrue();
+        }
+    } finally {
+        @unlink($flag);
+    }
+});
