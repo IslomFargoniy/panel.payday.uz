@@ -72,6 +72,14 @@ class EventTimeResolver
             if ($legacyUseDeviceTime && !$deviceAhead && !$deviceTooOld) {
                 return $device;
             }
+
+            // Kechikib yetkazilgan event (masalan internet uzilib, qurilma xotirasidan keyin yuborgan):
+            // server vaqti noto'g'ri kunga yozib yuboradi, shuning uchun qurilma vaqti olinadi.
+            $lateDeliverySeconds = (int) config('hikvision.late_delivery_seconds', 600);
+            if ($lateDeliverySeconds > 0 && -$diffSeconds > $lateDeliverySeconds && !$deviceTooOld) {
+                return $device;
+            }
+
             return $server;
         }
 

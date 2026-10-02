@@ -27,5 +27,9 @@ return [
 
     'use_device_time' => (bool) env('HIKVISION_USE_DEVICE_TIME', false),
 
+    // use_device_time=false bo'lsa ham, qurilma vaqti serverdan shuncha soniyadan ko'p orqada bo'lsa
+    // (kechikib yetkazilgan event) qurilma vaqti ishlatiladi. 0 — o'chirish.
+    'late_delivery_seconds' => (int) env('HIKVISION_LATE_DELIVERY_SECONDS', 600),
+
     'restart_command' => env('HIKVISION_RESTART_COMMAND', 'sudo systemctl restart hikvision-isup'),
 ];

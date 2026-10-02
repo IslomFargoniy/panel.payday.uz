@@ -13,7 +13,10 @@ class HikvisionBackfillEventTimeCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'hikvision:backfill-event-time {--dry-run : O\'zgarishlarni bazaga yozmasdan faqat hisobotni ko\'rsatish} {--force : O\'zgarishlarni to\'g\'ridan-to\'g\'ri bazaga yozish}';
+    protected $signature = 'hikvision:backfill-event-time {--dry-run : O\'zgarishlarni bazaga yozmasdan faqat hisobotni ko\'rsatish} {--force : O\'zgarishlarni to\'g\'ridan-to\'g\'ri bazaga yozish}
+                            {--from= : Qurilma vaqti (dateTime) shu sanadan (Y-m-d) boshlab}
+                            {--to= : Qurilma vaqti (dateTime) shu sanagacha (Y-m-d, shu kun ham kiradi)}
+                            {--device= : Faqat shu qurilma (shortSerialNumber yoki macAddress)}';
 
     /**
      * The console command description.
@@ -40,6 +43,12 @@ class HikvisionBackfillEventTimeCommand extends Command
         $records = DB::table('hikvision_access_events')
             ->join('hikvision_accesses', 'hikvision_access_events.hikvision_access_id', '=', 'hikvision_accesses.id')
             ->whereNull('hikvision_access_events.deleted_at')
+            ->when($this->option('from'), fn ($q, $from) => $q->where('hikvision_accesses.dateTime', '>=', Carbon::parse($from)->startOfDay()->toDateTimeString()))
+            ->when($this->option('to'), fn ($q, $to) => $q->where('hikvision_accesses.dateTime', '<=', Carbon::parse($to)->endOfDay()->toDateTimeString()))
+            ->when($this->option('device'), fn ($q, $device) => $q->where(function ($q) use ($device) {
+                $q->where('hikvision_accesses.shortSerialNumber', $device)
+                    ->orWhere('hikvision_accesses.macAddress', $device);
+            }))
             ->select([
                 'hikvision_access_events.id',
                 'hikvision_access_events.created_at',
