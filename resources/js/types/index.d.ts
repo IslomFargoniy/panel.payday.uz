@@ -215,6 +215,7 @@ export interface User {
     password: string;
     balance: number;
     avatar: string;
+    status?: 'waiting' | 'approved' | 'rejected';
     email_verified_at: string | null;
     user_topups?: UserTopUp[];
     user_firms?: UserFirm[];

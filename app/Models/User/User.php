@@ -33,7 +33,24 @@ class User extends Authenticatable
         'google_id',
         'telegram_id',
         'avatar',
+        'status',
     ];
+
+    /**
+     * Check if user is approved to access the application.
+     */
+    public function isApproved(): bool
+    {
+        return $this->hasRole('Admin') || $this->status === \App\Enums\UserStatus::APPROVED || $this->status === 'approved';
+    }
+
+    /**
+     * Check if user is waiting for approval.
+     */
+    public function isWaiting(): bool
+    {
+        return $this->status === \App\Enums\UserStatus::WAITING || $this->status === 'waiting';
+    }
 
     protected $with = [
         'roles'

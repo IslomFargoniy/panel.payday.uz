@@ -30,12 +30,20 @@ class UserController extends Controller
             return back()->with('error', "You are not allowed to access this page");
         }
 
-        $user = User::with([
+        $tab = $request->get('tab');
+        if (!in_array($tab, ['waiting', 'approved'])) {
+            $tab = 'waiting';
+        }
+
+        $baseQuery = User::with([
             'user_firms',
             'roles',
-        ])
-            ->whereNotIn('id', [Auth::user()->id])
-            ->orderBy('id', 'desc');
+        ])->whereNotIn('id', [Auth::user()->id]);
+
+        $waitingCount = (clone $baseQuery)->where('status', 'waiting')->count();
+        $approvedCount = (clone $baseQuery)->where('status', 'approved')->count();
+
+        $user = (clone $baseQuery)->where('status', $tab)->orderBy('id', 'desc');
 
         if ($request->search) {
             $user->where(function ($query) use ($request) {
@@ -48,8 +56,27 @@ class UserController extends Controller
         $user = $user->paginate($per_page);
 
         return Inertia::render('user/index', [
-            'user' => $user
+            'user' => $user,
+            'tab' => $tab,
+            'counts' => [
+                'waiting' => $waitingCount,
+                'approved' => $approvedCount,
+            ],
         ]);
+    }
+
+    /**
+     * Approve a waiting user.
+     */
+    public function approve(User $user)
+    {
+        if (!Auth::user()->hasRole('Admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $user->update(['status' => \App\Enums\UserStatus::APPROVED->value]);
+
+        return back()->with('success', 'Foydalanuvchi muvaffaqiyatli tasdiqlandi.');
     }
 
     /**

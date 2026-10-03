@@ -354,5 +354,18 @@
     "firm_id": "Firm",
     "branch_id": "Branch",
     "worker_id": "Worker",
-    "current_password": "Current password"
+    "current_password": "Current password",
+    "user_tab_waiting": "Waiting",
+    "user_tab_approved": "Approved",
+    "approve": "Approve",
+    "approve_confirm": "Are you sure you want to approve this user?",
+    "user_approved_successfully": "User approved successfully",
+    "registered_at": "Registered at",
+    "pending_approval": {
+        "title": "Account Pending Approval",
+        "description": "Superadmin approval is required to access the application",
+        "info_message": "Your account is awaiting approval from the system administrator (Superadmin). You will be able to access the dashboard once approved.",
+        "check_status": "Check Status",
+        "logout": "Log Out"
+    }
 }

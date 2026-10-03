@@ -354,5 +354,18 @@
     "firm_id": "Firma",
     "branch_id": "Filial",
     "worker_id": "Ishchi",
-    "current_password": "Joriy parol"
+    "current_password": "Joriy parol",
+    "user_tab_waiting": "Kutilmoqda",
+    "user_tab_approved": "Tasdiqlangan",
+    "approve": "Tasdiqlash",
+    "approve_confirm": "Ushbu foydalanuvchini tasdiqlaysizmi?",
+    "user_approved_successfully": "Foydalanuvchi muvaffaqiyatli tasdiqlandi",
+    "registered_at": "Ro'yxatdan o'tgan sana",
+    "pending_approval": {
+        "title": "Hisobingiz kutilmoqda",
+        "description": "Tizimdan foydalanish uchun superadmin tasdig‘i talab qilinadi",
+        "info_message": "Sizning hisobingiz tizim ma'muri (Superadmin) tasdiqlash jarayonida. Tasdiqlanganingizdan so‘ng sizga panelga kirish imkoni beriladi.",
+        "check_status": "Holatni tekshirish",
+        "logout": "Tizimdan chiqish"
+    }
 }

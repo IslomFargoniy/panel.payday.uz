@@ -23,25 +23,39 @@ class GoogleAuthController extends Controller
     public function callback()
     {
         $googleUser = Socialite::driver('google')->user();
+        $email = $googleUser->getEmail();
 
-        // Find or create the user
-        $user = User::updateOrCreate(
-            ['email' => $googleUser->getEmail()],
-            [
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            $user = User::create([
+                'email' => $email,
                 'name' => $googleUser->getName(),
                 'google_id' => $googleUser->getId(),
                 'avatar' => $googleUser->getAvatar(),
-            ]
-        );
-
-        if (!$user->hasRole('Client') && !$user->hasRole('Admin')) {
+                'status' => \App\Enums\UserStatus::WAITING->value,
+            ]);
             $user->assignRole('Client');
+        } else {
+            $user->update([
+                'name' => $googleUser->getName() ?: $user->name,
+                'google_id' => $googleUser->getId(),
+                'avatar' => $googleUser->getAvatar() ?: $user->avatar,
+            ]);
+
+            if (!$user->hasRole('Client') && !$user->hasRole('Admin')) {
+                $user->assignRole('Client');
+            }
         }
 
         // Log the user in
         Auth::login($user);
 
-        // Redirect to the dashboard or home
-        return redirect('/dashboard'); // Change as needed
+        // Redirect based on approval status
+        if ($user->isApproved()) {
+            return redirect()->intended('/dashboard');
+        }
+
+        return redirect()->route('pending.approval');
     }
 }

@@ -42,6 +42,7 @@ class RegisteredUserController extends Controller
             'phone' => $request->phone,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'status' => \App\Enums\UserStatus::WAITING->value,
         ]);
 
         $user->assignRole('Client'); // Assign the user role
@@ -50,6 +51,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return to_route('dashboard');
+        return to_route('pending.approval');
     }
 }

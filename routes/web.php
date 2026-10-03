@@ -10,10 +10,11 @@ Route::get('/', function () {
 
 Route::any('telegram/handle', [\App\Http\Controllers\TelegramController::class , 'handle']);
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'ensure.approved'])->group(function () {
     Route::get('dashboard', [\App\Http\Controllers\HomeController::class , 'index'])->name('dashboard');
 
     Route::resource('user', \App\Http\Controllers\User\UserController::class);
+    Route::post('/user/{user}/approve', [\App\Http\Controllers\User\UserController::class, 'approve'])->name('user.approve');
     Route::resource('user_firm', \App\Http\Controllers\User\UserFirmController::class);
     Route::resource('firm', \App\Http\Controllers\Firm\FirmController::class);
     Route::resource('firm_setting', \App\Http\Controllers\Firm\FirmSettingController::class);
@@ -38,6 +39,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/salary_report', [\App\Http\Controllers\ReportController::class , 'salary_report']);
 
 });
+
+Route::get('/pending-approval', function () {
+    if (auth()->check() && (auth()->user()->hasRole('Admin') || auth()->user()->status === 'approved')) {
+        return redirect()->route('dashboard');
+    }
+    return Inertia::render('auth/pending-approval');
+})->middleware(['auth'])->name('pending.approval');
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

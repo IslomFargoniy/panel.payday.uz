@@ -76,6 +76,7 @@ class WebPanelAuthorizationTest extends TestCase
             'phone' => '998901239999',
             'email' => 'client2@payday.uz',
             'password' => 'secret123',
+            'status' => 'approved',
         ]);
         $this->clientUser->assignRole('Client');
 

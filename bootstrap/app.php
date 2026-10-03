@@ -40,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
             'ensure.panel.user' => \App\Http\Middleware\EnsurePanelUser::class,
             'ensure.worker.user' => \App\Http\Middleware\EnsureWorkerUser::class,
+            'ensure.approved' => \App\Http\Middleware\EnsureUserIsApproved::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

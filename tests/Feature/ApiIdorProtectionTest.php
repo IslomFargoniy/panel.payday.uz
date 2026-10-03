@@ -74,6 +74,7 @@ class ApiIdorProtectionTest extends TestCase
             'phone' => '998901112233',
             'email' => 'client@payday.uz',
             'password' => 'secret123',
+            'status' => 'approved',
         ]);
         $this->clientUser->assignRole('Client');
 
